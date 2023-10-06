@@ -59,6 +59,7 @@ app.use(
       "https://prepgvreweb.vercel.app/",
       "https://gvre-migration-prep.netlify.app",
       "https://gvre-web-seo-prod.netlify.app",
+      "https://gvrecrmback-new-production.up.railway.app",
     ],
     credentials: true,
     optionsSuccessStatus: 200,
