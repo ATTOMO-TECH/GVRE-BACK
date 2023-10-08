@@ -67,11 +67,12 @@ app.use(
     optionsSuccessStatus: 200,
   })
 );
-
+app.set("trust proxy", 1);
 app.use(
   session({
     secret: 'asd!WQe!"3d.asd0/)12/3Adcq',
     resave: false,
+    proxy: true,
     saveUninitialized: false,
     cookie: {
       maxAge: 8760 * 3600 * 1000,
