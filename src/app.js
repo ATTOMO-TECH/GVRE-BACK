@@ -65,7 +65,7 @@ app.use(
     optionsSuccessStatus: 200,
   })
 );
-
+app.enable("trust proxy");
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'asd!WQe!"3d.asd0/)12/3Adcq',
