@@ -59,7 +59,7 @@ app.use(
       "https://prepgvreweb.vercel.app/",
       "https://gvre-migration-prep.netlify.app",
       "https://gvre-web-seo-prod.netlify.app",
-      "https://gvrecrmback-new-production.up.railway.app",
+      "https://crmfront-gvre.vercel.app",
     ],
     credentials: true,
     optionsSuccessStatus: 200,
@@ -69,10 +69,11 @@ app.enable("trust proxy");
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'asd!WQe!"3d.asd0/)12/3Adcq',
-    resave: false,
-    saveUninitialized: false,
+    resave: true,
+    saveUninitialized: true,
     proxy: true,
     cookie: {
+      secure: true,
       maxAge: 8760 * 3600 * 1000,
     },
     store: MongoStore.create({ mongoUrl: db.DB_URL }),
