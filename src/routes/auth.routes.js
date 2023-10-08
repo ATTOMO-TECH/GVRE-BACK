@@ -11,24 +11,24 @@ const {
   checkSession,
 } = require("../controllers/auth.controller");
 
-router.get("/register", registerGet);
-router.post("/register", registerPost);
-
-router.get("/login", loginGet);
-router.post("/login", loginPost);
-
-router.post("/logout", isAuth, logoutPost);
-
-router.get("/check-session", isAuth, checkSession);
-
 // router.get("/register", registerGet);
 // router.post("/register", registerPost);
 
 // router.get("/login", loginGet);
 // router.post("/login", loginPost);
 
-// router.post("/logout", logoutPost);
+// router.post("/logout", isAuth, logoutPost);
 
-// router.get("/check-session", checkSession);
+// router.get("/check-session", isAuth, checkSession);
+
+router.get("/register", registerGet);
+router.post("/register", registerPost);
+
+router.get("/login", loginGet);
+router.post("/login", loginPost);
+
+router.post("/logout", logoutPost);
+
+router.get("/check-session", checkSession);
 
 module.exports = router;
