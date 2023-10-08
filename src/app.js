@@ -23,6 +23,7 @@ const mailsRoutes = require("./routes/mails.routes");
 const catalogsRoutes = require("./routes/catalog.routes");
 const webRoutes = require("./routes/web.routes");
 const marketingCampaignsRoutes = require("./routes/marketingCampaing.routes");
+const { authValidator } = require("./middlewares/auth.validator");
 
 db.connect();
 
@@ -67,14 +68,12 @@ app.use(
   })
 );
 
-app.set("trust proxy", 1);
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || 'asd!WQe!"3d.asd0/)12/3Adcq',
+    secret: 'asd!WQe!"3d.asd0/)12/3Adcq',
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false,
       maxAge: 8760 * 3600 * 1000,
     },
     store: MongoStore.create({ mongoUrl: db.DB_URL }),
@@ -84,26 +83,12 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Consultant authentication validator
+app.use(authValidator);
+
 app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
-
-// Consultant authentication validator
-app.use((req, res, next) => {
-  req.isAdmin = false;
-
-  if (!req.isAuthenticated()) {
-    return next();
-  } else {
-    req.isUser = true;
-  }
-
-  if (req.user && req.user.role === "Admin") {
-    req.isAdmin = true;
-  }
-
-  return next();
-});
 
 app.use("/", indexRoutes);
 app.use("/auth", authRoutes);
