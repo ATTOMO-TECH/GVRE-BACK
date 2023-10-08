@@ -3,7 +3,6 @@ dotenv.config();
 const path = require("path");
 const express = require("express");
 const session = require("express-session");
-var cookieParser = require("cookie-parser");
 const MongoStore = require("connect-mongo");
 const passport = require("passport");
 require("./auth");
@@ -66,16 +65,13 @@ app.use(
     optionsSuccessStatus: 200,
   })
 );
-app.use(cookieParser());
-app.enable("trust proxy");
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'asd!WQe!"3d.asd0/)12/3Adcq',
     resave: false,
     saveUninitialized: false,
-    proxy: true,
     cookie: {
-      secure: true,
+      secure: false,
       maxAge: 8760 * 3600 * 1000,
     },
     store: MongoStore.create({ mongoUrl: db.DB_URL }),
