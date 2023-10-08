@@ -85,7 +85,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Consultant authentication validator
-app.use(authValidator);
+// app.use(authValidator);
 
 app.use(express.json());
 
