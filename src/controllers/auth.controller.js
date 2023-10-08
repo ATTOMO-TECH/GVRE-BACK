@@ -29,7 +29,7 @@ const registerPost = (req, res, next) => {
       return next(error);
     }
 
-    req.logIn(user, (error) => {
+    req.login(user, (error) => {
       if (error) {
         return next(error);
       }
@@ -52,7 +52,7 @@ const loginPost = (req, res, next) => {
       if (error) return next(error);
       return res.json(user);
     };
-    req.logIn(user, doneForSerialize);
+    req.login(user, doneForSerialize);
   };
   passport.authenticate("login", done)(req);
 };
