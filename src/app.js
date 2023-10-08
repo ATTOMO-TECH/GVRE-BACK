@@ -86,21 +86,21 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Consultant authentication validator
-// app.use((req, res, next) => {
-//   req.isAdmin = false;
+app.use((req, res, next) => {
+  req.isAdmin = false;
 
-//   if (!req.isAuthenticated()) {
-//     return next();
-//   } else {
-//     req.isUser = true;
-//   }
+  if (!req.isAuthenticated()) {
+    return next();
+  } else {
+    req.isUser = true;
+  }
 
-//   if (req.user && req.user.role === "Admin") {
-//     req.isAdmin = true;
-//   }
+  if (req.user && req.user.role === "Admin") {
+    req.isAdmin = true;
+  }
 
-//   return next();
-// });
+  return next();
+});
 
 app.use("/", indexRoutes);
 app.use("/auth", authRoutes);
