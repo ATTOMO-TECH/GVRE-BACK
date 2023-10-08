@@ -1,5 +1,5 @@
 const isAuth = (req, res, next) => {
-  if (req.isAuthenticated() || req.user) {
+  if (req.isAuthenticated()) {
     return next();
   } else {
     return res.json("Acceso restringido");
@@ -7,7 +7,7 @@ const isAuth = (req, res, next) => {
 };
 
 const isAdmin = (req, res, next) => {
-  if (req.isAuthenticated() || req.user) {
+  if (req.isAuthenticated()) {
     if (req.user.role === "Admin") {
       return next();
     } else {

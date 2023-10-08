@@ -71,6 +71,7 @@ app.use(
     secret: process.env.SESSION_SECRET || 'asd!WQe!"3d.asd0/)12/3Adcq',
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     cookie: {
       maxAge: 8760 * 3600 * 1000,
     },
