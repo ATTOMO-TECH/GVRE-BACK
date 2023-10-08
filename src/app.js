@@ -1,8 +1,9 @@
 const dotenv = require("dotenv");
 dotenv.config();
 const path = require("path");
-const express = require("express");
 const session = require("express-session");
+const express = require("express");
+
 const MongoStore = require("connect-mongo");
 const passport = require("passport");
 require("./auth");
@@ -65,6 +66,8 @@ app.use(
     optionsSuccessStatus: 200,
   })
 );
+
+app.set("trust proxy", 1);
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'asd!WQe!"3d.asd0/)12/3Adcq',
@@ -82,6 +85,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 app.use(express.json());
+
 app.use(express.urlencoded({ extended: true }));
 
 // Consultant authentication validator
