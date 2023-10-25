@@ -80,6 +80,11 @@ const maskTemplate2 = (value1, ref1, value2, ref2) => {
 const sendAdsToContact = (req, res) => {
   const createAdsRows = (ads) => {
     return ads.map((ad) => {
+      const pathFile = ad.images.main.split(" ").join("%20");
+      const part = pathFile.split("/");
+      const primeraParte = part[3];
+      const path = pathFile.substring(pathFile.indexOf(primeraParte));
+
       return `${
         ad.adDirectionSelected !== undefined
           ? `<div style="max-width: 600px; margin: auto">
@@ -163,7 +168,7 @@ const sendAdsToContact = (req, res) => {
                             <img
                               src=${
                                 !!ad.images.main
-                                  ? ad.images.main.split(" ").join("%20")
+                                  ? `https://ik.imagekit.io/qj2hsqo2q/${path}?tr=w-600,h-400`
                                   : "https://images.assetsdelivery.com/compings_v2/pavelstasevich/pavelstasevich1811/pavelstasevich181101031.jpg"
                               }
                               width="600px"
