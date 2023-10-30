@@ -6,16 +6,16 @@ const {
   sendEmailReservationToClient,
 } = require("../controllers/mails.controller");
 const {
-  getConsultantTokenByEmail,
+  getConsultantTokenById,
 } = require("../controllers/consultant.controller");
 const { createTransporter } = require("../middlewares/transporterMiddleare");
 
 const router = express.Router();
 
-router.post("/sendAdsToContact", getConsultantTokenByEmail, sendAdsToContact);
+router.post("/sendAdsToContact", getConsultantTokenById, sendAdsToContact);
 router.post(
   "/sendAdToContacts",
-  getConsultantTokenByEmail,
+  getConsultantTokenById,
   createTransporter,
   sendAdToContacts
 );
