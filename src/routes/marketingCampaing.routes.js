@@ -14,7 +14,7 @@ const {
   contactGetAllByMarketingsCampaigns,
 } = require("../controllers/contact.controller");
 const {
-  getConsultantTokenByEmail,
+  getConsultantTokenById,
 } = require("../controllers/consultant.controller");
 
 const router = express.Router();
@@ -30,7 +30,7 @@ router.put(
 );
 router.post(
   "/sendEmail",
-  getConsultantTokenByEmail,
+  getConsultantTokenById,
   sendEmailCampaignToContacts,
   marketingCampaignSendEmail
 );
