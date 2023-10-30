@@ -922,7 +922,6 @@ const sendAdsToContact = (req, res) => {
 const sendAdToContacts = async (req, res) => {
   let counter = 1;
   // let sendedEmailResults = [];
-  // const consultantData = await Consultant.findById(req.body.consultant);
 
   const transporter = nodemailer.createTransport({
     service: "Gmail",
@@ -941,10 +940,6 @@ const sendAdToContacts = async (req, res) => {
   });
 
   const sendMailWithDelay = (mailOptions, currentContactFullName) => {
-    mailOptions.html = mailOptions.html.replace(
-      req.body.messageP1,
-      currentContactFullName
-    );
     transporter.sendMail(mailOptions, function (error, info) {
       // sendedEmailResults.push({
       //   accepted: info.accepted[0] ? info.accepted[0] : info.accepted,
@@ -1249,7 +1244,7 @@ const sendAdToContacts = async (req, res) => {
                           "
                         >
                           <div style="max-width: 600px; margin: auto">
-                          ${req.body.messageP1}
+                            ${req.body.messageP1}
                           </div>
                           <div style="max-width: 600px; margin: auto"><br /></div>
                           <div style="max-width: 600px; margin: auto">
