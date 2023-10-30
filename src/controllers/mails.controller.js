@@ -1,5 +1,6 @@
 const nodemailer = require("nodemailer"); // email sender function
 const { getPasswordByEmail } = require("./utils");
+const Consultant = require("../models/consultant.model");
 
 const maskTemplate = (value, ref) => {
   let render = "";
@@ -917,19 +918,44 @@ const sendAdsToContact = (req, res) => {
     }
   });
 };
-const sendAdToContacts = (req, res) => {
+
+const sendAdToContacts = async (req, res) => {
+  let counter = 1;
+  // let sendedEmailResults = [];
+  // const consultantData = await Consultant.findById(req.body.consultant);
+
+  const transporter = nodemailer.createTransport({
+    service: "Gmail",
+    auth: {
+      user: `${req.body.consultant.consultantEmail}`,
+      pass: req.consultantToken,
+    },
+  });
+
+  transporter.verify(function (error, success) {
+    if (error) {
+      console.log(error);
+    } else {
+      console.log("Server is ready to take our messages");
+    }
+  });
+
   const sendMailWithDelay = (mailOptions, currentContactFullName) => {
     mailOptions.html = mailOptions.html.replace(
       req.body.messageP1,
       currentContactFullName
     );
-
-    req.reusableTransporter.sendMail(mailOptions, function (error, info) {
+    transporter.sendMail(mailOptions, function (error, info) {
+      // sendedEmailResults.push({
+      //   accepted: info.accepted[0] ? info.accepted[0] : info.accepted,
+      //   rejected: info.rejected[0] ? info.rejected[0] : info.rejected,
+      //   consultant: consultantData.fullName,
+      // });
       if (error) {
         console.error(error.message);
         // Manejar el error aquí si es necesario
       } else {
-        console.log(`Correo enviado`);
+        console.log(`Correo ${counter++} enviado`);
         // Registrar la respuesta del envío si es necesario
       }
     });
