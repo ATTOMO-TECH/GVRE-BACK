@@ -8,7 +8,6 @@ const {
 const {
   getConsultantTokenById,
 } = require("../controllers/consultant.controller");
-const { createTransporter } = require("../middlewares/transporterMiddleare");
 
 const router = express.Router();
 
@@ -16,7 +15,7 @@ router.post("/sendAdsToContact", getConsultantTokenById, sendAdsToContact);
 router.post(
   "/sendAdToContacts",
   getConsultantTokenById,
-  createTransporter,
+  // createTransporter,
   sendAdToContacts
 );
 router.post("/webReservations", sendEmailReservationToClient);
