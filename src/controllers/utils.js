@@ -36,6 +36,8 @@ function getPasswordByEmail(email) {
       return process.env.GVRE_PASS_MATEO_HERNANDEZ;
     case "ivan@attomo.digital":
       return process.env.GVRE_PASS_IVAN_SANCHEZ;
+    case "info@gvre.es":
+      return process.env.GVRE_PASS_INFO_GVRE;
     case "inigo@attomo.digital":
       return process.env.GVRE_PASS_INIGO_FOLDVARY;
     case "retail@gvre.es":
