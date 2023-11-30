@@ -15,23 +15,25 @@ const sendEmailCampaignToContacts = async (req, res, next) => {
   } = req.body;
   const {
     consultantEmail,
-    fullName,
+    consultantName,
+    consultantSurname,
     profession,
     position,
     consultantPhoneNumber,
     consultantMobileNumber,
-    office1,
-    office2,
+    consultantToken,
   } = consultant;
-
+  const fullName = `${consultantName} ${consultantSurname}`;
   // buscar en la base de datos
   //   console.log(req.consultantToken);
+
+  let counter = 1;
 
   const transporter = nodemailer.createTransport({
     service: "Gmail",
     auth: {
       user: consultantEmail,
-      pass: req.consultantToken,
+      pass: consultantToken,
     },
   });
 
@@ -42,6 +44,21 @@ const sendEmailCampaignToContacts = async (req, res, next) => {
       console.log("Server is ready to take our messages");
     }
   });
+
+  const sendMailWithDelay = (mailOptions, i) => {
+    transporter.sendMail(mailOptions, function (error, info) {
+      if (error) {
+        res.status(500).send(error.message);
+        console.error(error.message);
+        // Manejar el error aquí si es necesario
+      } else {
+        req.sendMail = "ok";
+        console.log(`Correo ${counter++} enviado`);
+        next();
+        // Registrar la respuesta del envío si es necesario
+      }
+    });
+  };
   //Hacer un map a la variable Contacts para definir el email de envío y enviar el email
   contacts.map((contact, i) => {
     // console.log(contact);
@@ -342,9 +359,14 @@ const sendEmailCampaignToContacts = async (req, res, next) => {
                                />
                            </div>
                            <span>&nbsp;</span> 
-                               <div style="max-width: 600px; margin: auto">
-                                 ${campaign.adComment}
-                               </div>
+                                 ${
+                                   campaign.adComment
+                                     ? `<div style="max-width: 600px; margin: auto">
+                                    ${campaign.adComment}
+                                  </div>`
+                                     : ""
+                                 }
+                               
                             </div>
                               <div style="max-width: 600px; margin: auto"><br /></div>
                               <span>&nbsp;</span>
@@ -421,9 +443,9 @@ const sendEmailCampaignToContacts = async (req, res, next) => {
                                       }
                                       <br />
                                       ${
-                                        office2
-                                          ? `${office1} | ${office2}`
-                                          : `${office1}`
+                                        req.office1
+                                          ? `${req.office1} | ${req.office2}`
+                                          : `${req.office1}`
                                       }
                                       <br />
                                       <a href="mailto:${consultantEmail}" target="_blank">
@@ -499,16 +521,10 @@ const sendEmailCampaignToContacts = async (req, res, next) => {
           </body>
         </html>`,
     };
-    transporter.sendMail(mailOptions, function (error, info) {
-      if (error) {
-        res.status(500).send(error.message);
-      } else {
-        if (contacts.length - 1 === i) {
-          req.sendMail = "ok";
-          next();
-        }
-      }
-    });
+
+    setTimeout(() => {
+      sendMailWithDelay(mailOptions, i);
+    }, i * 5000);
   });
 };
 

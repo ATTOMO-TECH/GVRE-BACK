@@ -154,14 +154,18 @@ const consultantDelete = async (req, res, next) => {
 };
 
 const getConsultantTokenById = async (req, res, next) => {
-  const id = req.body.consultant._id;
-  const consultant = await Consultant.findById({ _id: id });
+  const consultant = await Consultant.findOne({
+    consultantEmail: req.body.consultant.consultantEmail,
+  });
   if (
     consultant !== null &&
     consultant.consultantToken !== undefined &&
     consultant.consultantToken !== ""
   ) {
     req.consultantToken = consultant.consultantToken;
+    req.office1 = consultant.office1;
+    req.office2 = consultant.office2;
+
     return next();
   } else
     res.status(404).json({ message: "Error al recoger datos del consultor" });
