@@ -14,6 +14,7 @@ const sendEmailCampaignToContacts = async (req, res, next) => {
     campaign,
   } = req.body;
   const {
+    fullName,
     consultantEmail,
     consultantName,
     consultantSurname,
@@ -23,7 +24,7 @@ const sendEmailCampaignToContacts = async (req, res, next) => {
     consultantMobileNumber,
     consultantToken,
   } = consultant;
-  const fullName = `${consultantName} ${consultantSurname}`;
+
   // buscar en la base de datos
   //   console.log(req.consultantToken);
 
@@ -331,6 +332,48 @@ const sendEmailCampaignToContacts = async (req, res, next) => {
                                 outline: rgb(221, 221, 221) solid 1px;
                               "
                             >
+                            <div valign="top" style="border-collapse: collapse; vertical-align: top">
+                              <img
+                                src=${
+                                  campaign.image
+                                    ? campaign.image.split(" ").join("%20")
+                                    : "https://images.assetsdelivery.com/compings_v2/pavelstasevich/pavelstasevich1811/pavelstasevich181101031.jpg"
+                                }
+                                width="600px"
+                                alt="Imagen de anuncio"
+                                style="display: block; font-size: 0px; margin: auto"
+                                class="CToWUd"
+                              />
+                              ${
+                                campaign.adComment !== ""
+                                  ? `<div style="max-width: 600px; margin: auto">
+                                    <span>&nbsp;</span>
+                                    ${
+                                      campaign.adComment
+                                        ? `<div style="max-width: 600px; margin: auto">
+                                      ${campaign.adComment}
+                                        </div>`
+                                        : ""
+                                    }  
+                                    </div>
+                                    <div style="max-width: 600px; margin: auto; font-family: Helvetica; text-align: left">
+                                      <br />
+                                      <hr
+                                        width="100%"
+                                        style="
+                                          padding: 0px;
+                                          margin: 0px;
+                                          border: none;
+                                          max-width: 100%;
+                                          height: 1px;
+                                          background-color: rgb(221, 221, 221);
+                                        "
+                                      />
+                                      <br />
+                                    </div>`
+                                  : ""
+                              }
+                            </div>
                               <div style="max-width: 600px; margin: auto">
                                 ${messageP1}, ${contact.fullName}
                               </div>
@@ -342,32 +385,6 @@ const sendEmailCampaignToContacts = async (req, res, next) => {
                               <div style="max-width: 600px; margin: auto">
                                 ${messageP3}
                               </div>
-                              <span>&nbsp;</span>  
-                              <div style="max-width: 600px; margin: auto">
-                              <div valign="top" style="border-collapse: collapse; vertical-align: top">
-                             
-                               <img
-                                 src=${
-                                   campaign.image
-                                     ? campaign.image.split(" ").join("%20")
-                                     : "https://images.assetsdelivery.com/compings_v2/pavelstasevich/pavelstasevich1811/pavelstasevich181101031.jpg"
-                                 }
-                                 width="600px"
-                                 alt="Imagen de anuncio"
-                                 style="display: block; font-size: 0px; margin: auto"
-                                 class="CToWUd"
-                               />
-                           </div>
-                           <span>&nbsp;</span> 
-                                 ${
-                                   campaign.adComment
-                                     ? `<div style="max-width: 600px; margin: auto">
-                                    ${campaign.adComment}
-                                  </div>`
-                                     : ""
-                                 }
-                               
-                            </div>
                               <div style="max-width: 600px; margin: auto"><br /></div>
                               <span>&nbsp;</span>
                               <div style="max-width: 600px; margin: auto">
