@@ -62,6 +62,7 @@ app.use(
       "https://gvre-migration-prep.netlify.app",
       "https://gvre-web-seo-prod.netlify.app",
       "https://crmfront-gvre.vercel.app",
+      "crmfront-gvre-1v3kuvy0f-attomodigital.vercel.app",
     ],
     credentials: true,
     optionsSuccessStatus: 200,
