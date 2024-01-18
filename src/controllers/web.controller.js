@@ -432,10 +432,109 @@ const webDevelopmentServicesUpload = async (req, res, next) => {
   }
 };
 
+const webInvestmentServicesUpload = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const webHome = await WebHome.findById(id);
+    const webHomeToUpdate = webHome;
+    if (webHome) {
+      webHomeToUpdate.services.investment.title = req.body.title;
+      webHomeToUpdate.services.investment.description = req.body.description;
+      webHomeToUpdate.services.investment.investmentSections =
+        req.body.investmentSections;
+
+      const updatedWebHome = await WebHome.findByIdAndUpdate(
+        id,
+        webHomeToUpdate,
+        { new: true }
+      );
+      return res.status(200).json(updatedWebHome);
+    } else {
+      return res.status(400).json({
+        statusCode: 400,
+        message: "No se han adjuntado imágenes en la petición.",
+      });
+    }
+  } catch (err) {
+    console.log(err);
+    return next(err);
+  }
+};
+
+const webAssetManagementServicesUpload = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const webHome = await WebHome.findById(id);
+    const webHomeToUpdate = webHome;
+
+    if (webHome) {
+      webHomeToUpdate.services.assetManagement.title = req.body.title;
+      webHomeToUpdate.services.assetManagement.description1 =
+        req.body.description1;
+      webHomeToUpdate.services.assetManagement.description2 =
+        req.body.description2;
+      webHomeToUpdate.services.assetManagement.description3 =
+        req.body.description3;
+      webHomeToUpdate.services.assetManagement.description4 =
+        req.body.description4;
+
+      const updatedWebHome = await WebHome.findByIdAndUpdate(
+        id,
+        webHomeToUpdate,
+        { new: true }
+      );
+
+      return res.status(200).json(updatedWebHome);
+    } else {
+      return res.status(400).json({
+        statusCode: 400,
+        message: "No se han adjuntado imágenes en la petición.",
+      });
+    }
+  } catch (err) {
+    console.log(err);
+    return next(err);
+  }
+};
+
+const webCommercializationServicesUpload = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const webHome = await WebHome.findById(id);
+    const webHomeToUpdate = webHome;
+
+    console.log(req.body);
+
+    if (webHome) {
+      webHomeToUpdate.services.commercialization.title = req.body.title;
+      webHomeToUpdate.services.commercialization.description1 =
+        req.body.description1;
+      webHomeToUpdate.services.commercialization.description2 =
+        req.body.description2;
+      webHomeToUpdate.services.commercialization.commerSections =
+        req.body.commerSections;
+
+      const updatedWebHome = await WebHome.findByIdAndUpdate(
+        id,
+        webHomeToUpdate,
+        { new: true }
+      );
+
+      return res.status(200).json(updatedWebHome);
+    } else {
+      return res.status(400).json({
+        statusCode: 400,
+        message: "No se han adjuntado imágenes en la petición.",
+      });
+    }
+  } catch (err) {
+    console.log(err);
+    return next(err);
+  }
+};
+
 const webInteriorismServicesUpload = async (req, res, next) => {
   try {
-    // console.log(req.body);
-    // console.log(req.file);
     const { id } = req.params;
     const webHome = await WebHome.findById(id);
     const webHomeToUpdate = webHome;
@@ -472,8 +571,11 @@ module.exports = {
   webHomeEdit,
   webResidentialCategoryImageUpload,
   webPatrimonialCategoryImageUpload,
+  webCommercializationServicesUpload,
   webArtCategoryImageUpload,
   webCatalogCategoryImageUpload,
+  webInvestmentServicesUpload,
+  webAssetManagementServicesUpload,
   webCoastCategoryImageUpload,
   webRusticCategoryImageUpload,
   webSingularCategoryImageUpload,
