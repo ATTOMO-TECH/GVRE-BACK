@@ -17,10 +17,12 @@ const {
   webHomeTalkWithUs,
   webDevelopmentServicesUpload,
   webInteriorismServicesUpload,
+  webInvestmentServicesUpload,
+  webAssetManagementServicesUpload,
+  webCommercializationServicesUpload,
 } = require("../controllers/web.controller");
 
 const router = express.Router();
-
 // HOME TITLE AND IMAGE
 router.get("/home", webHomeGet);
 router.post(
@@ -114,6 +116,27 @@ router.put(
   //   upload.single("portraidImage catalog"),
   upload.single("developmentImage"),
   webDevelopmentServicesUpload
+);
+
+router.put(
+  "/services/investment/edit/:id",
+  //   upload.single("portraidImage catalog"),
+  // upload.single("investMentImage"),
+  webInvestmentServicesUpload
+);
+
+router.put(
+  "/services/assetManagement/edit/:id",
+  //   upload.single("portraidImage catalog"),
+  // upload.single("investMentImage"),
+  webAssetManagementServicesUpload
+);
+
+router.put(
+  "/services/commercialization/edit/:id",
+  //   upload.single("portraidImage catalog"),
+  // upload.single("investMentImage"),
+  webCommercializationServicesUpload
 );
 
 module.exports = router;

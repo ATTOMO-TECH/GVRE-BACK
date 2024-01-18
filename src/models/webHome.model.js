@@ -59,6 +59,24 @@ const webHomeSchema = new Schema(
         description: { type: String },
         image: { type: String },
       },
+      investment: {
+        title: { type: String },
+        description: { type: String },
+        investmentSections: { type: [String] },
+      },
+      assetManagement: {
+        title: { type: String },
+        description1: { type: String },
+        description2: { type: String },
+        description3: { type: String },
+        description4: { type: String },
+      },
+      commercialization: {
+        title: { type: String },
+        description1: { type: String },
+        description2: { type: String },
+        commerSections: { type: [String] },
+      },
     },
   },
   {
