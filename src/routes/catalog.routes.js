@@ -4,6 +4,9 @@ const {
   catalogCreate,
   catalogEdit,
   catalogDelete,
+  getMainImageCatalogSection,
+  uploadMainImageCatalogSection,
+  deleteImageCatalogSection,
 } = require("../controllers/catalog.controller");
 const { uploadFiles, upload } = require("../middlewares/file.middleware");
 
@@ -17,6 +20,17 @@ router.post(
   uploadFiles.array("files"),
   catalogCreate
 );
+
+router.post(
+  "/uploadImageCatalogSection",
+  upload.single("mainImageCatalog"),
+  uploadMainImageCatalogSection
+);
+
+router.get("/getImageCatalogSection", getMainImageCatalogSection);
+
+router.delete("/deleteImageCatalogSection/:id", deleteImageCatalogSection);
+
 router.put("/edit/:id", uploadFiles.array("files"), catalogEdit);
 
 router.delete("/delete/:id", catalogDelete);

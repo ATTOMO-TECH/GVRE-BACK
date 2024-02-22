@@ -1,5 +1,6 @@
 const { deleteImage } = require("../middlewares/file.middleware");
 const Catalog = require("../models/catalog.model");
+const CatalogPage = require("../models/catalogPage.model");
 
 const catalogGetAll = async (req, res, next) => {
   try {
@@ -95,9 +96,52 @@ const catalogDelete = async (req, res, next) => {
   }
 };
 
+const uploadMainImageCatalogSection = async (req, res, next) => {
+  try {
+    const newCatalogPage = new CatalogPage({
+      imgSection: req.file.location,
+    });
+    await newCatalogPage.save();
+    res
+      .status(201)
+      .send({ message: "Image uploaded successfully", data: newCatalogPage });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const getMainImageCatalogSection = async (req, res, next) => {
+  try {
+    const mainImageCatalog = await CatalogPage.find();
+    res.status(200).send(mainImageCatalog);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const deleteImageCatalogSection = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const mainImageCatalog = await CatalogPage.findById(id);
+
+    if (mainImageCatalog !== null) {
+      deleteImage(mainImageCatalog.imgSection);
+    }
+
+    const deleted = await CatalogPage.findByIdAndDelete(id);
+
+    deleted && res.status(200).json({ message: "Deleted Susscesfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   catalogGetAll,
   catalogCreate,
   catalogEdit,
   catalogDelete,
+  uploadMainImageCatalogSection,
+  getMainImageCatalogSection,
+  deleteImageCatalogSection,
 };
