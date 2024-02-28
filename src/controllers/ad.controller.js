@@ -2,6 +2,8 @@ const Ad = require("./../models/ad.model");
 const Request = require("./../models/request.model");
 const { deleteImage } = require("../middlewares/file.middleware");
 const mongoose = require("mongoose");
+const Contact = require("../models/contact.model");
+const Consultant = require("../models/consultant.model");
 const {
   orderAdsAscendentBySalePrice,
   orderAdsDescendentBySalePrice,
@@ -271,117 +273,133 @@ const adGetAll = async (req, res, next) => {
 
 const adGetByFilters = async (req, res, next) => {
   try {
-    /* console.log('req.params.query',req.params) */
+    let limit = 100;
 
-    const paramString = req.params.query.replace("&", "");
-    /* console.log(paramString) */
-    const params = JSON.parse(paramString);
-    // console.log('parametros iniciales', params)
-    /* console.log('parametros iniciales',typeof params) */
-    /* console.log('params.adStatus', params.adStatus) */
-    //console.log('parseados', JSON.parse(req.params.query))
+    let {
+      department,
+      saleOrder,
+      rentOrder,
+      sortField,
+      sortOrder,
+      page,
+      search,
+    } = req.query;
 
-    let zoneParam = [];
-    if (!!params.zone) {
-      zoneParam = params.zone.map((zone) => mongoose.Types.ObjectId(zone._id));
-    }
-    let adStatus = !!params.adStatus ? params.adStatus : true;
-    let gvOperationClose = !!params.gvOperationClose
-      ? params.gvOperationClose
-      : "";
-    let adType = !!params.adType ? params.adType : ["Alquiler", "Venta"];
-    let adBuildingType = !!params.adBuildingType
-      ? params.adBuildingType
-      : [
-          "Casa",
-          "Piso",
-          "Parcela",
-          "Ático",
-          "Oficina",
-          "Edificio",
-          "Local",
-          "Campo Rústico",
-          "Activos singulares",
-          "Costa",
-        ];
-    let department = !!params.department ? params.department : "todos";
-    let saleValueOrder = !!params.saleOrder ? params.saleOrder : "Defecto";
-    let rentValueOrder = !!params.rentOrder ? params.rentOrder : "Defecto";
+    let adStatusValue = req.query.adStatus
+      ? JSON.parse(req.query.adStatus)
+      : null;
 
-    /* console.log('adStatus',adStatus) */
-    /* console.log('gvOperationClose',gvOperationClose) */
-    /* console.log('adType',adType) */
-    /* console.log('adBuildingType',adBuildingType) */
-    /* console.log('zones',zoneParam) */
-    // console.log('department', department)
+    let gvOperationCloseValue = req.query.gvOperationClose
+      ? JSON.parse(req.query.gvOperationClose)
+      : null;
 
-    const query = Ad.find()
-      .populate({ path: "zone", select: "zone name" })
-      .populate({ path: "owner", select: "fullName" })
-      .populate({ path: "consultant", select: "fullName" });
+    let adBuildingTypeValue = req.query.adBuildingType
+      ? JSON.parse(req.query.adBuildingType)
+      : null;
 
-    if (params.department.toLowerCase() !== "todos") {
-      query.and({ department: { $in: department } });
-    }
-    if (!!params.adStatus) {
-      query.and({ adStatus: { $in: adStatus } });
-    }
-    if (!!params.gvOperationClose) {
-      query.and({ gvOperationClose: { $in: gvOperationClose } });
-    }
-    if (!!params.adBuildingType) {
-      query.and({ adBuildingType: { $in: adBuildingType } });
-    }
-    if (!!params.adType) {
-      query.and({ adType: { $in: adType } });
-    }
-    if (!!params.zone) {
-      query.and({ zone: { $in: zoneParam } });
+    let zoneValue = req.query.zone ? JSON.parse(req.query.zone) : null;
+
+    let adTypeValue = req.query.adType ? JSON.parse(req.query.adType) : null;
+
+    department = department !== "Todos" ? department : undefined;
+
+    const queryConditions = {};
+
+    if (search) {
+      const ownerIds = await Contact.find(
+        {
+          fullName: { $regex: new RegExp(search, "i") },
+        },
+        "_id"
+      ).then((contacts) => contacts.map((contact) => contact._id));
+
+      const consultantIds = await Consultant.find(
+        {
+          fullName: { $regex: new RegExp(search, "i") },
+        },
+        "_id"
+      ).then((consultants) => consultants.map((consultant) => consultant._id));
+
+      queryConditions.$or = [
+        { adReference: { $regex: new RegExp(search, "i") } },
+        { title: { $regex: new RegExp(search, "i") } },
+        { "adDirection.address.street": { $regex: new RegExp(search, "i") } },
+        ...(ownerIds.length > 0 ? [{ owner: { $in: ownerIds } }] : []),
+        ...(consultantIds.length > 0
+          ? [{ consultant: { $in: consultantIds } }]
+          : []),
+      ];
     }
 
-    let ads = await query.exec();
-    let sortedAds = [];
-    // ads.map((ad) => console.log("sin ordenar:", ad.sale.saleValue));
-    // ads.map((ad) => console.log("sin ordenar:", ad.rent.rentValue));
-    let orderFunction = () => {};
+    if (adStatusValue && adStatusValue.length > 0)
+      queryConditions.adStatus = {
+        $in: adStatusValue.map((item) => item.name),
+      };
 
-    if (saleValueOrder !== "Defecto") {
-      // console.log("ordeno por venta");
+    if (gvOperationCloseValue && gvOperationCloseValue.length > 0)
+      queryConditions.gvOperationClose = {
+        $in: gvOperationCloseValue.map((item) => item.name),
+      };
 
-      if (saleValueOrder === "Ascendente")
-        orderFunction = orderAdsAscendentBySalePrice;
-      else if (saleValueOrder === "Descendente")
-        orderFunction = orderAdsDescendentBySalePrice;
-      sortedAds = ads.sort(orderFunction);
-      // sortedAds.map((ad) => console.log("ordenado", ad.sale.saleValue));
-    }
-    if (rentValueOrder !== "") {
-      // console.log("ordeno por alquiler");
+    if (adBuildingTypeValue && adBuildingTypeValue.length > 0)
+      queryConditions.adBuildingType = {
+        $in: adBuildingTypeValue.map((item) => item.name),
+      };
 
-      if (rentValueOrder === "Ascendente")
-        orderFunction = orderAdsAscendentByRentPrice;
-      else if (rentValueOrder === "Descendente")
-        orderFunction = orderAdsDescendentByRentPrice;
-      sortedAds = ads.sort(orderFunction);
-      // sortedAds.map((ad) => console.log("ordenado:", ad.rent.rentValue));
+    if (adTypeValue && adTypeValue.length > 0)
+      queryConditions.adType = {
+        $in: adTypeValue.map((item) => item.name),
+      };
+
+    if (zoneValue && zoneValue.length > 0)
+      queryConditions.zone = {
+        $in: zoneValue.map((item) => mongoose.Types.ObjectId(item._id)),
+      };
+
+    if (department) queryConditions.department = department;
+
+    let sort = {};
+
+    if (sortField === "updatedAt" && sortOrder) {
+      sort[sortField] = sortOrder === "ASC" ? 1 : -1;
+    } else {
+      sort = { updatedAt: -1 };
     }
-    if (rentValueOrder === "Defecto" && saleValueOrder === "Defecto") {
-      // console.log("ordeno por fecha");
-      sortedAds = ads.sort(function (a, b) {
-        var keyA = new Date(a.updatedAt),
-          keyB = new Date(b.updatedAt);
-        // Compare the 2 dates
-        if (keyA < keyB) return 1;
-        if (keyA > keyB) return -1;
-        return 0;
-      });
+
+    if (sortField !== "updatedAt" && sortField !== null) {
+      if (saleOrder !== "Defecto") {
+        sort[sortField] = sortOrder === "ASC" ? 1 : -1;
+      }
+      if (rentOrder !== "Defecto") {
+        sort[sortField] = sortOrder === "ASC" ? 1 : -1;
+      }
     }
-    if (ads.length > 0)
-      /* console.log(ads) */
-      /* console.log(ads.length) */
-      return res.status(200).json(sortedAds);
-    if (ads.length === 0) return res.status(200).json([]);
+
+    page = parseInt(page);
+    limit = parseInt(limit);
+
+    const ads = await Ad.find(queryConditions)
+      .populate("zone", "zone name")
+      .populate("owner", "fullName")
+      .populate("consultant", "fullName")
+      .sort(sort)
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    const totalElements = await Ad.countDocuments(queryConditions);
+    const totalPages = Math.ceil(totalElements / limit);
+
+    return res.status(200).json({
+      ads,
+      pageInfo: {
+        page,
+        totalPages,
+        totalElements,
+        limit,
+      },
+    });
   } catch (err) {
+    console.error(err);
     return next(err);
   }
 };

@@ -58,7 +58,7 @@ const router = express.Router();
 // router.delete("/delete/:id", [isAuth, isAdmin], adDelete);
 
 router.get("/", adGetAll);
-router.get("/filter/:query", adGetByFilters);
+router.get("/filter", adGetByFilters);
 router.get("/matching/:id", adGetMatchedRequests);
 router.get("/repair/ads", repairAds);
 router.get("/web/:query", getAdsPaginated);
