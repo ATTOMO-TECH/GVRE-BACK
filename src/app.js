@@ -60,6 +60,7 @@ app.use(
       "https://apiweb-gvre.vercel.app/",
       "https://prepgvreweb.vercel.app/",
       "https://gvre-migration-prep.netlify.app",
+      "https://crmfront-gvre-pre-production.vercel.app",
       "https://gvre-web-seo-prod.netlify.app",
       "https://crmfront-gvre.vercel.app",
     ],

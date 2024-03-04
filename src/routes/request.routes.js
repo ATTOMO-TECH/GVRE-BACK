@@ -37,7 +37,7 @@ const router = express.Router();
 // router.delete("/delete/:id", isAuth, requestDelete);
 
 router.get("/", requestsGetAll);
-router.get("/filter/:query", requestsGetByFilters);
+router.get("/filter", requestsGetByFilters);
 router.get("/lastReference", requestLastReference);
 router.get("/matching/:id", requestGetAdsMatched);
 router.get("/contact/:id", requestGetByContact);
