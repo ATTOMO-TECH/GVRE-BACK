@@ -1,6 +1,13 @@
 const nodemailer = require("nodemailer"); // email sender function
 const { getPasswordByEmail } = require("./utils");
 const Consultant = require("../models/consultant.model");
+const AWS = require("aws-sdk");
+
+const SES_CONFIG = {
+  accessKeyId: process.env.SES_ACCESS_KEY_DAYAN,
+  secretAccessKey: process.env.SES_SECRET_ACCESS_KEY_DAYAN,
+  region: process.env.SES_REGION,
+};
 
 const maskTemplate = (value, ref) => {
   let render = "";
@@ -429,13 +436,9 @@ const sendAdsToContact = (req, res) => {
       </div>`;
     });
   };
-  // console.log(req.body)
+
   const transporter = nodemailer.createTransport({
-    service: "Gmail",
-    auth: {
-      user: `${req.body.consultant.consultantEmail}`,
-      pass: req.consultantToken,
-    },
+    SES: new AWS.SES(SES_CONFIG),
   });
 
   transporter.verify(function (error, success) {
@@ -447,7 +450,7 @@ const sendAdsToContact = (req, res) => {
   });
 
   const mailOptions = {
-    from: `GV Real Estate`,
+    from: `<${req.body.consultant.consultantEmail}>`,
     to: `${req.body.contact.email}`,
     subject: `${req.body.subject}`,
     html: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -748,7 +751,7 @@ const sendAdsToContact = (req, res) => {
                           </div>
                           <div style="max-width: 600px; margin: auto"><br /></div>
                           <span>&nbsp;</span>
-                          <span>&nbsp;</span>  
+                          <span>&nbsp;</span>
                           ${createAdsRows(req.body.ads)}
                           <div style="max-width: 600px; margin: auto">
                             ${req.body.messageGoodbyeP1}
@@ -912,6 +915,7 @@ const sendAdsToContact = (req, res) => {
 
   transporter.sendMail(mailOptions, function (error, info) {
     if (error) {
+      console.log(error);
       res.status(500).send(error.message);
     } else {
       res.status(200).json("Mensaje enviado");
@@ -921,14 +925,9 @@ const sendAdsToContact = (req, res) => {
 
 const sendAdToContacts = async (req, res) => {
   let counter = 1;
-  // let sendedEmailResults = [];
 
   const transporter = nodemailer.createTransport({
-    service: "Gmail",
-    auth: {
-      user: `${req.body.consultant.consultantEmail}`,
-      pass: req.consultantToken,
-    },
+    SES: new AWS.SES(SES_CONFIG),
   });
 
   transporter.verify(function (error, success) {
@@ -1805,17 +1804,15 @@ const sendAdToContacts = async (req, res) => {
   req.body.requestsToSend.forEach((recipient, index) => {
     // Clonar las opciones base para este destinatario
     const mailOptions = { ...baseMailOptions };
-
     // Configurar el destinatario para el correo actual
-    mailOptions.from = recipient.requestContact.fullName;
+    mailOptions.from = req.body.consultant.consultantEmail;
     mailOptions.to = recipient.requestContact.email;
 
     // Enviar el correo actual con el retraso
-
     // Programar el envío del siguiente correo
     setTimeout(() => {
       sendMailWithDelay(mailOptions, recipient.requestContact.fullName);
-    }, index * 5000);
+    }, index * 110);
   });
 };
 
