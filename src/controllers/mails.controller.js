@@ -1,13 +1,6 @@
 const nodemailer = require("nodemailer"); // email sender function
 const { getPasswordByEmail } = require("./utils");
 const Consultant = require("../models/consultant.model");
-const AWS = require("aws-sdk");
-
-const SES_CONFIG = {
-  accessKeyId: process.env.SES_ACCESS_KEY,
-  secretAccessKey: process.env.SES_SECRET_ACCESS_KEY,
-  region: process.env.SES_REGION,
-};
 
 const maskTemplate = (value, ref) => {
   let render = "";
@@ -438,7 +431,11 @@ const sendAdsToContact = (req, res) => {
   };
 
   const transporter = nodemailer.createTransport({
-    SES: new AWS.SES(SES_CONFIG),
+    service: "Gmail",
+    auth: {
+      user: `${req.body.consultant.consultantEmail}`,
+      pass: req.consultantToken,
+    },
   });
 
   transporter.verify(function (error, success) {
@@ -450,7 +447,7 @@ const sendAdsToContact = (req, res) => {
   });
 
   const mailOptions = {
-    from: `<${req.body.consultant.consultantEmail}>`,
+    from: `GV Real Estate`,
     to: `${req.body.contact.email}`,
     subject: `${req.body.subject}`,
     html: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -927,7 +924,11 @@ const sendAdToContacts = async (req, res) => {
   let counter = 1;
 
   const transporter = nodemailer.createTransport({
-    SES: new AWS.SES(SES_CONFIG),
+    service: "Gmail",
+    auth: {
+      user: `${req.body.consultant.consultantEmail}`,
+      pass: req.consultantToken,
+    },
   });
 
   transporter.verify(function (error, success) {
@@ -956,7 +957,7 @@ const sendAdToContacts = async (req, res) => {
   };
 
   const baseMailOptions = {
-    subject: `${req.body.subject}`,
+    subject: `GV Real Estate`,
     html: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
     <html
       xmlns="http://www.w3.org/1999/xhtml"
@@ -1805,14 +1806,14 @@ const sendAdToContacts = async (req, res) => {
     // Clonar las opciones base para este destinatario
     const mailOptions = { ...baseMailOptions };
     // Configurar el destinatario para el correo actual
-    mailOptions.from = req.body.consultant.consultantEmail;
+    mailOptions.from = recipient.requestContact.fullName;
     mailOptions.to = recipient.requestContact.email;
 
     // Enviar el correo actual con el retraso
     // Programar el envío del siguiente correo
     setTimeout(() => {
       sendMailWithDelay(mailOptions, recipient.requestContact.fullName);
-    }, index * 110);
+    }, index * 5000);
   });
 };
 
