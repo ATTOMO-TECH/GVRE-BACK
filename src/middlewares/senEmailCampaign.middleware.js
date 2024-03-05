@@ -3,8 +3,8 @@ const { getPasswordByEmail } = require("../controllers/utils");
 const AWS = require("aws-sdk");
 
 const SES_CONFIG = {
-  accessKeyId: process.env.SES_ACCESS_KEY_DAYAN,
-  secretAccessKey: process.env.SES_SECRET_ACCESS_KEY_DAYAN,
+  accessKeyId: process.env.SES_ACCESS_KEY,
+  secretAccessKey: process.env.SES_SECRET_ACCESS_KEY,
   region: process.env.SES_REGION,
 };
 
