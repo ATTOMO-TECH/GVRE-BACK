@@ -1,5 +1,12 @@
 const nodemailer = require("nodemailer"); // email sender function
 const { getPasswordByEmail } = require("../controllers/utils");
+const AWS = require("aws-sdk");
+
+const SES_CONFIG = {
+  accessKeyId: process.env.SES_ACCESS_KEY,
+  secretAccessKey: process.env.SES_SECRET_ACCESS_KEY,
+  region: process.env.SES_REGION,
+};
 
 const sendEmailCampaignToContacts = async (req, res, next) => {
   const {
@@ -31,11 +38,7 @@ const sendEmailCampaignToContacts = async (req, res, next) => {
   let counter = 1;
 
   const transporter = nodemailer.createTransport({
-    service: "Gmail",
-    auth: {
-      user: consultantEmail,
-      pass: consultantToken,
-    },
+    SES: new AWS.SES(SES_CONFIG),
   });
 
   transporter.verify(function (error, success) {
@@ -64,7 +67,7 @@ const sendEmailCampaignToContacts = async (req, res, next) => {
   contacts.map((contact, i) => {
     // console.log(contact);
     const mailOptions = {
-      from: `GV Real Estate`,
+      from: `GV Real Estate <${consultantEmail}>`,
       to: contact.email,
       subject: subject,
       html: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -541,7 +544,7 @@ const sendEmailCampaignToContacts = async (req, res, next) => {
 
     setTimeout(() => {
       sendMailWithDelay(mailOptions, i);
-    }, i * 5000);
+    }, i * 110);
   });
 };
 
