@@ -84,21 +84,10 @@ const requestsGetByFilters = async (req, res, next) => {
         $in: requestAdTypeValue.map((item) => item.name),
       };
 
-    let sort = {};
+    let sort = { updatedAt: -1 };
 
-    if (sortField === "updatedAt" && sortOrder) {
-      sort[sortField] = sortOrder === "ASC" ? 1 : -1;
-    } else {
-      sort = { updatedAt: -1 };
-    }
-
-    if (sortField !== "updatedAt" && sortField !== null) {
-      if (saleOrder !== "Defecto") {
-        sort[sortField] = sortOrder === "ASC" ? 1 : -1;
-      }
-      if (rentOrder !== "Defecto") {
-        sort[sortField] = sortOrder === "ASC" ? 1 : -1;
-      }
+    if (sortField && (sortOrder === "ASC" || sortOrder === "DESC")) {
+      sort = { [sortField]: sortOrder === "ASC" ? 1 : -1 };
     }
 
     page = parseInt(page);
