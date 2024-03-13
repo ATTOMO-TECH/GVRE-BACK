@@ -275,15 +275,7 @@ const adGetByFilters = async (req, res, next) => {
   try {
     let limit = 100;
 
-    let {
-      department,
-      saleOrder,
-      rentOrder,
-      sortField,
-      sortOrder,
-      page,
-      search,
-    } = req.query;
+    let { department, sortField, sortOrder, page, search } = req.query;
 
     let adStatusValue = req.query.adStatus
       ? JSON.parse(req.query.adStatus)
@@ -305,28 +297,101 @@ const adGetByFilters = async (req, res, next) => {
 
     const queryConditions = {};
 
+    function createAccentInsensitiveRegex(str) {
+      return str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // Remueve los acentos
+        .replace(/a/g, "[aá]")
+        .replace(/e/g, "[eé]")
+        .replace(/i/g, "[ií]")
+        .replace(/o/g, "[oó]")
+        .replace(/u/g, "[uúü]")
+        .replace(/c/g, "[cç]") // Si necesitas otros caracteres, añádelos aquí
+        .replace(/n/g, "[nñ]");
+    }
+
     if (search) {
+      // Tu código existente para obtener ownerIds y consultantIds...
       const ownerIds = await Contact.find(
         {
-          fullName: { $regex: new RegExp(search, "i") },
+          fullName: {
+            $regex: new RegExp(createAccentInsensitiveRegex(search), "i"),
+          },
         },
         "_id"
       ).then((contacts) => contacts.map((contact) => contact._id));
 
       const consultantIds = await Consultant.find(
         {
-          fullName: { $regex: new RegExp(search, "i") },
+          fullName: {
+            $regex: new RegExp(createAccentInsensitiveRegex(search), "i"),
+          },
         },
         "_id"
       ).then((consultants) => consultants.map((consultant) => consultant._id));
 
-      queryConditions.$or = [
-        { adReference: { $regex: new RegExp(search, "i") } },
-        { title: { $regex: new RegExp(search, "i") } },
-        { "adDirection.address.street": { $regex: new RegExp(search, "i") } },
+      const searchParts = search.split(" ");
+      let numberPart = searchParts.pop(); // Asumimos inicialmente que el último elemento podría ser un número
+      let streetPart = searchParts.join(" ");
+      const isNumber = !isNaN(parseInt(numberPart, 10)); // Verificamos si es realmente un número
+
+      // Revertimos la extracción si no era un número
+      if (!isNumber) {
+        streetPart = search; // Usar toda la búsqueda como nombre de la calle si no hay número
+        numberPart = ""; // No hay parte numérica
+      }
+
+      // Preparamos las regex para la calle y el número, insensibles a tildes y mayúsculas
+      const streetRegex = new RegExp(
+        createAccentInsensitiveRegex(streetPart),
+        "i"
+      );
+      const numberRegex = new RegExp(numberPart, "i"); // Usado solo si isNumber es true
+
+      // Construir la condición de búsqueda para la dirección
+      let addressSearchCondition = {};
+      if (streetPart) {
+        if (isNumber) {
+          // Solo crea una condición compuesta si hay tanto una calle como un número
+          addressSearchCondition = {
+            $and: [
+              { "adDirection.address.street": { $regex: streetRegex } },
+              {
+                "adDirection.address.directionNumber": { $regex: numberRegex },
+              },
+            ],
+          };
+        } else {
+          // Si no hay número, solo busca por la calle
+          addressSearchCondition = {
+            "adDirection.address.street": { $regex: streetRegex },
+          };
+        }
+      }
+
+      // Condiciones de búsqueda originales para otros campos
+      const originalSearchConditions = [
+        {
+          adReference: {
+            $regex: new RegExp(createAccentInsensitiveRegex(search), "i"),
+          },
+        },
+        {
+          title: {
+            $regex: new RegExp(createAccentInsensitiveRegex(search), "i"),
+          },
+        },
         ...(ownerIds.length > 0 ? [{ owner: { $in: ownerIds } }] : []),
         ...(consultantIds.length > 0
           ? [{ consultant: { $in: consultantIds } }]
+          : []),
+      ];
+
+      // Combinar todas las condiciones en la consulta principal
+      queryConditions.$or = [
+        ...originalSearchConditions,
+        ...(Object.keys(addressSearchCondition).length > 0
+          ? [addressSearchCondition]
           : []),
       ];
     }
