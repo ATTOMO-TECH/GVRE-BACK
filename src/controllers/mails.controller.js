@@ -1,6 +1,13 @@
 const nodemailer = require("nodemailer"); // email sender function
 const { getPasswordByEmail } = require("./utils");
 const Consultant = require("../models/consultant.model");
+const AWS = require("aws-sdk");
+
+const SES_CONFIG = {
+  accessKeyId: process.env.SES_ACCESS_KEY,
+  secretAccessKey: process.env.SES_SECRET_ACCESS_KEY,
+  region: process.env.SES_REGION,
+};
 
 const maskTemplate = (value, ref) => {
   let render = "";
@@ -431,11 +438,7 @@ const sendAdsToContact = (req, res) => {
   };
 
   const transporter = nodemailer.createTransport({
-    service: "Gmail",
-    auth: {
-      user: `${req.body.consultant.consultantEmail}`,
-      pass: req.consultantToken,
-    },
+    SES: new AWS.SES(SES_CONFIG),
   });
 
   transporter.verify(function (error, success) {
@@ -447,7 +450,7 @@ const sendAdsToContact = (req, res) => {
   });
 
   const mailOptions = {
-    from: `GV Real Estate`,
+    from: `<${req.body.consultant.consultantEmail}>`,
     to: `${req.body.contact.email}`,
     subject: `${req.body.subject}`,
     html: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -924,11 +927,7 @@ const sendAdToContacts = async (req, res) => {
   let counter = 1;
 
   const transporter = nodemailer.createTransport({
-    service: "Gmail",
-    auth: {
-      user: `${req.body.consultant.consultantEmail}`,
-      pass: req.consultantToken,
-    },
+    SES: new AWS.SES(SES_CONFIG),
   });
 
   transporter.verify(function (error, success) {
@@ -939,20 +938,19 @@ const sendAdToContacts = async (req, res) => {
     }
   });
 
-  const sendMailWithDelay = (mailOptions, currentContactFullName) => {
-    transporter.sendMail(mailOptions, function (error, info) {
-      // sendedEmailResults.push({
-      //   accepted: info.accepted[0] ? info.accepted[0] : info.accepted,
-      //   rejected: info.rejected[0] ? info.rejected[0] : info.rejected,
-      //   consultant: consultantData.fullName,
-      // });
-      if (error) {
-        console.error(error.message);
-        // Manejar el error aquí si es necesario
-      } else {
-        console.log(`Correo ${counter++} enviado`);
-        // Registrar la respuesta del envío si es necesario
-      }
+  const sendMailWithDelay = (mailOptions, delay) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        transporter.sendMail(mailOptions, (error, info) => {
+          if (error) {
+            console.error(error.message);
+            reject(error);
+          } else {
+            console.log(`Correo ${counter++} enviado`);
+            resolve(info);
+          }
+        });
+      }, delay);
     });
   };
 
@@ -1802,19 +1800,18 @@ const sendAdToContacts = async (req, res) => {
     </html>`,
   };
 
-  req.body.requestsToSend.forEach((recipient, index) => {
-    // Clonar las opciones base para este destinatario
-    const mailOptions = { ...baseMailOptions };
-    // Configurar el destinatario para el correo actual
-    mailOptions.from = recipient.requestContact.fullName;
-    mailOptions.to = recipient.requestContact.email;
+  const sendEmails = async () => {
+    for (let index = 0; index < req.body.requestsToSend.length; index++) {
+      const recipient = req.body.requestsToSend[index];
+      const mailOptions = { ...baseMailOptions };
+      mailOptions.from = req.body.consultant.consultantEmail;
+      mailOptions.to = recipient.requestContact.email;
+      mailOptions.bcc = req.body.consultant.consultantEmail;
+      await sendMailWithDelay(mailOptions, index * 700);
+    }
+  };
 
-    // Enviar el correo actual con el retraso
-    // Programar el envío del siguiente correo
-    setTimeout(() => {
-      sendMailWithDelay(mailOptions, recipient.requestContact.fullName);
-    }, index * 5000);
-  });
+  sendEmails().catch(console.error);
 };
 
 const sendEmailReservationToClient = (req, res) => {
