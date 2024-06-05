@@ -1807,7 +1807,7 @@ const sendAdToContacts = async (req, res) => {
       mailOptions.from = req.body.consultant.consultantEmail;
       mailOptions.to = recipient.requestContact.email;
       mailOptions.bcc = req.body.consultant.consultantEmail;
-      await sendMailWithDelay(mailOptions, index * 700);
+      await sendMailWithDelay(mailOptions, 800);
     }
   };
 
