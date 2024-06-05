@@ -89,11 +89,7 @@ app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ limit: "100mb", extended: true }));
 
 // Consultant authentication validator
-// app.use(authValidator);
-
-app.use(express.json());
-
-app.use(express.urlencoded({ extended: true }));
+// app.use(authValidator)
 
 app.use("/", indexRoutes);
 app.use("/auth", authRoutes);
