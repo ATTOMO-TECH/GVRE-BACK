@@ -227,7 +227,7 @@ const marketingCampaignDelete = async (req, res, next) => {
     if (deleted)
       return res
         .status(200)
-        .json({ status: 200, message: "Campaña borrada de la base de datos" });
+        .json({ status: 200, message: "Campaña borrada de la base de datos." });
     else
       return res.status(404).json({
         status: 404,
