@@ -438,7 +438,11 @@ const sendAdsToContact = (req, res) => {
   };
 
   const transporter = nodemailer.createTransport({
-    SES: new AWS.SES(SES_CONFIG),
+    service: "Gmail",
+    auth: {
+      user: `${req.body.consultant.consultantEmail}`,
+      pass: req.consultantToken,
+    },
   });
 
   transporter.verify(function (error, success) {
