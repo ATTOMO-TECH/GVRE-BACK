@@ -1875,6 +1875,8 @@ const generateZonesHTML = (zones) => {
   let html = "";
 
   priorities.forEach((priority) => {
+    const priorityZones = zones[priority];
+    if (!priorityZones) return; //
     const residentialZones = zones[priority].residential
       .slice(0, 3)
       .map(createZoneHTML)
