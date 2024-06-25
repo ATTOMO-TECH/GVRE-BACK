@@ -437,9 +437,9 @@ const sendAdsToContact = (req, res) => {
     });
   };
 
-  const zonesHTML = generateZonesHTML(
-    req.body.consultant?.consultantEmailSignZones
-  );
+  const zonesHTML =
+    req.body.consultant?.consultantEmailSignZones &&
+    generateZonesHTML(req.body.consultant?.consultantEmailSignZones);
 
   const transporter = nodemailer.createTransport({
     service: "Gmail",
@@ -856,7 +856,9 @@ const sendAdsToContact = (req, res) => {
                                   <br />
                                   ${
                                     req.body.consultant
-                                      ?.consultantEmailSignZones && zonesHTML
+                                      ?.consultantEmailSignZones
+                                      ? zonesHTML
+                                      : ""
                                   }
                                 </td>
                               </tr>
@@ -969,9 +971,9 @@ const sendAdToContacts = async (req, res) => {
     });
   };
 
-  const zonesHTML = generateZonesHTML(
-    req.body.consultant?.consultantEmailSignZones
-  );
+  const zonesHTML =
+    req.body.consultant?.consultantEmailSignZones &&
+    generateZonesHTML(req.body.consultant?.consultantEmailSignZones);
 
   const baseMailOptions = {
     subject: `${req.body.subject}`,
@@ -1755,7 +1757,9 @@ const sendAdToContacts = async (req, res) => {
                                   <br />
                                   ${
                                     req.body.consultant
-                                      ?.consultantEmailSignZones && zonesHTML
+                                      ?.consultantEmailSignZones
+                                      ? zonesHTML
+                                      : ""
                                   }
                                 </td>
                               </tr>

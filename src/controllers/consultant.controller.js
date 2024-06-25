@@ -105,7 +105,7 @@ const consultantUpdate = async (req, res, next) => {
     fieldsToUpdate.profession = req.body.profession;
     fieldsToUpdate.office1 = req.body.office1;
     fieldsToUpdate.office2 = req.body.office2;
-    fieldsToUpdate.consultantComments = req.body.consultantComments;
+    fieldsToUpdate.consultantComments = req.body.consultantComments || "";
     fieldsToUpdate.role = req.body.role;
     fieldsToUpdate.showOnWeb = req.body.showOnWeb;
 
