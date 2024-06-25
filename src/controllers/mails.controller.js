@@ -1859,7 +1859,8 @@ const generateZonesHTML = (zones) => {
                 padding: 7px 10px;
                 margin: 5px;
                 border: 1px solid #ccc;
-                border-radius: 5px;
+                border-radius: 3px;
+                border: 1px solid #2b363d;
                 color: #2b2b2b;
                 text-align: center;
                 font-family: Helvetica, Arial, sans-serif;
