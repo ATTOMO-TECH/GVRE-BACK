@@ -85,7 +85,11 @@ const maskTemplate2 = (value1, ref1, value2, ref2) => {
   return `<p>${render1} &nbsp; ${render2}</p>`;
 };
 
-const sendAdsToContact = (req, res) => {
+const sendAdsToContact = async (req, res) => {
+  const updatedConsultant = await Consultant.findOne({
+    _id: req.body.consultant._id,
+  });
+
   const createAdsRows = (ads) => {
     return ads.map((ad) => {
       const pathFile = ad.images.main.split(" ").join("%20");
@@ -438,8 +442,8 @@ const sendAdsToContact = (req, res) => {
   };
 
   const zonesHTML =
-    req.body.consultant?.consultantEmailSignZones &&
-    generateZonesHTML(req.body.consultant?.consultantEmailSignZones);
+    updatedConsultant?.consultantEmailSignZones &&
+    generateZonesHTML(updatedConsultant?.consultantEmailSignZones);
 
   const transporter = nodemailer.createTransport({
     service: "Gmail",
@@ -855,8 +859,7 @@ const sendAdsToContact = (req, res) => {
                                   <br />
                                   <br />
                                   ${
-                                    req.body.consultant
-                                      ?.consultantEmailSignZones
+                                    updatedConsultant?.consultantEmailSignZones
                                       ? zonesHTML
                                       : ""
                                   }
@@ -941,6 +944,10 @@ const sendAdsToContact = (req, res) => {
 };
 
 const sendAdToContacts = async (req, res) => {
+  const updatedConsultant = await Consultant.findOne({
+    _id: req.body.consultant._id,
+  });
+
   let counter = 1;
 
   const transporter = nodemailer.createTransport({
@@ -972,8 +979,8 @@ const sendAdToContacts = async (req, res) => {
   };
 
   const zonesHTML =
-    req.body.consultant?.consultantEmailSignZones &&
-    generateZonesHTML(req.body.consultant?.consultantEmailSignZones);
+    updatedConsultant?.consultantEmailSignZones &&
+    generateZonesHTML(updatedConsultant?.consultantEmailSignZones);
 
   const baseMailOptions = {
     subject: `${req.body.subject}`,
@@ -1756,8 +1763,7 @@ const sendAdToContacts = async (req, res) => {
                                   <br />
                                   <br />
                                   ${
-                                    req.body.consultant
-                                      ?.consultantEmailSignZones
+                                    updatedConsultant?.consultantEmailSignZones
                                       ? zonesHTML
                                       : ""
                                   }
