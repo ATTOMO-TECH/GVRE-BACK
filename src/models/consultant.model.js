@@ -2,6 +2,12 @@ const mongoose = require("mongoose");
 
 const Schema = mongoose.Schema;
 
+const ZoneSchema = new Schema({
+  zoneId: { type: String },
+  zone: { type: String },
+  name: { type: String },
+});
+
 const consultantSchema = new Schema(
   {
     role: { type: String, enum: ["Admin", "Consultor"], default: "Consultor" },
@@ -20,6 +26,23 @@ const consultantSchema = new Schema(
     office2: { type: String },
     consultantComments: { type: String },
     ads: { type: mongoose.Types.ObjectId, ref: "ads" },
+    consultantEmailSignZones: {
+      high: {
+        residential: [ZoneSchema],
+        patrimonial: [ZoneSchema],
+        others: [ZoneSchema],
+      },
+      medium: {
+        residential: [ZoneSchema],
+        patrimonial: [ZoneSchema],
+        others: [ZoneSchema],
+      },
+      low: {
+        residential: [ZoneSchema],
+        patrimonial: [ZoneSchema],
+        others: [ZoneSchema],
+      },
+    },
   },
   {
     timestamps: true,
