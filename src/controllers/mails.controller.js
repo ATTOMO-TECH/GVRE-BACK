@@ -437,6 +437,10 @@ const sendAdsToContact = (req, res) => {
     });
   };
 
+  const zonesHTML = generateZonesHTML(
+    req.body.consultant?.consultantEmailSignZones
+  );
+
   const transporter = nodemailer.createTransport({
     service: "Gmail",
     auth: {
@@ -847,6 +851,10 @@ const sendAdsToContact = (req, res) => {
                                   <span>&nbsp;</span>
                                   <br />
                                   <br />
+                                  ${
+                                    req.body.consultant
+                                      ?.consultantEmailSignZones && zonesHTML
+                                  }
                                 </td>
                               </tr>
                             </tbody>
@@ -957,6 +965,10 @@ const sendAdToContacts = async (req, res) => {
       }, delay);
     });
   };
+
+  const zonesHTML = generateZonesHTML(
+    req.body.consultant?.consultantEmailSignZones
+  );
 
   const baseMailOptions = {
     subject: `${req.body.subject}`,
@@ -1734,6 +1746,10 @@ const sendAdToContacts = async (req, res) => {
                                     <span>&nbsp;</span>
                                     <br />
                                     <br />
+                                    ${
+                                      req.body.consultant
+                                        ?.consultantEmailSignZones && zonesHTML
+                                    }
                                 </td>
                               </tr>
                             </tbody>
@@ -1816,6 +1832,57 @@ const sendAdToContacts = async (req, res) => {
   };
 
   sendEmails().catch(console.error);
+};
+
+const generateZonesHTML = (zones) => {
+  const createZoneHTML = (zone) => {
+    let zoneSection;
+    if (zone.zone === "Residencial") {
+      zoneSection = "residential";
+    } else if (zone.zone === "Patrimonial") {
+      zoneSection = "patrimonial";
+    } else {
+      zoneSection = "others";
+    }
+
+    return `<a href="https://gvre.es/${zoneSection}/1?zona=${zone._id}&page=1" style="
+                display: inline-block;
+                padding: 7px 10px;
+                margin: 5px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                color: #2b2b2b;
+                text-align: center;
+                font-family: Helvetica, Arial, sans-serif;
+                font-size: 10.800000190734863px;
+                text-decoration: none;
+                ">
+              ${zone.name}
+            </span>`;
+  };
+
+  const priorities = ["high", "medium", "low"];
+  let html = "";
+
+  priorities.forEach((priority, index) => {
+    const residentialZones = zones[priority].residential
+      .map(createZoneHTML)
+      .join("");
+    const patrimonialZones = zones[priority].patrimonial
+      .map(createZoneHTML)
+      .join("");
+    const othersZones = zones[priority].others.map(createZoneHTML).join("");
+
+    html += `<div style="margin-bottom: 3px; text-align: center; ">
+               <div display: inline-block; margin: 0 auto;">
+                 ${residentialZones}
+                 ${patrimonialZones}
+                 ${othersZones}
+               </div>
+             </div>`;
+  });
+
+  return html;
 };
 
 const sendEmailReservationToClient = (req, res) => {

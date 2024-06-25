@@ -57,7 +57,6 @@ const consultantCreate = async (req, res, next) => {
 const consultantUpdate = async (req, res, next) => {
   try {
     const fieldsToUpdate = {};
-
     const consultant = await Consultant.findById(req.body.id);
 
     if (req.body.consultantEmail !== consultant.consultantEmail) {
@@ -106,11 +105,20 @@ const consultantUpdate = async (req, res, next) => {
     fieldsToUpdate.profession = req.body.profession;
     fieldsToUpdate.office1 = req.body.office1;
     fieldsToUpdate.office2 = req.body.office2;
-    fieldsToUpdate.consultantComments = req.body.comments;
+    fieldsToUpdate.consultantComments = req.body.consultantComments;
     fieldsToUpdate.role = req.body.role;
     fieldsToUpdate.showOnWeb = req.body.showOnWeb;
 
-    if (Object.entries(req.files).length !== 0) {
+    if (req.body.consultantEmailSignZones) {
+      const consultantEmailSignZones = JSON.parse(
+        Array.isArray(req.body.consultantEmailSignZones)
+          ? req.body.consultantEmailSignZones[1]
+          : req.body.consultantEmailSignZones
+      );
+      fieldsToUpdate.consultantEmailSignZones = consultantEmailSignZones;
+    }
+
+    if (req.files && Object.entries(req.files).length !== 0) {
       if (req.files.avatar) {
         deleteImage(consultant.avatar);
         fieldsToUpdate.avatar = req.files.avatar[0].location;
@@ -130,7 +138,7 @@ const consultantUpdate = async (req, res, next) => {
       fieldsToUpdate,
       { new: true }
     );
-    updatedConsultant.password = null;
+    updatedConsultant.consultantPassword = null;
 
     return res.status(200).json(updatedConsultant);
   } catch (err) {
