@@ -250,7 +250,7 @@ const sendAdsToContact = (req, res) => {
                             <p
                               style="
                               font-family: Helvetica;
-                              text-align: justify;
+                              text-align: center;
                               color: rgb(43, 54, 61);
                               "
                             >${ad.description.emailPDF}</p><span>&nbsp;</span
@@ -768,10 +768,10 @@ const sendAdsToContact = (req, res) => {
                           <div style="max-width: 600px; margin: auto">
                             ${req.body.messageGoodbyeP2}
                           </div>
-                          <table cellpadding="0" cellspacing="0" border="0" style="border-spacing: 0px; width: 777.15625px">
-                            <tbody>
-                              <tr>
-                                <td style="border-collapse: collapse; vertical-align: top">
+                          <table cellpadding="0" cellspacing="0" border="0" style="border-spacing: 0px; width: 100%;">
+                            <tbody style="width: 100%;">
+                              <tr style="width: 100%;">
+                                <td style="border-collapse: collapse; vertical-align: top; width: 100%;">
                                   <div style="max-width: 600px; margin: auto; font-family: Helvetica; text-align: left">
                                     <br />
                                     <hr
@@ -796,16 +796,18 @@ const sendAdsToContact = (req, res) => {
                                     border-collapse: collapse;
                                     vertical-align: top;
                                     font-family: Helvetica;
-                                    font-size: 10.800000190734863px;
+                                    font-size: 10.8px;
                                     color: rgb(34, 34, 34);
+                                    width: 100%;
+                                    text-align: center;
                                   "
                                 >
                                   <img
-                                    src=${
+                                    src="${
                                       req.body.consultant.avatar
                                         ? req.body.consultant.avatar
                                         : "https://ci6.googleusercontent.com/proxy/AfGGywFT6_3aswvTp_kvD7StE2fqbnoU9jILHPGzB-VTH9f9GVCLngB4B9zF0ZWU5I6N8HDYArUh_CeA2MztYx7CYyAorUyq_Y0E5LML90LV-TdxVNCDdX06ZA=s0-d-e1-ft#https://s3.eu-central-1.amazonaws.com/hydrobot-static/GV_logo_blanco.png"
-                                    }
+                                    }"
                                     alt="Agent portrait"
                                     border="0"
                                     width="60"
@@ -819,6 +821,7 @@ const sendAdsToContact = (req, res) => {
                                       border-top-right-radius: 50%;
                                       border-bottom-right-radius: 50%;
                                       border-bottom-left-radius: 50%;
+                                      margin: 0 auto;
                                     "
                                     class="CToWUd"
                                   />
@@ -846,7 +849,7 @@ const sendAdsToContact = (req, res) => {
                                   <a href="mailto:${
                                     req.body.consultant.consultantEmail
                                   }" target="_blank">
-                                     ${req.body.consultant.consultantEmail}
+                                    ${req.body.consultant.consultantEmail}
                                   </a>
                                   <span>&nbsp;</span>
                                   <br />
@@ -1377,10 +1380,10 @@ const sendAdToContacts = async (req, res) => {
                                             </td>
                                           </tr>
                                           <tr>
-                                            <td style="border-collapse: collapse; vertical-align: top; text-align: center">
+                                            <td style="border-collapse: collapse; vertical-align: top; text-align: center;">
                                               <h2
                                                 id="m_-4520741529468623966gmail-m_8445976314637867845price"
-                                                style="padding: 10px 15px 10 15px; color: rgb(43, 54, 61); font-size: 22px"
+                                                style="padding: 10px 15px 10 15px; color: rgb(43, 54, 61); font-size: 22px text-align: center;"
                                               >
                                                 ${
                                                   req.body.ad.adType.includes(
@@ -1443,8 +1446,9 @@ const sendAdToContacts = async (req, res) => {
                                                 <p
                                                   style="
                                                     font-family: Helvetica;
-                                                    text-align: justify;
+                                                    text-align: center;
                                                     color: rgb(43, 54, 61);
+                                                    
                                                   "
                                                 >${
                                                   req.body.ad.description
@@ -1663,10 +1667,10 @@ const sendAdToContacts = async (req, res) => {
                           <div style="max-width: 600px; margin: auto">
                             ${req.body.messageGoodbyeP2}
                           </div>
-                          <table cellpadding="0" cellspacing="0" border="0" style="border-spacing: 0px; width: 777.15625px">
-                            <tbody>
-                              <tr>
-                                <td style="border-collapse: collapse; vertical-align: top">
+                          <table cellpadding="0" cellspacing="0" border="0" style="border-spacing: 0px; width: 100%;">
+                            <tbody style="width: 100%;">
+                              <tr style="width: 100%;">
+                                <td style="border-collapse: collapse; vertical-align: top; width: 100%;">
                                   <div style="max-width: 600px; margin: auto; font-family: Helvetica; text-align: left">
                                     <br />
                                     <hr
@@ -1691,16 +1695,18 @@ const sendAdToContacts = async (req, res) => {
                                     border-collapse: collapse;
                                     vertical-align: top;
                                     font-family: Helvetica;
-                                    font-size: 10.800000190734863px;
+                                    font-size: 10.8px;
                                     color: rgb(34, 34, 34);
+                                    width: 100%;
+                                    text-align: center;
                                   "
                                 >
                                   <img
-                                    src=${
+                                    src="${
                                       req.body.consultant.avatar
                                         ? req.body.consultant.avatar
                                         : "https://ci6.googleusercontent.com/proxy/AfGGywFT6_3aswvTp_kvD7StE2fqbnoU9jILHPGzB-VTH9f9GVCLngB4B9zF0ZWU5I6N8HDYArUh_CeA2MztYx7CYyAorUyq_Y0E5LML90LV-TdxVNCDdX06ZA=s0-d-e1-ft#https://s3.eu-central-1.amazonaws.com/hydrobot-static/GV_logo_blanco.png"
-                                    }
+                                    }"
                                     alt="Agent portrait"
                                     border="0"
                                     width="60"
@@ -1714,46 +1720,48 @@ const sendAdToContacts = async (req, res) => {
                                       border-top-right-radius: 50%;
                                       border-bottom-right-radius: 50%;
                                       border-bottom-left-radius: 50%;
+                                      margin: 0 auto;
                                     "
                                     class="CToWUd"
                                   />
-                                    <br />
-                                    <b>${req.body.consultant.fullName}</b>
-                                    <br />
-                                    ${
-                                      req.body.consultant.profession
-                                        ? `${req.body.consultant.position} | ${req.body.consultant.profession}`
-                                        : `${req.body.consultant.position}`
-                                    }
-                                    <br />
-                                    ${
-                                      req.body.consultant.consultantPhoneNumber
-                                        ? `${req.body.consultant.consultantMobileNumber} | ${req.body.consultant.consultantPhoneNumber}`
-                                        : `${req.body.consultant.consultantMobileNumber}`
-                                    }
-                                    <br />
-                                    ${
-                                      req.body.consultant.office2
-                                        ? `${req.body.consultant.office1} | ${req.body.consultant.office2}`
-                                        : `${req.body.consultant.office1}`
-                                    }
-                                    <br />
-                                    <a href="mailto:${
-                                      req.body.consultant.consultantEmail
-                                    }" target="_blank">
-                                       ${req.body.consultant.consultantEmail}
-                                    </a>
-                                    <span>&nbsp;</span>
-                                    <br />
-                                    <br />
-                                    ${
-                                      req.body.consultant
-                                        ?.consultantEmailSignZones && zonesHTML
-                                    }
+                                  <br />
+                                  <b>${req.body.consultant.fullName}</b>
+                                  <br />
+                                  ${
+                                    req.body.consultant.profession
+                                      ? `${req.body.consultant.position} | ${req.body.consultant.profession}`
+                                      : `${req.body.consultant.position}`
+                                  }
+                                  <br />
+                                  ${
+                                    req.body.consultant.consultantPhoneNumber
+                                      ? `${req.body.consultant.consultantMobileNumber} | ${req.body.consultant.consultantPhoneNumber}`
+                                      : `${req.body.consultant.consultantMobileNumber}`
+                                  }
+                                  <br />
+                                  ${
+                                    req.body.consultant.office2
+                                      ? `${req.body.consultant.office1} | ${req.body.consultant.office2}`
+                                      : `${req.body.consultant.office1}`
+                                  }
+                                  <br />
+                                  <a href="mailto:${
+                                    req.body.consultant.consultantEmail
+                                  }" target="_blank">
+                                    ${req.body.consultant.consultantEmail}
+                                  </a>
+                                  <span>&nbsp;</span>
+                                  <br />
+                                  <br />
+                                  ${
+                                    req.body.consultant
+                                      ?.consultantEmailSignZones && zonesHTML
+                                  }
                                 </td>
                               </tr>
                             </tbody>
                           </table>
+
                         </td>
                       </tr>
                       <tr>
@@ -1836,6 +1844,7 @@ const sendAdToContacts = async (req, res) => {
 
 const generateZonesHTML = (zones) => {
   const createZoneHTML = (zone) => {
+    if (!zone || !zone.name) return ""; // Evita elementos vacíos
     let zoneSection;
     if (zone.zone === "Residencial") {
       zoneSection = "residential";
@@ -1854,34 +1863,43 @@ const generateZonesHTML = (zones) => {
                 color: #2b2b2b;
                 text-align: center;
                 font-family: Helvetica, Arial, sans-serif;
-                font-size: 10.800000190734863px;
+                font-size: 10.8px;
                 text-decoration: none;
                 ">
               ${zone.name}
-            </span>`;
+            </a>`;
   };
 
   const priorities = ["high", "medium", "low"];
   let html = "";
 
-  priorities.forEach((priority, index) => {
+  priorities.forEach((priority) => {
     const residentialZones = zones[priority].residential
+      .slice(0, 3)
       .map(createZoneHTML)
+      .filter((html) => html !== "")
       .join("");
     const patrimonialZones = zones[priority].patrimonial
+      .slice(0, 3)
       .map(createZoneHTML)
+      .filter((html) => html !== "")
       .join("");
-    const othersZones = zones[priority].others.map(createZoneHTML).join("");
+    const othersZones = zones[priority].others
+      .slice(0, 3)
+      .map(createZoneHTML)
+      .filter((html) => html !== "")
+      .join("");
 
-    html += `<div style="margin-bottom: 3px; text-align: center; ">
-               <div display: inline-block; margin: 0 auto;">
-                 ${residentialZones}
-                 ${patrimonialZones}
-                 ${othersZones}
-               </div>
-             </div>`;
+    if (residentialZones || patrimonialZones || othersZones) {
+      html += `<div style="margin-bottom: 3px; text-align: center;">
+                 <div style="display: inline-block; margin: 0 auto;">
+                   ${residentialZones}
+                   ${patrimonialZones}
+                   ${othersZones}
+                 </div>
+               </div>`;
+    }
   });
-
   return html;
 };
 
