@@ -71,6 +71,8 @@ const requestsGetByFilters = async (req, res, next) => {
 
       if (orConditions.length > 0) {
         queryConditions.$or = orConditions;
+      } else {
+        queryConditions.$or = [{ _id: null }];
       }
     }
 

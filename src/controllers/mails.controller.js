@@ -1864,21 +1864,26 @@ const generateZonesHTML = (zones) => {
       zoneSection = "others";
     }
 
-    return `<a href="https://gvre.es/${zoneSection}/1?zona=${zone._id}&page=1" style="
-                display: inline-block;
-                padding: 7px 10px;
-                margin: 5px;
-                border: 1px solid #ccc;
-                border-radius: 3px;
-                border: 1px solid #2b363d;
-                color: #2b2b2b;
-                text-align: center;
-                font-family: Helvetica, Arial, sans-serif;
-                font-size: 10.8px;
-                text-decoration: none;
-                ">
-              ${zone.name}
-            </a>`;
+    return `<td style="width: 33.33%; vertical-align: top;">
+    <table role="presentation" style="margin: 0 auto; border: 1px solid #ccc; border-radius: 3px; width: 100%; height: 70px; overflow: hidden; font-family: Helvetica, Arial, sans-serif;">
+      <tr>
+        <td style="padding: 0; margin: 0; width: 100%; height: 80px;">
+          <table role="presentation" style="width: 100%; height: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 0; margin: 0; text-align: center; vertical-align: middle; width: 100%; height: 70px; background: url('${zone.image}') no-repeat center center; background-size: cover;">
+                <a href="https://gvre.es/${zoneSection}/1?zona=${zone._id}&page=1" style="text-decoration: none; display: block; width: 100%; height: 100%; text-align: center;">
+                  <span style="display: inline-block; vertical-align: middle; height: 100%;"></span>
+                  <span style="display: inline-block; background-color: white; padding: 1px 3px; font-size: 10px; color: #2b2b2b; opacity: 90%; vertical-align: middle;">
+                    ${zone.name}
+                  </span>
+                </a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </td>`;
   };
 
   const priorities = ["high", "medium", "low"];
@@ -1886,33 +1891,35 @@ const generateZonesHTML = (zones) => {
 
   priorities.forEach((priority) => {
     const priorityZones = zones[priority];
-    if (!priorityZones) return; //
-    const residentialZones = zones[priority].residential
-      .slice(0, 3)
-      .map(createZoneHTML)
-      .filter((html) => html !== "")
-      .join("");
-    const patrimonialZones = zones[priority].patrimonial
-      .slice(0, 3)
-      .map(createZoneHTML)
-      .filter((html) => html !== "")
-      .join("");
-    const othersZones = zones[priority].others
-      .slice(0, 3)
-      .map(createZoneHTML)
-      .filter((html) => html !== "")
-      .join("");
+    if (!priorityZones) return;
 
-    if (residentialZones || patrimonialZones || othersZones) {
-      html += `<div style="margin-bottom: 3px; text-align: center;">
-                 <div style="display: inline-block; margin: 0 auto;">
-                   ${residentialZones}
-                   ${patrimonialZones}
-                   ${othersZones}
-                 </div>
-               </div>`;
+    let content = "";
+    let count = 0;
+
+    ["residential", "patrimonial", "others"].forEach((section) => {
+      priorityZones[section].forEach((zone) => {
+        if (count % 3 === 0) {
+          if (count !== 0) {
+            content += "</tr>";
+          }
+          content += "<tr>";
+        }
+        content += createZoneHTML(zone);
+        count++;
+      });
+    });
+
+    if (count % 3 !== 0) {
+      while (count % 3 !== 0) {
+        content += "<td></td>";
+        count++;
+      }
+      content += "</tr>";
     }
+
+    html += `<table role="presentation" style="width: 100%; border-collapse: collapse;">${content}</table>`;
   });
+
   return html;
 };
 
