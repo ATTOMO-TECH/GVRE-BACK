@@ -6,6 +6,7 @@ const ZoneSchema = new Schema({
   zoneId: { type: String },
   zone: { type: String },
   name: { type: String },
+  image: { type: String },
 });
 
 const consultantSchema = new Schema(
