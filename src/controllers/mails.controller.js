@@ -1873,7 +1873,7 @@ const generateZonesHTML = (zones) => {
               <td style="padding: 0; margin: 0; text-align: center; vertical-align: middle; width: 100%; height: 70px; background: url('${zone.image}') no-repeat center center; background-size: cover;">
                 <a href="https://gvre.es/${zoneSection}/1?zona=${zone._id}&page=1" style="text-decoration: none; display: block; width: 100%; height: 100%; text-align: center;">
                   <span style="display: inline-block; vertical-align: middle; height: 100%;"></span>
-                  <span style="display: inline-block; background-color: white; padding: 1px 3px; font-size: 10px; color: #2b2b2b; opacity: 90%; vertical-align: middle;">
+                  <span style="display: inline-block; background-color: white; padding: 1px 3px; font-size: 10px; color: #2a373d; opacity: 90%; vertical-align: middle;">
                     ${zone.name}
                   </span>
                 </a>
