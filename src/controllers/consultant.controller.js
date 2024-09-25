@@ -65,49 +65,7 @@ const consultantUpdate = async (req, res, next) => {
       return next(error);
     }
 
-    // Validación y actualización del correo electrónico
-    if (req.body.consultantEmail) {
-      if (req.body.consultantEmail !== consultant.consultantEmail) {
-        const existingEmail = await Consultant.findOne({
-          consultantEmail: req.body.consultantEmail,
-        });
-        if (existingEmail) {
-          const error = new Error(
-            "Este correo ya se encuentra en nuestra base de datos"
-          );
-          error.status = 400;
-          return next(error);
-        }
-        if (isValidEmail(req.body.consultantEmail) === false) {
-          const error = new Error("Formato de correo inválido");
-          error.status = 400;
-          return next(error);
-        } else fieldsToUpdate.consultantEmail = req.body.consultantEmail;
-      } else {
-        fieldsToUpdate.consultantEmail = req.body.consultantEmail;
-      }
-    }
-
-    // Validación y actualización de la contraseña
-    const isEqualToLast =
-      req.body.consultantPassword === consultant.consultantPassword;
-    if (!isEqualToLast) {
-      if (isValidPassword(req.body.consultantPassword) === false) {
-        const error = new Error(
-          "La contraseña debe contener al menos entre 8 y 16 carácteres, 1 mayúscula, 1 minúscula y 1 dígito"
-        );
-        error.status = 400;
-        return next(error);
-      }
-      fieldsToUpdate.consultantPassword = await bcrypt.hash(
-        req.body.consultantPassword,
-        10
-      );
-    } else {
-      fieldsToUpdate.consultantPassword = req.body.consultantPassword;
-    }
-
-    // Actualización de otros campos
+    // Actualización de los campos básicos
     fieldsToUpdate.fullName = req.body.fullName;
     fieldsToUpdate.consultantToken = req.body.consultantToken;
     fieldsToUpdate.consultantMobileNumber = req.body.consultantMobileNumber;
@@ -122,77 +80,83 @@ const consultantUpdate = async (req, res, next) => {
 
     // Manejo de zonas de firma de correo electrónico
     if (req.body.consultantEmailSignZones) {
-      const consultantEmailSignZones = JSON.parse(
-        Array.isArray(req.body.consultantEmailSignZones)
-          ? req.body.consultantEmailSignZones[1]
-          : req.body.consultantEmailSignZones
-      );
+      const consultantEmailSignZones =
+        typeof req.body.consultantEmailSignZones === "string"
+          ? JSON.parse(req.body.consultantEmailSignZones)
+          : req.body.consultantEmailSignZones;
 
-      // Actualizar solo las zonas que son diferentes
+      // Inicializamos el campo de zonas si no existe
+      fieldsToUpdate.consultantEmailSignZones =
+        consultant.consultantEmailSignZones || {};
+
+      // Recorremos las zonas y actualizamos con los nuevos valores
       Object.keys(consultantEmailSignZones).forEach((priority) => {
-        Object.keys(consultantEmailSignZones[priority]).forEach((type) => {
-          consultantEmailSignZones[priority][type].forEach((zone, index) => {
-            if (
-              zone.image === undefined &&
-              consultant.consultantEmailSignZones[priority][type][index]
-            ) {
-              zone.image =
-                consultant.consultantEmailSignZones[priority][type][
-                  index
-                ].image;
-            }
-          });
+        Object.keys(consultantEmailSignZones[priority]).forEach((zoneKey) => {
+          const zoneData = consultantEmailSignZones[priority][zoneKey];
+
+          // Limpiamos los datos innecesarios y actualizamos
+          const cleanedZoneData = {
+            zoneId: zoneData.zoneId || zoneData._id,
+            zone: zoneData.zone,
+            name: zoneData.name,
+            image: zoneData.image || "", // La imagen puede estar vacía
+          };
+
+          // Verificamos si las zonas ya existen, si no las inicializamos
+          if (!fieldsToUpdate.consultantEmailSignZones[priority]) {
+            fieldsToUpdate.consultantEmailSignZones[priority] = {};
+          }
+
+          // Actualizamos la zona específica
+          fieldsToUpdate.consultantEmailSignZones[priority][zoneKey] =
+            cleanedZoneData;
         });
       });
-
-      fieldsToUpdate.consultantEmailSignZones = consultantEmailSignZones;
     }
 
-    // Manejo de archivos subidos
+    // Manejo de archivos subidos (imágenes)
     if (req.files) {
       const { avatar, companyUnitLogo, ...backgroundImages } = req.files;
 
       // Actualización del avatar
       if (avatar) {
         if (consultant.avatar) {
-          deleteImage(consultant.avatar); // Elimina la imagen anterior
+          deleteImage(consultant.avatar); // Elimina la imagen anterior si existe
         }
-        fieldsToUpdate.avatar = avatar[0].location;
+        fieldsToUpdate.avatar = avatar[0].location; // Añadir nueva imagen de avatar
       }
 
       // Actualización del logo de la unidad de la empresa
       if (companyUnitLogo) {
         if (consultant.companyUnitLogo) {
-          deleteImage(consultant.companyUnitLogo); // Elimina la imagen anterior
+          deleteImage(consultant.companyUnitLogo); // Elimina la imagen anterior si existe
         }
-        fieldsToUpdate.companyUnitLogo = companyUnitLogo[0].location;
+        fieldsToUpdate.companyUnitLogo = companyUnitLogo[0].location; // Añadir nuevo logo
       }
 
-      // Manejo de las imágenes de fondo
-      const zonesToUpdate =
-        fieldsToUpdate.consultantEmailSignZones ||
-        consultant.consultantEmailSignZones;
-
+      // Actualizamos las imágenes de las zonas si se han subido
       Object.keys(backgroundImages).forEach((key) => {
-        if (backgroundImages[key]) {
-          const [priority, type] = key.split("_");
-          if (zonesToUpdate[priority] && zonesToUpdate[priority][type]) {
-            zonesToUpdate[priority][type].forEach((zone) => {
-              zone.image = backgroundImages[key][0].location;
-            });
-          }
+        const [priority, zoneKey] = key.split("_").slice(0, 2); // Tomamos solo 'high' y 'zone1'
+
+        if (!fieldsToUpdate.consultantEmailSignZones[priority]) {
+          fieldsToUpdate.consultantEmailSignZones[priority] = {};
+        }
+
+        // Asegúrate de que la zona exista antes de asignar la imagen
+        if (fieldsToUpdate.consultantEmailSignZones[priority][zoneKey]) {
+          fieldsToUpdate.consultantEmailSignZones[priority][zoneKey].image =
+            backgroundImages[key][0].location; // Asigna la URL de la imagen subida
         }
       });
-
-      fieldsToUpdate.consultantEmailSignZones = zonesToUpdate;
     }
 
     // Actualización del consultor
     const updatedConsultant = await Consultant.findByIdAndUpdate(
       req.body.id,
-      fieldsToUpdate,
+      { $set: fieldsToUpdate }, // Utilizamos $set para asegurarnos de que solo se actualicen las propiedades específicas
       { new: true }
     );
+
     updatedConsultant.consultantPassword = null; // No enviar la contraseña en la respuesta
 
     return res.status(200).json(updatedConsultant);
@@ -217,7 +181,7 @@ const deleteConsultantImage = async (req, res, next) => {
     const typeParts = type.split("_");
     const priority = typeParts[0];
     const zoneType = typeParts[1];
-    const imageField = `consultantEmailSignZones.${priority}.${zoneType}.0.image`;
+    const imageField = `consultantEmailSignZones.${priority}.${zoneType}.image`;
 
     const imageToDelete = consultant.get(imageField);
 

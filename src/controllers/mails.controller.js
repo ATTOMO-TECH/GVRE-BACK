@@ -1854,7 +1854,7 @@ const sendAdToContacts = async (req, res) => {
 
 const generateZonesHTML = (zones) => {
   const createZoneHTML = (zone) => {
-    if (!zone || !zone.name) return ""; // Evita elementos vacíos
+    if (!zone || !zone.name) return "";
     let zoneSection;
     if (zone.zone === "Residencial") {
       zoneSection = "residential";
@@ -1871,7 +1871,7 @@ const generateZonesHTML = (zones) => {
           <table role="presentation" style="width: 100%; height: 100%; border-collapse: collapse;">
             <tr>
               <td style="padding: 0; margin: 0; text-align: center; vertical-align: middle; width: 100%; height: 70px; background: url('${zone.image}') no-repeat center center; background-size: cover;">
-                <a href="https://gvre.es/${zoneSection}/1?zona=${zone._id}&page=1" style="text-decoration: none; display: block; width: 100%; height: 100%; text-align: center;">
+                <a href="https://gvre.es/${zoneSection}/1?zona=${zone.zoneId}&page=1" style="text-decoration: none; display: block; width: 100%; height: 100%; text-align: center;">
                   <span style="display: inline-block; vertical-align: middle; height: 100%;"></span>
                   <span style="display: inline-block; background-color: white; padding: 1px 3px; font-size: 10px; color: #2a373d; opacity: 90%; vertical-align: middle;">
                     ${zone.name}
@@ -1886,35 +1886,36 @@ const generateZonesHTML = (zones) => {
   </td>`;
   };
 
-  const priorities = ["high", "medium", "low"];
+  const priorityLevels = ["high", "medium", "low"];
   let html = "";
 
-  priorities.forEach((priority) => {
-    const priorityZones = zones[priority];
+  priorityLevels.forEach((priority) => {
+    const priorityZones = zones[priority]; // Zonas por prioridad
     if (!priorityZones) return;
 
     let content = "";
     let count = 0;
 
-    ["residential", "patrimonial", "others"].forEach((section) => {
-      priorityZones[section].forEach((zone) => {
-        if (count % 3 === 0) {
-          if (count !== 0) {
-            content += "</tr>";
-          }
-          content += "<tr>";
+    // Recorremos las zonas (zone1, zone2, etc.)
+    Object.keys(priorityZones).forEach((zoneKey) => {
+      const zone = priorityZones[zoneKey];
+      if (count % 3 === 0) {
+        if (count !== 0) {
+          content += "</tr>";
         }
-        content += createZoneHTML(zone);
-        count++;
-      });
+        content += "<tr>"; // Abrimos una nueva fila cada 3 elementos
+      }
+      content += createZoneHTML(zone); // Generamos el HTML para cada zona
+      count++;
     });
 
+    // Si la última fila tiene menos de 3 zonas, completamos con celdas vacías
     if (count % 3 !== 0) {
       while (count % 3 !== 0) {
         content += "<td></td>";
         count++;
       }
-      content += "</tr>";
+      content += "</tr>"; // Cerramos la última fila
     }
 
     html += `<table role="presentation" style="width: 100%; border-collapse: collapse;">${content}</table>`;

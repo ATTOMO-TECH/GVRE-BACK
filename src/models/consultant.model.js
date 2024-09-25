@@ -29,19 +29,19 @@ const consultantSchema = new Schema(
     ads: { type: mongoose.Types.ObjectId, ref: "ads" },
     consultantEmailSignZones: {
       high: {
-        residential: [ZoneSchema],
-        patrimonial: [ZoneSchema],
-        others: [ZoneSchema],
+        zone1: ZoneSchema,
+        zone2: ZoneSchema,
+        zone3: ZoneSchema,
       },
       medium: {
-        residential: [ZoneSchema],
-        patrimonial: [ZoneSchema],
-        others: [ZoneSchema],
+        zone4: ZoneSchema,
+        zone5: ZoneSchema,
+        zone6: ZoneSchema,
       },
       low: {
-        residential: [ZoneSchema],
-        patrimonial: [ZoneSchema],
-        others: [ZoneSchema],
+        zone7: ZoneSchema,
+        zone8: ZoneSchema,
+        zone9: ZoneSchema,
       },
     },
   },
