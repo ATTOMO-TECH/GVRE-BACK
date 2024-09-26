@@ -1856,12 +1856,22 @@ const generateZonesHTML = (zones) => {
   const createZoneHTML = (zone) => {
     if (!zone || !zone.name) return "";
     let zoneSection;
-    if (zone.zone === "Residencial") {
+    if (
+      zone.zone === "Residencial" ||
+      zone.zone === "Nueva España - Hispanoamérica" ||
+      zone.zone === "Barrio Salamanca" ||
+      zone.zone === "La Moraleja" ||
+      zone.zone === "Somosaguas" ||
+      zone.zone === "Puerta de Hierro" ||
+      zone.zone === "Colonia Fuentelarreyna"
+    ) {
       zoneSection = "residential";
     } else if (zone.zone === "Patrimonial") {
       zoneSection = "patrimonial";
-    } else {
-      zoneSection = "others";
+    } else if (zone.zone === "Others") {
+      if (zone.name === "Activos singulares") zoneSection = "singular";
+      else if (zone.name === "Campo Rústico") zoneSection = "rustico";
+      else if (zone.name === "Costa") zoneSection = "costa";
     }
 
     return `<td style="width: 33.33%; vertical-align: top;">
@@ -1870,8 +1880,14 @@ const generateZonesHTML = (zones) => {
         <td style="padding: 0; margin: 0; width: 100%; height: 80px;">
           <table role="presentation" style="width: 100%; height: 100%; border-collapse: collapse;">
             <tr>
-              <td style="padding: 0; margin: 0; text-align: center; vertical-align: middle; width: 100%; height: 70px; background: url('${zone.image}') no-repeat center center; background-size: cover;">
-                <a href="https://gvre.es/${zoneSection}/1?zona=${zone.zoneId}&page=1" style="text-decoration: none; display: block; width: 100%; height: 100%; text-align: center;">
+              <td style="padding: 0; margin: 0; text-align: center; vertical-align: middle; width: 100%; height: 70px; background: url('${
+                zone.image
+              }') no-repeat center center; background-size: cover;">
+                <a href="${
+                  zone.zone === "Others"
+                    ? `https://gvre.es/${zoneSection}/1&page=1`
+                    : `https://gvre.es/${zoneSection}/1?zona=${zone.zoneId}&page=1`
+                }" style="text-decoration: none; display: block; width: 100%; height: 100%; text-align: center;">
                   <span style="display: inline-block; vertical-align: middle; height: 100%;"></span>
                   <span style="display: inline-block; background-color: white; padding: 1px 3px; font-size: 10px; color: #2a373d; opacity: 90%; vertical-align: middle;">
                     ${zone.name}
