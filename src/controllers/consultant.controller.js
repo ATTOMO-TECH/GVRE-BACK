@@ -150,6 +150,24 @@ const consultantUpdate = async (req, res, next) => {
       });
     }
 
+    const isEqualToLast =
+      req.body.consultantPassword === consultant.consultantPassword;
+    if (!isEqualToLast) {
+      if (isValidPassword(req.body.consultantPassword) === false) {
+        const error = new Error(
+          "La contraseña debe contener al menos entre 8 y 16 carácteres, 1 mayúscula, 1 minúscula y 1 dígito"
+        );
+        error.status = 400;
+        return next(error);
+      }
+      fieldsToUpdate.consultantPassword = await bcrypt.hash(
+        req.body.consultantPassword,
+        10
+      );
+    } else {
+      fieldsToUpdate.consultantPassword = req.body.consultantPassword;
+    }
+
     // Actualización del consultor
     const updatedConsultant = await Consultant.findByIdAndUpdate(
       req.body.id,
