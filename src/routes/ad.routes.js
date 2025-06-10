@@ -1,6 +1,5 @@
 const express = require("express");
 const { upload, deleteImage } = require("../middlewares/file.middleware");
-const { isAuth, isAdmin } = require("../middlewares/auth.middleware");
 const {
   adGetAll,
   adGetByFilters,

@@ -10,6 +10,7 @@ require("./auth");
 const db = require("./db");
 const cors = require("cors");
 const app = express();
+const { isAuth } = require("./middlewares/auth.middleware");
 
 // Routes
 const indexRoutes = require("./routes/index.routes");
@@ -93,16 +94,16 @@ app.use(express.urlencoded({ limit: "100mb", extended: true }));
 
 app.use("/", indexRoutes);
 app.use("/auth", authRoutes);
-app.use("/ads", adRoutes);
-app.use("/inmuebles", adRoutes);
-app.use("/requests", requestRoutes);
-app.use("/contacts", contactRoutes);
-app.use("/consultants", consultantRoutes);
+app.use("/ads", isAuth, adRoutes);
+app.use("/inmuebles", isAuth, adRoutes);
+app.use("/requests", isAuth, requestRoutes);
+app.use("/contacts", isAuth, contactRoutes);
+app.use("/consultants", isAuth, consultantRoutes);
 app.use("/zones", zoneRoutes);
-app.use("/mails", mailsRoutes);
-app.use("/catalogs", catalogsRoutes);
+app.use("/mails", isAuth, mailsRoutes);
+app.use("/catalogs", isAuth, catalogsRoutes);
 app.use("/web", webRoutes);
-app.use("/marketingCampaigns", marketingCampaignsRoutes);
+app.use("/marketingCampaigns", isAuth, marketingCampaignsRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
