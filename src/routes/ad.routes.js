@@ -1,6 +1,5 @@
 const express = require("express");
 const { upload, deleteImage } = require("../middlewares/file.middleware");
-const { isAuth, isAdmin } = require("../middlewares/auth.middleware");
 const {
   adGetAll,
   adGetByFilters,
@@ -22,6 +21,7 @@ const {
   adDelete,
   repairAds,
   getAdsPaginated,
+  adUpdateImageOrder,
 } = require("../controllers/ad.controller");
 
 const router = express.Router();
@@ -83,6 +83,7 @@ router.put(
 router.put("/delete/blueprint/:id", adBlueprintImagesDelete);
 router.put("/upload/others/:id", upload.array("others"), adOthersImagesUpload);
 router.put("/delete/others/:id", adOthersImagesDelete);
+router.put("/:id/images/order", adUpdateImageOrder);
 router.delete("/delete/:id", adDelete);
 
 module.exports = router;

@@ -1085,6 +1085,59 @@ const adDelete = async (req, res, next) => {
   }
 };
 
+const adUpdateImageOrder = async (req, res, next) => {
+  // Corregí 'nect' por 'next'
+  try {
+    // 1. Recogemos los datos necesarios
+    const { id } = req.params; // El ID del anuncio viene de la URL
+    const { from, urls } = req.body; // 'from' y 'urls' vienen del cuerpo de la petición
+
+    // 2. Validación básica de los datos recibidos
+    if (!from || !urls || !Array.isArray(urls)) {
+      return res.status(400).json({
+        message: "Datos inválidos. Se requiere 'from' y un array 'urls'.",
+      });
+    }
+
+    // 3. Preparamos el campo que vamos a actualizar en la BD
+    let fieldToUpdate;
+    if (from === "others") {
+      fieldToUpdate = "images.others";
+    } else if (from === "blueprint") {
+      fieldToUpdate = "images.blueprint";
+    } else {
+      console.log(from);
+      // Si 'from' no es ni 'others' ni 'blueprint', es un error.
+      return res
+        .status(400)
+        .json({ message: "El campo 'from' debe ser 'others' o 'blueprint'." });
+    }
+
+    // 4. Buscamos el anuncio por ID y actualizamos el campo correspondiente
+    // Usamos $set para reemplazar completamente el array viejo con el nuevo.
+    // La opción { new: true } nos devuelve el documento ya actualizado.
+    const updatedAd = await Ad.findByIdAndUpdate(
+      id,
+      { $set: { [fieldToUpdate]: urls } }, // Usamos corchetes para usar la variable como nombre de la clave
+      { new: true }
+    );
+
+    // 5. Verificamos si se encontró y actualizó el anuncio
+    if (!updatedAd) {
+      return res.status(404).json({
+        message: "No se encontró el anuncio con el ID proporcionado.",
+      });
+    }
+
+    // 6. Enviamos la respuesta con el anuncio actualizado
+    return res.status(200).json(updatedAd);
+  } catch (error) {
+    console.log(error);
+    // Si algo sale mal, lo pasamos al manejador de errores de Express
+    return next(error);
+  }
+};
+
 module.exports = {
   adGetAll,
   adGetByFilters,
@@ -1106,4 +1159,5 @@ module.exports = {
   adGetMatchedRequests,
   repairAds,
   getAdsPaginated,
+  adUpdateImageOrder,
 };
