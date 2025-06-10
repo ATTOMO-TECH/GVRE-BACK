@@ -1,5 +1,5 @@
 const express = require("express");
-const { isAuth, isAdmin } = require("../middlewares/auth.middleware");
+
 const { upload, uploadFiles } = require("../middlewares/file.middleware");
 const {
   consultantGetAll,

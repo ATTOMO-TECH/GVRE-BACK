@@ -27,8 +27,8 @@ router.post("/register", registerPost);
 router.get("/login", loginGet);
 router.post("/login", loginPost);
 
-router.post("/logout", logoutPost);
+router.post("/logout", isAuth, logoutPost);
 
-router.get("/check-session", checkSession);
+router.get("/check-session", isAuth, checkSession);
 
 module.exports = router;
