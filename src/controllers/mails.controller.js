@@ -1240,7 +1240,7 @@ const sendAdToContacts = async (req, res) => {
                             vertical-align: top;
                             padding-left: 24px;
                             padding-right: 24px;
-                            padding-top: 10px
+                            padding-top: 10px;
                             padding-bottom: 10px;
                             background-color: rgb(43, 54, 61);
                           "
