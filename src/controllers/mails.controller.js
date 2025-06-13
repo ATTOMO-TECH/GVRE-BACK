@@ -723,7 +723,7 @@ const sendAdsToContact = async (req, res) => {
                           "
                         >
                           <img
-                            src="${process.env.BACKEND_URL}/Logo.svg"
+                            src="${process.env.BACKEND_URL}/Logo.png"
                             alt="${req.body.consultant.position}"
                             border="0"
                             width="100"
@@ -1242,7 +1242,7 @@ const sendAdToContacts = async (req, res) => {
                           "
                         >
                           <img
-                            src="${process.env.BACKEND_URL}/Logo.svg"
+                            src="${process.env.BACKEND_URL}/Logo.png"
                             alt="${req.body.consultant.position}"
                             border="0"
                             width="100"
