@@ -1095,7 +1095,7 @@ const adUpdateImageOrder = async (req, res, next) => {
     // 2. Validación básica de los datos recibidos
     if (!from || !urls || !Array.isArray(urls)) {
       return res.status(400).json({
-        message: "Datos inválidos. Se requiere 'from' y un array 'urls'.",
+        message: "Datos inválidos.",
       });
     }
 
