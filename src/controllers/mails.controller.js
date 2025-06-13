@@ -2,6 +2,7 @@ const nodemailer = require("nodemailer"); // email sender function
 const { getPasswordByEmail } = require("./utils");
 const Consultant = require("../models/consultant.model");
 const AWS = require("aws-sdk");
+const Contact = require("./../models/contact.model");
 
 const SES_CONFIG = {
   accessKeyId: process.env.SES_ACCESS_KEY,
@@ -885,13 +886,15 @@ const sendAdsToContact = async (req, res) => {
                           "
                         >
                           <br />Don't want to receive this type of email?<span>&nbsp;</span
-                          ><a
-                            href="mailto:${
-                              req.body.consultant.consultantEmail
-                            }?subject=Unsubscribe"
+                          >
+                          <a 
+                            href="${
+                              process.env.BACKEND_URL
+                            }/mails/unsubscribe/${req.body.contact._id}">
                             style="color: rgb(153, 153, 153)"
                             target="_blank"
-                            >Unsubscribe.</a
+                            >Unsubscribe</a
+                          >
                           ><span>&nbsp;</span>&nbsp;<br />&nbsp;
                         </td>
                       </tr>
@@ -1792,13 +1795,13 @@ const sendAdToContacts = async (req, res) => {
                           "
                         >
                           <br />Don't want to receive this type of email?<span>&nbsp;</span
-                          ><a
-                            href="mailto:${
-                              req.body.consultant.consultantEmail
-                            }?subject=Unsubscribe"
+                          > <a 
+                            href="\${unsubscribeLink}"
                             style="color: rgb(153, 153, 153)"
                             target="_blank"
-                            >Unsubscribe.</a
+                          >
+                            Unsubscribe
+                          </a>
                           ><span>&nbsp;</span>&nbsp;<br />&nbsp;
                         </td>
                       </tr>
@@ -1845,11 +1848,19 @@ const sendAdToContacts = async (req, res) => {
   const sendEmails = async () => {
     for (let index = 0; index < req.body.requestsToSend.length; index++) {
       const recipient = req.body.requestsToSend[index];
+      const unsubscribeLink = `${process.env.BACKEND_URL}/mails/unsubscribe/${recipient.requestContact._id}`;
+
+      // 👇 Aquí montas el HTML personalizado para ese contacto
+      const personalizedHtml = baseMailOptions.html.replace(
+        /\$\{unsubscribeLink\}/g,
+        unsubscribeLink
+      );
       const mailOptions = { ...baseMailOptions };
       mailOptions.from = req.body.consultant.consultantEmail;
       mailOptions.to = recipient.requestContact.email;
       mailOptions.bcc = req.body.consultant.consultantEmail;
-      await sendMailWithDelay(mailOptions, 800);
+      (mailOptions.html = personalizedHtml),
+        await sendMailWithDelay(mailOptions, 800);
     }
   };
 
@@ -2379,8 +2390,36 @@ const sendEmailReservationToClient = (req, res) => {
   });
 };
 
+const unsubscribeEmails = async (req, res) => {
+  try {
+    const contact = await Contact.findByIdAndUpdate(
+      req.params.id,
+      { notReceiveCommunications: true },
+      { new: true }
+    );
+
+    if (!contact) {
+      return res.status(404).send("Contacto no encontrado.");
+    }
+
+    res.send(`
+      <html>
+        <head><title>Unsubscribe</title></head>
+        <body style="font-family: Helvetica, sans-serif; text-align: center; margin-top: 80px">
+          <h2>Has sido dado de baja correctamente</h2>
+          <p>No recibirás más comunicaciones de este tipo.</p>
+        </body>
+      </html>
+    `);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error al procesar la baja.");
+  }
+};
+
 module.exports = {
   sendAdsToContact,
   sendAdToContacts,
   sendEmailReservationToClient,
+  unsubscribeEmails,
 };

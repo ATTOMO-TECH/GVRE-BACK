@@ -4,6 +4,7 @@ const {
   sendAdsToContact,
   sendAdToContacts,
   sendEmailReservationToClient,
+  unsubscribeEmails,
 } = require("../controllers/mails.controller");
 const {
   getConsultantTokenById,
@@ -19,5 +20,6 @@ router.post(
   sendAdToContacts
 );
 router.post("/webReservations", sendEmailReservationToClient);
+router.get("/unsubscribe/:id", unsubscribeEmails);
 
 module.exports = router;
