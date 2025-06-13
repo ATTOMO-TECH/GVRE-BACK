@@ -98,10 +98,10 @@ app.use("/ads", isAuth, adRoutes);
 app.use("/inmuebles", adRoutes);
 app.use("/requests", isAuth, requestRoutes);
 app.use("/contacts", isAuth, contactRoutes);
-app.use("/consultants", isAuth, consultantRoutes);
+app.use("/consultants", consultantRoutes);
 app.use("/zones", zoneRoutes);
-app.use("/mails", isAuth, mailsRoutes);
-app.use("/catalogs", isAuth, catalogsRoutes);
+app.use("/mails", mailsRoutes);
+app.use("/catalogs", catalogsRoutes);
 app.use("/web", webRoutes);
 app.use("/marketingCampaigns", isAuth, marketingCampaignsRoutes);
 
