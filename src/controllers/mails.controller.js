@@ -1242,7 +1242,7 @@ const sendAdToContacts = async (req, res) => {
                           "
                         >
                           <img
-                            src="https://ci6.googleusercontent.com/proxy/AfGGywFT6_3aswvTp_kvD7StE2fqbnoU9jILHPGzB-VTH9f9GVCLngB4B9zF0ZWU5I6N8HDYArUh_CeA2MztYx7CYyAorUyq_Y0E5LML90LV-TdxVNCDdX06ZA=s0-d-e1-ft#https://s3.eu-central-1.amazonaws.com/hydrobot-static/GV_logo_blanco.png"
+                            src="${process.env.BACKEND_URL}/Logo.svg"
                             alt="${req.body.consultant.position}"
                             border="0"
                             width="100"
