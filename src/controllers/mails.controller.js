@@ -719,6 +719,8 @@ const sendAdsToContact = async (req, res) => {
                             vertical-align: top;
                             padding-left: 24px;
                             padding-right: 24px;
+                            padding-top: 10px;
+                            padding-bottom: 10px;
                             background-color: rgb(43, 54, 61);
                           "
                         >
@@ -726,8 +728,8 @@ const sendAdsToContact = async (req, res) => {
                             src="${process.env.BACKEND_URL}/Logo.png"
                             alt="${req.body.consultant.position}"
                             border="0"
-                            width="100"
-                            height="50"
+                            width="70"
+                            height="35"
                             hspace="0"
                             vspace="0"
                             style="display: block; font-size: 0px; max-width: 100%; height: auto"
@@ -1238,6 +1240,8 @@ const sendAdToContacts = async (req, res) => {
                             vertical-align: top;
                             padding-left: 24px;
                             padding-right: 24px;
+                            padding-top: 10px
+                            padding-bottom: 10px;
                             background-color: rgb(43, 54, 61);
                           "
                         >
@@ -1245,8 +1249,8 @@ const sendAdToContacts = async (req, res) => {
                             src="${process.env.BACKEND_URL}/Logo.png"
                             alt="${req.body.consultant.position}"
                             border="0"
-                            width="100"
-                            height="50"
+                            width="70"
+                            height="35"
                             hspace="0"
                             vspace="0"
                             style="display: block; font-size: 0px; max-width: 100%; height: auto"
