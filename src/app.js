@@ -89,6 +89,8 @@ app.use(passport.session());
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ limit: "100mb", extended: true }));
 
+app.use(express.static(path.join(__dirname, "public")));
+
 // Consultant authentication validator
 // app.use(authValidator)
 
