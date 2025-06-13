@@ -95,7 +95,7 @@ app.use(express.urlencoded({ limit: "100mb", extended: true }));
 app.use("/", indexRoutes);
 app.use("/auth", authRoutes);
 app.use("/ads", isAuth, adRoutes);
-app.use("/inmuebles", isAuth, adRoutes);
+app.use("/inmuebles", adRoutes);
 app.use("/requests", isAuth, requestRoutes);
 app.use("/contacts", isAuth, contactRoutes);
 app.use("/consultants", isAuth, consultantRoutes);
