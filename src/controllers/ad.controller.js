@@ -546,6 +546,27 @@ const allAdsGetByIdConsultant = async (req, res, next) => {
 
 const adCreate = async (req, res, next) => {
   try {
+    const idCopy = req.body.idCopy;
+
+    let images = {
+      main: "",
+      blueprint: [],
+      others: [],
+      media: "",
+    };
+
+    // 🔁 Si hay un anuncio a copiar, copia sus imágenes
+    if (idCopy) {
+      const adToCopy = await Ad.findById(idCopy);
+      if (adToCopy) {
+        images = {
+          main: adToCopy.images.main,
+          blueprint: [...adToCopy.images.blueprint],
+          others: [...adToCopy.images.others],
+          media: adToCopy.images.media,
+        };
+      }
+    }
     const adDirection = {
       address: {
         street: req.body.street,
@@ -630,13 +651,6 @@ const adCreate = async (req, res, next) => {
       web: req.body.web,
       emailPDF: req.body.emailPDF,
       distribution: req.body.distribution,
-    };
-
-    const images = {
-      main: "",
-      blueprint: [],
-      others: [],
-      media: "",
     };
 
     const newAd = new Ad({
