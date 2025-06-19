@@ -459,9 +459,6 @@ const adGetByFilters = async (req, res, next) => {
 };
 
 const adGetMatchedRequests = async (req, res, next) => {
-  console.log("Query params:", req.query);
-  console.log("Petición recibida");
-
   try {
     const { id } = req.params;
     const ad = await Ad.findById({ _id: id });
