@@ -459,9 +459,13 @@ const adGetByFilters = async (req, res, next) => {
 };
 
 const adGetMatchedRequests = async (req, res, next) => {
+  console.log("Query params:", req.query);
+  console.log("Petición recibida");
+
   try {
     const { id } = req.params;
     const ad = await Ad.findById({ _id: id });
+    const search = req.query.search;
 
     // Query constructor
     let query = Request.find();
@@ -512,9 +516,24 @@ const adGetMatchedRequests = async (req, res, next) => {
       path: "requestContact",
       select: "fullName company email contactComments notReceiveCommunications",
     });
+
+    // Ejecutar la query
+    const requests = await query.exec();
+
+    // Filtrar si hay búsqueda
+    let filteredRequests = requests;
+    if (search) {
+      const regex = new RegExp(search, "i");
+      filteredRequests = requests.filter((req) => {
+        const name = req.requestContact?.fullName || "";
+        const company = req.requestContact?.company || "";
+        const comment = req.requestComment || "";
+        return regex.test(name) || regex.test(company) || regex.test(comment);
+      });
+    }
+
     if (ad.adStatus === "Activo") {
-      const requests = await query.exec();
-      return res.status(200).json(requests);
+      return res.status(200).json(filteredRequests);
     } else {
       return next();
     }
