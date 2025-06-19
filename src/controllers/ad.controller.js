@@ -1036,6 +1036,17 @@ const adUpdate = async (req, res, next) => {
       distribution: req.body.distribution,
     };
 
+    if (req.body.updateSameRef && req.body.adReference) {
+      await Ad.updateMany(
+        {
+          adReference: req.body.adReference,
+          _id: { $ne: req.body.id }, // para no volver a actualizar el mismo anuncio
+        },
+        {
+          $set: { surfacesBox: req.body.surfacesBox },
+        }
+      );
+    }
     const updatedAd = await Ad.findByIdAndUpdate(id, fieldsToUpdate, {
       new: true,
     });
