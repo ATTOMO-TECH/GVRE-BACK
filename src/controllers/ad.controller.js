@@ -277,21 +277,12 @@ const adGetByFilters = async (req, res, next) => {
 
     let { department, sortField, sortOrder, page, search } = req.query;
 
-    let adStatusValue = req.query.adStatus
-      ? JSON.parse(req.query.adStatus)
-      : null;
-
-    let gvOperationCloseValue = req.query.gvOperationClose
-      ? JSON.parse(req.query.gvOperationClose)
-      : null;
-
-    let adBuildingTypeValue = req.query.adBuildingType
-      ? JSON.parse(req.query.adBuildingType)
-      : null;
-
-    let zoneValue = req.query.zone ? JSON.parse(req.query.zone) : null;
-
-    let adTypeValue = req.query.adType ? JSON.parse(req.query.adType) : null;
+    // ELIMINA JSON.parse() aquí. Express ya te da el objeto/array.
+    let adStatusValue = req.query.adStatus;
+    let gvOperationCloseValue = req.query.gvOperationClose;
+    let adBuildingTypeValue = req.query.adBuildingType;
+    let zoneValue = req.query.zone;
+    let adTypeValue = req.query.adType;
 
     department = department !== "Todos" ? department : undefined;
 
