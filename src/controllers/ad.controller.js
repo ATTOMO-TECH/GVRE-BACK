@@ -231,7 +231,6 @@ const getAdsPaginated = async (req, res, next) => {
     if (reformedToReformOrConditions.length > 0) {
       andConditions.push({ $or: reformedToReformOrConditions });
     }
-    console.log(params);
     // Filtro para 'smokeOutlet' (es un AND, por lo que se añade directamente si es true)
     if (hasSmokeOutlet) {
       andConditions.push({ "quality.others.smokeOutlet": true });
@@ -1180,7 +1179,6 @@ const adUpdateImageOrder = async (req, res, next) => {
     } else if (from === "blueprint") {
       fieldToUpdate = "images.blueprint";
     } else {
-      console.log(from);
       // Si 'from' no es ni 'others' ni 'blueprint', es un error.
       return res
         .status(400)
