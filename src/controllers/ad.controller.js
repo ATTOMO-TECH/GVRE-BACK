@@ -111,6 +111,13 @@ const getAdsPaginated = async (req, res, next) => {
     let orderByDate =
       !!params.orderByDate && params.orderByDate === "true" ? true : false;
 
+    // --- Nuevas variables para los filtros de estado de reforma y salida de humos ---
+    // ¡Es crucial que estos nombres (params.reformed, params.toReform, params.smokeOutlet)
+    // coincidan con los nombres exactos que tu frontend envía en la URL!
+    let isReformed = params.reformed === "true" ? true : false;
+    let isToReform = params.toReform === "true" ? true : false;
+    let hasSmokeOutlet = params.smokeOutlet === "true" ? true : false;
+
     /* console.log('adType:', adType) */
     /* console.log('minSurface:', minSurface) */
     /* console.log('maxSurface:', maxSurface) */
@@ -122,35 +129,47 @@ const getAdsPaginated = async (req, res, next) => {
     /* console.log('paramtro fecha:', params.orderByDate) */
     /* console.log('ordenacion por fecha:',orderByDate) */
 
-    const query = Ad.find();
+    // Reemplazar la construcción de `query` encadenando `.and()` por un objeto de condiciones.
+    // Esto permite combinar AND y OR de forma flexible sin reescribir todo.
+    // Se inicializa con las condiciones que siempre deben aplicarse (department, showOnWeb).
+    let andConditions = [{ department: department, showOnWeb: true }];
 
-    query.where({ department: department });
-    query.and({ showOnWeb: true });
-    // query.and({ adStatus: "Activo" })
-    if (!!params.featuredOnMain) query.and({ featuredOnMain: featuredOnMain });
+    // --- Mover los filtros existentes a andConditions ---
+    // Aquí solo se empujan condiciones si el parámetro existe en `params`
+    if (!!params.featuredOnMain)
+      andConditions.push({ featuredOnMain: featuredOnMain });
     if (!!params.zone) {
-      query.and({ zone: { $in: zoneParam } });
+      andConditions.push({ zone: { $in: zoneParam } });
     }
-    if (!!params.adType) query.and({ adType: { $in: adType } });
-    if (!!params.adReference) query.and({ adReference });
+    if (!!params.adType) andConditions.push({ adType: { $in: adType } });
+    if (!!params.adReference) andConditions.push({ adReference: adReference }); // Usar adReference directamente
     if (!!params.adBuildingType)
-      query.and({ adBuildingType: { $in: adBuildingType } });
+      andConditions.push({ adBuildingType: { $in: adBuildingType } });
     if (!!params.swimmingPool)
-      query.and({ "quality.others.swimmingPool": hasSwimmingPool });
-    if (!!params.garage) query.and({ "quality.others.garage": hasGarage });
-    if (!!params.terrace) query.and({ "quality.others.terrace": hasTerrace });
+      andConditions.push({ "quality.others.swimmingPool": hasSwimmingPool });
+    if (!!params.garage)
+      andConditions.push({ "quality.others.garage": hasGarage });
+    if (!!params.terrace)
+      andConditions.push({ "quality.others.terrace": hasTerrace });
     if (!!params.exclusiveOfficeBuilding)
-      query.and({
+      andConditions.push({
         "quality.others.exclusiveOfficeBuilding": hasexclusiveOffice,
       });
     if (!!params.classicBuilding)
-      query.and({ "quality.others.classicBuilding": hasClassicBuilding });
+      andConditions.push({
+        "quality.others.classicBuilding": hasClassicBuilding,
+      });
     if (!!params.coworking)
-      query.and({ "quality.others.coworking": hasCoworking });
+      andConditions.push({ "quality.others.coworking": hasCoworking });
+
+    // Lógica para rangos de precios y superficies (se mantiene como la tenías, ajustada al array)
+    // Se asume que minSalePrice, maxSalePrice, etc. ya son números o arrays de un elemento.
     if (!!params.minSurface && !!params.maxSurface) {
-      query.and({ buildSurface: { $gte: minSurface, $lte: maxSurface } });
+      andConditions.push({
+        buildSurface: { $gte: minSurface, $lte: maxSurface },
+      });
     } else {
-      query.and({
+      andConditions.push({
         buildSurface: {
           $gte: minSurface[0].buildSurface,
           $lte: maxSurface[0].buildSurface,
@@ -158,22 +177,17 @@ const getAdsPaginated = async (req, res, next) => {
       });
     }
 
-    /* console.log(!!params.adType) */
     if (!!params.adType && adType.length === 1) {
-      /* console.log(adType) */
       if (adType[0] === "Venta") {
-        /* console.log('dentro de venta') */
         if (!!params.minSalePrice && !!params.maxSalePrice) {
-          /* console.log('en el if') */
-          query.and({
+          andConditions.push({
             "sale.saleValue": {
               $gte: minSalePrice,
               $lte: maxSalePrice,
             },
           });
         } else {
-          /* console.log('en el else') */
-          query.and({
+          andConditions.push({
             "sale.saleValue": {
               $gte: minSalePrice[0].sale.saleValue,
               $lte: maxSalePrice[0].sale.saleValue,
@@ -183,14 +197,14 @@ const getAdsPaginated = async (req, res, next) => {
       }
       if (adType[0] === "Alquiler") {
         if (!!params.minRentPrice && !!params.maxRentPrice) {
-          query.and({
+          andConditions.push({
             "rent.rentValue": {
               $gte: minRentPrice,
               $lte: maxRentPrice,
             },
           });
         } else {
-          query.and({
+          andConditions.push({
             "rent.rentValue": {
               $gte: minRentPrice[0].rent.rentValue,
               $lte: maxRentPrice[0].rent.rentValue,
@@ -199,62 +213,77 @@ const getAdsPaginated = async (req, res, next) => {
         }
       }
     }
-    if (orderByDate) {
-      /* console.log('ordeno por fecha') */
-      query.sort({ createdAt: -1 });
-    } else {
-      if (!!params.adType && params.adType === "Alquiler")
-        query.sort({ "rent.rentValue": -1 });
-      else query.sort({ "sale.saleValue": -1, "rent.rentValue": -1 });
+    // --- Fin de filtros existentes movidos ---
+
+    // --- ¡Nuevas líneas para los filtros de estado de reforma y salida de humos! ---
+    const reformedToReformOrConditions = [];
+
+    // Si 'reformed' es true en los parámetros de la URL
+    if (isReformed) {
+      reformedToReformOrConditions.push({ "quality.reformed": true });
+    }
+    // Si 'toReform' es true en los parámetros de la URL
+    if (isToReform) {
+      reformedToReformOrConditions.push({ "quality.toReform": true });
     }
 
+    // Si al menos uno de 'reformed' o 'toReform' está activo, añadir la condición $or al array principal
+    if (reformedToReformOrConditions.length > 0) {
+      andConditions.push({ $or: reformedToReformOrConditions });
+    }
+    // Filtro para 'smokeOutlet' (es un AND, por lo que se añade directamente si es true)
+    if (hasSmokeOutlet) {
+      andConditions.push({ "quality.others.smokeOutlet": true });
+    }
+    // --- Fin de nuevas líneas añadidas ---
+
+    // Ahora, en lugar de `const query = Ad.find();` y `query.where().and()`,
+    // usamos el array `andConditions` para construir la query final.
+    // Si `andConditions` tiene solo un elemento (e.g., `{ department: ..., showOnWeb: ... }`),
+    // lo usamos directamente. Si tiene más, los combinamos con `$and`.
+    const finalMongoQuery =
+      andConditions.length > 0 ? { $and: andConditions } : {};
+
+    // --- Paginación y Ordenación (se mantiene tu lógica, pero aplicada a finalMongoQuery) ---
     const adsPerPage = 30;
+    let sortOptions = {};
 
-    let ads = await query.exec();
-    /* ads.forEach(ad => console.log(ad.title)) */
-    let totalAds = ads.length;
-    // console.log('anuncios:', totalAds )
-    const totalActives = ads.length === 0 ? 0 : ads.length;
-    let totalPages = Math.ceil(totalActives / adsPerPage);
-
-    // let totalPages = totalAds / adsPerPage
-    if (totalPages === 0) totalPages = 1;
-    if (parseInt(page) === 1) {
-      if (totalActives > adsPerPage) {
-        ads = ads.slice(page - 1, adsPerPage);
-      }
-    } else if (parseInt(page) === totalPages) {
-      ads = ads.slice((page - 1) * adsPerPage, ads.length);
+    if (orderByDate) {
+      sortOptions = { createdAt: -1 };
     } else {
-      ads = ads.slice((page - 1) * adsPerPage, adsPerPage * page);
-    }
-    if (ads.length === 0) {
-      ads = [];
-      totalPages = 1;
+      // Tu lógica de ordenación existente
+      if (!!params.adType && adType.length === 1) {
+        if (adType[0] === "Alquiler") {
+          sortOptions = { "rent.rentValue": -1 };
+        } else {
+          // Asumo que si length es 1 y no es Alquiler, es Venta
+          sortOptions = { "sale.saleValue": -1 };
+        }
+      } else {
+        // Si no hay tipo específico o ambos
+        sortOptions = { "sale.saleValue": -1, "rent.rentValue": -1 };
+      }
     }
 
-    // if (totalPages < 0) totalPages = 1;
-    // else if (Math.floor(totalPages) !== 0) totalPages + 1;
+    const totalAds = await Ad.countDocuments(finalMongoQuery);
+    const ads = await Ad.find(finalMongoQuery)
+      .sort(sortOptions)
+      .limit(adsPerPage)
+      .skip((page - 1) * adsPerPage)
+      .exec();
 
-    // if (page === 1) {
-    //   if (totalAds > adsPerPage) {
-    //     ads = ads.slice(page - 1, adsPerPage);
-    //   }
-    // } else if (ads.length === 0) {
-    //   ads = [];
-    //   totalPages = 0;
-    // } else {
-    //   ads = ads.slice((page - 1) * adsPerPage + 1, adsPerPage * page + 1);
-    // }
+    let totalPages = Math.ceil(totalAds / adsPerPage);
+    if (totalAds === 0) totalPages = 1;
+
     const messageToSend = {
       totalAds,
       totalPages,
-      //   totalPages: Math.trunc(totalPages),
       ads,
     };
 
     return res.status(200).json(messageToSend);
   } catch (err) {
+    console.error("Error en getAdsPaginated:", err); // Añadir para depuración
     return next(err);
   }
 };
@@ -1150,7 +1179,6 @@ const adUpdateImageOrder = async (req, res, next) => {
     } else if (from === "blueprint") {
       fieldToUpdate = "images.blueprint";
     } else {
-      console.log(from);
       // Si 'from' no es ni 'others' ni 'blueprint', es un error.
       return res
         .status(400)
