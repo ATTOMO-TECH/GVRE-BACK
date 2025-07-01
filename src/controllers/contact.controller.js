@@ -75,27 +75,31 @@ const contactGetOwners = async (req, res, next) => {
 };
 
 const contactGetAllByEmailNotificationsTrue = async (req, res, next) => {
-  console.log(req.query);
+  console.log("Original req.query:", req.query); // This will show { tags: "id1,id2" }
   try {
-    // Obtener los tags seleccionados desde la consulta (query params)
-    const { tags } = req.query; // tags es un array de IDs de tags
+    let { tags } = req.query; // 'tags' will be a string like "id1,id2,id3" or undefined
 
-    // Si no se proporcionan tags, devolver todos los contactos que no reciben comunicaciones
-    if (!tags || tags.length === 0) {
-      const contacts = await Contact.find({
-        notReceiveCommunications: false,
-      }).populate("tags");
-      return res.status(200).json(contacts);
+    let tagsArray = [];
+    if (tags) {
+      // If tags exists and is a non-empty string, split it into an array of strings
+      tagsArray = tags.split(",").filter((id) => id.trim() !== ""); // .filter ensures no empty strings if there's trailing comma
+      console.log("Parsed tagsArray:", tagsArray); // This will show ['id1', 'id2', 'id3']
     }
 
-    // Filtrar los contactos por los tags seleccionados
-    const contacts = await Contact.find({
-      notReceiveCommunications: false,
-      tags: { $in: tags }, // Filtra los contactos cuyo array 'tags' contenga al menos uno de los tags proporcionados
-    }).populate("tags");
+    // Determine the query object based on whether tags were provided
+    let query = { notReceiveCommunications: false };
+
+    if (tagsArray.length > 0) {
+      // If tags were provided and parsed, add the $in condition
+      query.tags = { $in: tagsArray };
+    }
+
+    // Execute the Mongoose query
+    const contacts = await Contact.find(query).populate("tags");
 
     return res.status(200).json(contacts);
   } catch (err) {
+    console.error("Error in contactGetAllByEmailNotificationsTrue:", err);
     return next(err);
   }
 };
