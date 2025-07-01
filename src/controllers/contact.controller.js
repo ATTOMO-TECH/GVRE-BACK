@@ -4,7 +4,8 @@ const contactGetAll = async (req, res, next) => {
   try {
     const contacts = await Contact.find()
       .sort({ createdAt: -1 })
-      .populate({ path: "consultant", select: "fullName" });
+      .populate({ path: "consultant", select: "fullName" })
+      .populate("tags");
 
     return res.status(200).json(contacts);
   } catch (err) {
@@ -74,10 +75,31 @@ const contactGetOwners = async (req, res, next) => {
 };
 
 const contactGetAllByEmailNotificationsTrue = async (req, res, next) => {
+  console.log("Original req.query:", req.query); // This will show { tags: "id1,id2" }
   try {
-    const contact = await Contact.find({ notReceiveCommunications: false });
-    return res.status(200).json(contact);
+    let { tags } = req.query; // 'tags' will be a string like "id1,id2,id3" or undefined
+
+    let tagsArray = [];
+    if (tags) {
+      // If tags exists and is a non-empty string, split it into an array of strings
+      tagsArray = tags.split(",").filter((id) => id.trim() !== ""); // .filter ensures no empty strings if there's trailing comma
+      console.log("Parsed tagsArray:", tagsArray); // This will show ['id1', 'id2', 'id3']
+    }
+
+    // Determine the query object based on whether tags were provided
+    let query = { notReceiveCommunications: false };
+
+    if (tagsArray.length > 0) {
+      // If tags were provided and parsed, add the $in condition
+      query.tags = { $in: tagsArray };
+    }
+
+    // Execute the Mongoose query
+    const contacts = await Contact.find(query).populate("tags");
+
+    return res.status(200).json(contacts);
   } catch (err) {
+    console.error("Error in contactGetAllByEmailNotificationsTrue:", err);
     return next(err);
   }
 };
@@ -120,6 +142,7 @@ const contactCreate = async (req, res, next) => {
 
 const contactUpdate = async (req, res, next) => {
   try {
+    console.log(req.body);
     const fieldsToUpdate = {};
 
     fieldsToUpdate.fullName = req.body.fullName;
@@ -140,6 +163,7 @@ const contactUpdate = async (req, res, next) => {
       city: req.body.city,
       country: req.body.country,
     };
+    fieldsToUpdate.tags = req.body.tags;
 
     const contactUpdated = await Contact.findByIdAndUpdate(
       req.body.id,

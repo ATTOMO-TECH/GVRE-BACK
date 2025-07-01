@@ -34,6 +34,7 @@ const contactSchema = new Schema(
       { type: mongoose.Types.ObjectId, ref: "marketingCampaign" },
     ],
     reciveMarketingCampaing: { type: Boolean },
+    tags: [{ type: mongoose.Types.ObjectId, ref: "tags" }],
   },
   {
     timestamps: true,

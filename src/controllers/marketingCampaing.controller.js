@@ -18,6 +18,41 @@ const marketingCampaignsGetAll = async (req, res, next) => {
     return next(err);
   }
 };
+const marketingCampaignsFilterByTags = async (req, res, next) => {
+  try {
+    // Obtener los tags seleccionados desde la consulta (query params)
+    const { tags } = req.query; // Suponiendo que 'tags' es un array de IDs de tags
+
+    // Si no se proporcionan tags, devolver todas las campañas
+    if (!tags || tags.length === 0) {
+      const marketingCampaigns = await MarketingCampaign.find()
+        .sort({ createdAt: -1 })
+        .populate({ path: "consultant", select: "fullName" })
+        .populate({
+          path: "contactList",
+          select:
+            "fullName email contactMobileNumber contactPhoneNumber contactDirection",
+        });
+      return res.status(200).json(marketingCampaigns);
+    }
+
+    // Filtrar las campañas por los tags proporcionados
+    const marketingCampaigns = await MarketingCampaign.find({
+      tags: { $in: tags }, // Filtrar las campañas cuyo array 'tags' contenga al menos uno de los tags proporcionados
+    })
+      .sort({ createdAt: -1 })
+      .populate({ path: "consultant", select: "fullName" })
+      .populate({
+        path: "contactList",
+        select:
+          "fullName email contactMobileNumber contactPhoneNumber contactDirection",
+      });
+
+    return res.status(200).json(marketingCampaigns);
+  } catch (err) {
+    return next(err);
+  }
+};
 
 const marketingCampaignGetOne = async (req, res, next) => {
   try {
