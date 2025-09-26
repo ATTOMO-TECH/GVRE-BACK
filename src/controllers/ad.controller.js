@@ -529,7 +529,11 @@ const adGetMatchedRequests = async (req, res, next) => {
       "requestBathrooms.bathroomsMin": { $lte: ad.quality.bathrooms },
     });
 
-    // query.where({ smokeOutlet: ad.quality.others.smokeOutlet });
+    if (ad.quality.others.smokeOutlet === false) {
+      query.where({ smokeOutlet: { $ne: true } });
+    } else {
+      query.where({ smokeOutlet: true });
+    }
 
     query.populate({
       path: "requestContact",
