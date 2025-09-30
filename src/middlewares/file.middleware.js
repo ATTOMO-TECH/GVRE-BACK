@@ -1,6 +1,23 @@
 const aws = require("aws-sdk");
 const multer = require("multer");
 const multerS3 = require("multer-s3");
+const path = require("path");
+
+const sanitizeFilename = (filename) => {
+  // Separa el nombre base de su extensión (ej: 'mi-imagen' y '.jpg')
+  const fileExtension = path.extname(filename);
+  const baseName = path.basename(filename, fileExtension);
+
+  // Limpia el nombre base
+  const sanitizedBaseName = baseName
+    .toLowerCase() // Pasa todo a minúsculas
+    .replace(/\s+/g, "-") // Reemplaza uno o más espacios por un guión
+    .replace(/[^a-z0-9-]/g, "") // Elimina cualquier carácter que no sea letra, número o guión
+    .replace(/-+/g, "-"); // Reemplaza múltiples guiones por uno solo
+
+  // Devuelve el nombre limpio con su extensión original
+  return sanitizedBaseName + fileExtension;
+};
 
 const { S3_ENDPOINT, BUCKET_NAME } = process.env;
 
@@ -35,7 +52,7 @@ const FileFilter = (req, data, cb) => {
     //   cb(error);
     // }
   } catch (err) {
-    console.log("holi", err);
+    console.log(err);
   }
 };
 
@@ -49,11 +66,19 @@ const upload = multer({
         fieldname: file.fieldname,
       });
     },
+    // <-- 2. ¡AQUÍ ESTÁ LA ACTUALIZACIÓN EN LA FUNCIÓN 'KEY'! -->
     key: (req, file, cb) => {
-      cb(null, `${Date.now()}-${file.originalname}`);
+      // Primero, sanitizamos el nombre original del archivo
+      const sanitizedName = sanitizeFilename(file.originalname);
+
+      // Luego, creamos el nombre final con el timestamp para que sea único
+      const finalKey = `${Date.now()}-${sanitizedName}`;
+
+      // Pasamos el nombre final y limpio al callback
+      cb(null, finalKey);
     },
   }),
-  ImageFilter,
+  ImageFilter, // Tu filtro se mantiene igual
 });
 
 const uploadFiles = multer({
