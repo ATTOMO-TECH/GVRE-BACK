@@ -788,35 +788,29 @@ const adBlueprintImageUpload = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const ad = await Ad.findById(id);
-    const fieldsToUpdate = ad;
-
-    const blueprint = req.files
+    const newImageUrls = req.files
       ? req.files.map(
           (file) =>
             `https://${file.bucket}.fra1.digitaloceanspaces.com/${file.key}`
         )
       : [];
 
-    if (ad.images.blueprint.length !== 0) {
-      req.files.forEach((file) => {
-        if (
-          !fieldsToUpdate.images.blueprint.includes(
-            `https://${file.bucket}.fra1.digitaloceanspaces.com/${file.key}`
-          )
-        ) {
-          fieldsToUpdate.images.blueprint.push(
-            `https://${file.bucket}.fra1.digitaloceanspaces.com/${file.key}`
-          );
-        }
-      });
-    } else {
-      fieldsToUpdate.images.blueprint = blueprint;
+    if (newImageUrls.length === 0) {
+      const ad = await Ad.findById(id);
+      return res.status(200).json(ad);
     }
 
-    const updatedAd = await Ad.findByIdAndUpdate(id, fieldsToUpdate, {
-      new: true,
-    });
+    const updatedAd = await Ad.findByIdAndUpdate(
+      id,
+      {
+        $push: { "images.blueprint": { $each: newImageUrls } },
+      },
+      { new: true }
+    );
+
+    if (!updatedAd) {
+      return res.status(404).json({ message: "Anuncio no encontrado." });
+    }
 
     return res.status(200).json(updatedAd);
   } catch (err) {
@@ -828,36 +822,35 @@ const adOthersImagesUpload = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const ad = await Ad.findById(id);
-    const fieldsToUpdate = ad;
-
-    const others = req.files
+    // 1. Obtenemos las URLs de los archivos recién subidos por Multer.
+    const newImageUrls = req.files
       ? req.files.map(
           (file) =>
             `https://${file.bucket}.fra1.digitaloceanspaces.com/${file.key}`
         )
       : [];
 
-    if (ad.images.others.length !== 0) {
-      req.files.forEach((file) => {
-        if (
-          !fieldsToUpdate.images.others.includes(
-            `https://${file.bucket}.fra1.digitaloceanspaces.com/${file.key}`
-          )
-        ) {
-          fieldsToUpdate.images.others.push(
-            `https://${file.bucket}.fra1.digitaloceanspaces.com/${file.key}`
-          );
-        }
-      });
-    } else {
-      fieldsToUpdate.images.others = others;
+    // Si por alguna razón no se subieron archivos, devolvemos el anuncio actual.
+    if (newImageUrls.length === 0) {
+      const ad = await Ad.findById(id);
+      return res.status(200).json(ad);
     }
 
-    const updatedAd = await Ad.findByIdAndUpdate(id, fieldsToUpdate, {
-      new: true,
-    });
+    // 2. Usamos '$push' con '$each' para añadir TODAS las nuevas URLs al array 'images.others'
+    // en una sola operación atómica y segura.
+    const updatedAd = await Ad.findByIdAndUpdate(
+      id,
+      {
+        $push: { "images.others": { $each: newImageUrls } },
+      },
+      { new: true } // Esta opción nos devuelve el documento ya actualizado.
+    );
 
+    if (!updatedAd) {
+      return res.status(404).json({ message: "Anuncio no encontrado." });
+    }
+
+    // 3. Devolvemos el anuncio completo y actualizado al frontend.
     return res.status(200).json(updatedAd);
   } catch (err) {
     return next(err);
