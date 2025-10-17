@@ -305,11 +305,11 @@ const sendEmailCampaignToContacts = async (req, res, next) => {
                               "
                             >
                               <img
-                                src="https://ci6.googleusercontent.com/proxy/AfGGywFT6_3aswvTp_kvD7StE2fqbnoU9jILHPGzB-VTH9f9GVCLngB4B9zF0ZWU5I6N8HDYArUh_CeA2MztYx7CYyAorUyq_Y0E5LML90LV-TdxVNCDdX06ZA=s0-d-e1-ft#https://s3.eu-central-1.amazonaws.com/hydrobot-static/GV_logo_blanco.png"
-                                alt="logo GVRE"
+                                src="${process.env.BACKEND_URL}/Logo.png"
+                                alt="Logo GVRE Blanco"
                                 border="0"
-                                width="100"
-                                height="50"
+                                width="70"
+                                height="35"
                                 hspace="0"
                                 vspace="0"
                                 style="display: block; font-size: 0px; max-width: 100%; height: auto"
