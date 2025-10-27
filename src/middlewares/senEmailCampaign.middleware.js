@@ -1,7 +1,13 @@
 const nodemailer = require("nodemailer"); // email sender function
-const { getPasswordByEmail } = require("../controllers/utils");
+const AWS = require("aws-sdk");
 
-const sendEmailCampaignToContacts = async (req, res, next) => {
+const SES_CONFIG = {
+  accessKeyId: process.env.SES_ACCESS_KEY,
+  secretAccessKey: process.env.SES_SECRET_ACCESS_KEY,
+  region: process.env.SES_REGION,
+};
+
+const sendEmailCampaignToContacts = async (req, res) => {
   const {
     contacts,
     consultant,
@@ -31,11 +37,7 @@ const sendEmailCampaignToContacts = async (req, res, next) => {
   let counter = 1;
 
   const transporter = nodemailer.createTransport({
-    service: "Gmail",
-    auth: {
-      user: consultantEmail,
-      pass: consultantToken,
-    },
+    SES: new AWS.SES(SES_CONFIG),
   });
 
   transporter.verify(function (error, success) {
@@ -46,28 +48,39 @@ const sendEmailCampaignToContacts = async (req, res, next) => {
     }
   });
 
-  const sendMailWithDelay = (mailOptions, i) => {
-    transporter.sendMail(mailOptions, function (error, info) {
-      if (error) {
-        res.status(500).send(error.message);
-        console.error(error.message);
-        // Manejar el error aquí si es necesario
-      } else {
-        req.sendMail = "ok";
-        console.log(`Correo ${counter++} enviado`);
-        next();
-        // Registrar la respuesta del envío si es necesario
-      }
+  const sendMailWithDelay = (mailOptions, delay) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        transporter.sendMail(mailOptions, (error, info) => {
+          if (error) {
+            console.error(
+              `Error sending email to ${mailOptions.to}:`,
+              error.message
+            );
+            reject(error); // Rechaza la promesa si hay error
+          } else {
+            console.log(`Correo ${counter++} enviado a ${mailOptions.to}`);
+            resolve(info); // Resuelve la promesa si hay éxito
+          }
+        });
+      }, delay);
     });
   };
-  //Hacer un map a la variable Contacts para definir el email de envío y enviar el email
-  contacts.map((contact, i) => {
-    // console.log(contact);
-    const mailOptions = {
-      from: `GV Real Estate`,
-      to: contact.email,
-      subject: subject,
-      html: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  // --- 5. ORQUESTAR LOS ENVÍOS CON ASYNC/AWAIT ---
+  const sendEmails = async () => {
+    const results = [];
+
+    for (let index = 0; index < contacts.length; index++) {
+      const contact = contacts[index];
+
+      // 6. CREAR LINK DE UNSUBSCRIBE DINÁMICO
+      const unsubscribeLink = `${process.env.BACKEND_URL}/mails/unsubscribe/${contact._id}`;
+
+      const mailOptions = {
+        from: `<${consultantEmail}>`,
+        to: contact.email,
+        subject: subject,
+        html: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
         <html
           xmlns="http://www.w3.org/1999/xhtml"
           xmlns:v="urn:schemas-microsoft-com:vml"
@@ -492,7 +505,7 @@ const sendEmailCampaignToContacts = async (req, res, next) => {
                             >
                               <br />Don't want to receive this type of email?<span>&nbsp;</span
                               ><a
-                                href="mailto:${consultantEmail}?subject=Unsubscribe"
+                                href="${unsubscribeLink}"
                                 style="color: rgb(153, 153, 153)"
                                 target="_blank"
                                 >Unsubscribe.</a
@@ -537,12 +550,41 @@ const sendEmailCampaignToContacts = async (req, res, next) => {
             </div>
           </body>
         </html>`,
-    };
+      };
+      try {
+        const info = await sendMailWithDelay(mailOptions, 100);
+        results.push({
+          status: "fulfilled",
+          to: contact.email,
+          info: info.messageId,
+        });
+      } catch (error) {
+        results.push({
+          status: "rejected",
+          to: contact.email,
+          error: error.message,
+        });
+      }
+    }
+    return results;
+  };
 
-    setTimeout(() => {
-      sendMailWithDelay(mailOptions, i);
-    }, i * 5000);
-  });
+  try {
+    const emailResults = await sendEmails();
+    console.log("Email campaign finished processing.");
+    // Envía una respuesta al cliente indicando que el proceso terminó
+    res.status(200).json({
+      message: "Proceso de envío de campaña finalizado.",
+      results: emailResults,
+    });
+  } catch (error) {
+    console.error("General error in sendEmails orchestrator:", error);
+    if (!res.headersSent) {
+      res
+        .status(500)
+        .json({ message: "Error al orquestar los envíos de correo." });
+    }
+  }
 };
 
 module.exports = { sendEmailCampaignToContacts };
