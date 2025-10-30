@@ -170,14 +170,11 @@ const consultantUpdate = async (req, res, next) => {
     }
 
     if (req.body.consultantPassword) {
-      // 1. Comprobar si la contraseña proporcionada es la misma que la antigua
-      const isSameAsOld = await bcrypt.compare(
-        req.body.consultantPassword,
-        consultant.consultantPassword
-      );
+      const isSameAsHash =
+        req.body.consultantPassword === consultant.consultantPassword;
 
-      // 2. Si NO es la misma, es una contraseña nueva y debemos actualizarla
-      if (!isSameAsOld) {
+      if (!isSameAsHash) {
+        // 3. Validamos esa NUEVA contraseña en texto plano
         if (isValidPassword(req.body.consultantPassword) === false) {
           const error = new Error(
             "La contraseña debe contener al menos entre 8 y 16 carácteres, 1 mayúscula, 1 minúscula y 1 dígito"
@@ -185,7 +182,8 @@ const consultantUpdate = async (req, res, next) => {
           error.status = 400;
           return next(error);
         }
-        // Hashear la NUEVA contraseña
+
+        // 4. Hasheamos la NUEVA contraseña
         fieldsToUpdate.consultantPassword = await bcrypt.hash(
           req.body.consultantPassword,
           10
