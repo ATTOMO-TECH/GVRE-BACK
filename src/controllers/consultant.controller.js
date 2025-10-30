@@ -78,6 +78,25 @@ const consultantUpdate = async (req, res, next) => {
     fieldsToUpdate.role = req.body.role;
     fieldsToUpdate.showOnWeb = req.body.showOnWeb;
 
+    if (req.body.consultantEmail) {
+      // 1. Comprueba si el email ha cambiado
+      if (req.body.consultantEmail !== consultant.consultantEmail) {
+        // 2. Si ha cambiado, busca si ya existe en otro consultor
+        const emailExists = await Consultant.findOne({
+          consultantEmail: req.body.consultantEmail,
+        });
+
+        if (emailExists) {
+          return res
+            .status(409)
+            .json({ message: "El correo electrónico ya está en uso" });
+        }
+
+        // 3. Si no existe, lo añade para actualizar
+        fieldsToUpdate.consultantEmail = req.body.consultantEmail;
+      }
+    }
+
     // Manejo de zonas de firma de correo electrónico
     if (req.body.consultantEmailSignZones) {
       const consultantEmailSignZones =
@@ -150,22 +169,28 @@ const consultantUpdate = async (req, res, next) => {
       });
     }
 
-    const isEqualToLast =
-      req.body.consultantPassword === consultant.consultantPassword;
-    if (!isEqualToLast) {
-      if (isValidPassword(req.body.consultantPassword) === false) {
-        const error = new Error(
-          "La contraseña debe contener al menos entre 8 y 16 carácteres, 1 mayúscula, 1 minúscula y 1 dígito"
-        );
-        error.status = 400;
-        return next(error);
-      }
-      fieldsToUpdate.consultantPassword = await bcrypt.hash(
+    if (req.body.consultantPassword) {
+      // 1. Comprobar si la contraseña proporcionada es la misma que la antigua
+      const isSameAsOld = await bcrypt.compare(
         req.body.consultantPassword,
-        10
+        consultant.consultantPassword
       );
-    } else {
-      fieldsToUpdate.consultantPassword = req.body.consultantPassword;
+
+      // 2. Si NO es la misma, es una contraseña nueva y debemos actualizarla
+      if (!isSameAsOld) {
+        if (isValidPassword(req.body.consultantPassword) === false) {
+          const error = new Error(
+            "La contraseña debe contener al menos entre 8 y 16 carácteres, 1 mayúscula, 1 minúscula y 1 dígito"
+          );
+          error.status = 400;
+          return next(error);
+        }
+        // Hashear la NUEVA contraseña
+        fieldsToUpdate.consultantPassword = await bcrypt.hash(
+          req.body.consultantPassword,
+          10
+        );
+      }
     }
 
     // Actualización del consultor
