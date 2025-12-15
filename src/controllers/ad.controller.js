@@ -531,8 +531,6 @@ const adGetMatchedRequests = async (req, res, next) => {
 
     if (ad.quality.others.smokeOutlet === false) {
       query.where({ smokeOutlet: { $ne: true } });
-    } else {
-      query.where({ smokeOutlet: true });
     }
 
     query.populate({

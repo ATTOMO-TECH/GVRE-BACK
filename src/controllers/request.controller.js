@@ -281,8 +281,6 @@ const requestGetAdsMatched = async (req, res, next) => {
       caracterristicConditions.push({ "quality.toReform": true });
     }
 
-    console.log(request);
-
     if (request.smokeOutlet === true) {
       caracterristicConditions.push({ "quality.others.smokeOutlet": true });
     }
