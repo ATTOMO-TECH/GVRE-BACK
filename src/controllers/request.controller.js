@@ -176,6 +176,7 @@ const allRequestGetByIdConsultant = async (req, res, next) => {
     return next(err);
   }
 };
+
 const requestGetAdsMatched = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -285,6 +286,10 @@ const requestGetAdsMatched = async (req, res, next) => {
       caracterristicConditions.push({ "quality.others.smokeOutlet": true });
     }
 
+    if (request.profitability === true) {
+      caracterristicConditions.push({ profitability: true });
+    }
+
     // Si alguna de las condiciones de 'reformed' o 'toReform' fue activada,
     // la añadimos a las condiciones principales usando $or
     if (caracterristicConditions.length > 0) {
@@ -386,6 +391,10 @@ const requestGetNewMatched = async (req, res, next) => {
       query.where({ "quality.others.smokeOutlet": true });
     }
 
+    if (req.body.profitability === true) {
+      query.where({ profitability: true });
+    }
+
     const ads = await query.exec();
 
     return res.status(200).json(ads);
@@ -395,9 +404,9 @@ const requestGetNewMatched = async (req, res, next) => {
 };
 
 const requestCreate = async (req, res, next) => {
-  let reference = await Request.find().sort({ requestReference: -1 });
-  reference = reference[0].requestReference + 1;
   try {
+    const lastRequest = await Request.findOne().sort({ requestReference: -1 });
+    const reference = lastRequest ? lastRequest.requestReference + 1 : 1;
     const requestSalePrice = {
       salePriceMax: req.body.salePriceMax,
       salePriceMin: req.body.salePriceMin,
@@ -445,6 +454,7 @@ const requestCreate = async (req, res, next) => {
       reformed: req.body.reformed,
       toReform: req.body.toReform,
       smokeOutlet: req.body.smokeOutlet,
+      profitability: req.body.profitability,
     });
 
     const requestCreated = await newRequest.save();
@@ -500,6 +510,7 @@ const requestUpdate = async (req, res, next) => {
     fieldsToUpdate.reformed = req.body.reformed;
     fieldsToUpdate.toReform = req.body.toReform;
     fieldsToUpdate.smokeOutlet = req.body.smokeOutlet;
+    fieldsToUpdate.profitability = req.body.profitability;
 
     const updatedRequest = await Request.findByIdAndUpdate(
       req.body.id,

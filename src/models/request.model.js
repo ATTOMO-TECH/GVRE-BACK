@@ -28,6 +28,7 @@ const requestsSchema = new Schema(
     reformed: { type: Boolean },
     toReform: { type: Boolean },
     smokeOutlet: { type: Boolean },
+    profitability: { type: Boolean },
     requestSalePrice: {
       salePriceMax: { type: Number, default: 0 },
       salePriceMin: { type: Number, default: 0 },
