@@ -533,6 +533,10 @@ const adGetMatchedRequests = async (req, res, next) => {
       query.where({ smokeOutlet: { $ne: true } });
     }
 
+    if (!ad.profitability) {
+      query.where({ profitability: { $ne: true } });
+    }
+
     query.populate({
       path: "requestContact",
       select: "fullName company email contactComments notReceiveCommunications",
@@ -974,6 +978,8 @@ const adUpdate = async (req, res, next) => {
     fieldsToUpdate.zone = req.body.zone;
     fieldsToUpdate.department = req.body.department;
     fieldsToUpdate.webSubtitle = req.body.webSubtitle;
+    fieldsToUpdate.profitability = req.body.profitability;
+    fieldsToUpdate.profitabilityValue = req.body.profitabilityValue;
     fieldsToUpdate.buildSurface = req.body.buildSurface;
     fieldsToUpdate.plotSurface = req.body.plotSurface;
     fieldsToUpdate.floor = req.body.floor;
