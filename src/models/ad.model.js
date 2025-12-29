@@ -75,6 +75,8 @@ const adSchema = new Schema(
     plotSurface: { type: Number },
     floor: { type: String },
     disponibility: { type: String },
+    profitability: { type: Boolean, default: false },
+    profitabilityValue: { type: Number, default: 0 },
     surfacesBox: [
       {
         id: { type: Number },
