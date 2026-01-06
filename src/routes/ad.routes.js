@@ -22,6 +22,7 @@ const {
   repairAds,
   getAdsPaginated,
   adUpdateImageOrder,
+  getAdsByContact,
 } = require("../controllers/ad.controller");
 
 const router = express.Router();
@@ -60,6 +61,7 @@ const router = express.Router();
 router.get("/", adGetAll);
 router.get("/filter", adGetByFilters);
 router.get("/matching/:id", adGetMatchedRequests);
+router.get("/contact/:contactId", getAdsByContact);
 router.get("/repair/ads", repairAds);
 router.get("/web/:query", getAdsPaginated);
 router.get("/:id", adGetOne);
