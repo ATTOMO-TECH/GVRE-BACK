@@ -75,15 +75,12 @@ const contactGetOwners = async (req, res, next) => {
 };
 
 const contactGetAllByEmailNotificationsTrue = async (req, res, next) => {
-  console.log("Original req.query:", req.query); // This will show { tags: "id1,id2" }
   try {
-    let { tags } = req.query; // 'tags' will be a string like "id1,id2,id3" or undefined
+    let { tags } = req.query;
 
     let tagsArray = [];
     if (tags) {
-      // If tags exists and is a non-empty string, split it into an array of strings
-      tagsArray = tags.split(",").filter((id) => id.trim() !== ""); // .filter ensures no empty strings if there's trailing comma
-      console.log("Parsed tagsArray:", tagsArray); // This will show ['id1', 'id2', 'id3']
+      tagsArray = tags.split(",").filter((id) => id.trim() !== "");
     }
 
     // Determine the query object based on whether tags were provided
@@ -142,7 +139,6 @@ const contactCreate = async (req, res, next) => {
 
 const contactUpdate = async (req, res, next) => {
   try {
-    console.log(req.body);
     const fieldsToUpdate = {};
 
     fieldsToUpdate.fullName = req.body.fullName;
