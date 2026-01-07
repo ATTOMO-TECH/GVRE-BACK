@@ -64,6 +64,7 @@ app.use(
       "https://crmfront-gvre-pre-production.vercel.app",
       "https://gvre-web-seo-prod.netlify.app",
       "https://crmfront-gvre.vercel.app",
+      "https://crm-gvre.netlify.app",
     ],
     credentials: true,
     optionsSuccessStatus: 200,
