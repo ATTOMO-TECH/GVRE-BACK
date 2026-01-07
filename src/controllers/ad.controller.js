@@ -577,6 +577,17 @@ const adGetOne = async (req, res, next) => {
   }
 };
 
+const getAdsByContact = async (req, res, next) => {
+  try {
+    const { contactId } = req.params;
+    // Only select the title and the _id for each ad belonging to the contact
+    const ads = await Ad.find({ owner: contactId }).select("title");
+    return res.status(200).json(ads);
+  } catch (err) {
+    return next(err);
+  }
+};
+
 const allAdsGetByIdConsultant = async (req, res, next) => {
   try {
     const { consultantId } = req.params;
@@ -1235,4 +1246,5 @@ module.exports = {
   repairAds,
   getAdsPaginated,
   adUpdateImageOrder,
+  getAdsByContact,
 };
