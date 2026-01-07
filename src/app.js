@@ -24,6 +24,7 @@ const mailsRoutes = require("./routes/mails.routes");
 const catalogsRoutes = require("./routes/catalog.routes");
 const webRoutes = require("./routes/web.routes");
 const marketingCampaignsRoutes = require("./routes/marketingCampaing.routes");
+const tagsRoutes = require("./routes/tag.routes");
 const { authValidator } = require("./middlewares/auth.validator");
 
 db.connect();
@@ -106,6 +107,7 @@ app.use("/mails", mailsRoutes);
 app.use("/catalogs", catalogsRoutes);
 app.use("/web", webRoutes);
 app.use("/marketingCampaigns", isAuth, marketingCampaignsRoutes);
+app.use("/tags", isAuth, tagsRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
