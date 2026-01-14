@@ -580,8 +580,29 @@ const adGetOne = async (req, res, next) => {
 const getAdsByContact = async (req, res, next) => {
   try {
     const { contactId } = req.params;
-    // Only select the title and the _id for each ad belonging to the contact
-    const ads = await Ad.find({ owner: contactId }).select("title");
+
+    const ads = await Ad.find({ owner: contactId })
+      .select({
+        title: 1,
+        adReference: 1,
+        adStatus: 1,
+        adBuildingType: 1,
+        buildSurface: 1,
+        plotSurface: 1,
+        "adDirection.city": 1,
+        "adDirection.address.street": 1,
+        "sale.saleValue": 1,
+        "rent.rentValue": 1,
+        "quality.bedrooms": 1,
+        "quality.bathrooms": 1,
+        "quality.others.lift": 1,
+        "images.main": 1,
+        zone: 1, // Necesario para el populate
+        createdAt: 1,
+        updatedAt: 1,
+      })
+      .populate("zone", "name"); // Traemos solo el nombre de la zona
+
     return res.status(200).json(ads);
   } catch (err) {
     return next(err);
