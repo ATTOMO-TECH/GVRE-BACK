@@ -105,3 +105,51 @@ module.exports = {
   orderAdsAscendentByRentPrice,
   orderAdsDescendentByRentPrice,
 };
+
+/**
+ * Ensure a normalized changesHistory array for an ad object.
+ * If CREATION entry is missing, it will be synthesized from createdAt.
+ * Returns a new array sorted by date ascending.
+ */
+function normalizeAdHistory(ad) {
+  const createdAt = ad && ad.createdAt ? new Date(ad.createdAt) : new Date();
+  const rawHistory = Array.isArray(ad && ad.changesHistory)
+    ? [...ad.changesHistory]
+    : [];
+
+  const normalized = rawHistory.map((h) => ({
+    ...h,
+    date: h && h.date ? new Date(h.date) : new Date(),
+  }));
+
+  const hasCreation = normalized.some((h) => h && h.type === "CREATION");
+
+  if (!hasCreation) {
+    let consultant = null;
+    if (ad && ad.consultant) {
+      if (typeof ad.consultant === "object") {
+        consultant = {
+          _id: ad.consultant._id,
+          fullName: ad.consultant.fullName || null,
+        };
+      } else {
+        consultant = { _id: ad.consultant, fullName: null };
+      }
+    }
+
+    normalized.unshift({
+      type: "CREATION",
+      field: "createdAt",
+      oldValue: null,
+      newValue: createdAt,
+      date: createdAt,
+      consultant,
+      note: "Synthetic creation entry from createdAt",
+    });
+  }
+
+  normalized.sort((a, b) => new Date(a.date) - new Date(b.date));
+  return normalized;
+}
+
+module.exports.normalizeAdHistory = normalizeAdHistory;

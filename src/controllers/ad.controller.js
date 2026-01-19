@@ -9,6 +9,7 @@ const {
   orderAdsDescendentBySalePrice,
   orderAdsAscendentByRentPrice,
   orderAdsDescendentByRentPrice,
+  normalizeAdHistory,
 } = require("./utils");
 
 const repairAds = async (req, res, next) => {
@@ -43,7 +44,6 @@ const getAdsPaginated = async (req, res, next) => {
     new URLSearchParams(search).forEach((value, key) => {
       params[key] = value;
     });
-    // console.log('paramsIniciales:',params)
 
     let zoneParam = [];
     if (!!params.zone) {
@@ -117,17 +117,6 @@ const getAdsPaginated = async (req, res, next) => {
     let isReformed = params.reformed === "true" ? true : false;
     let isToReform = params.toReform === "true" ? true : false;
     let hasSmokeOutlet = params.smokeOutlet === "true" ? true : false;
-
-    /* console.log('adType:', adType) */
-    /* console.log('minSurface:', minSurface) */
-    /* console.log('maxSurface:', maxSurface) */
-    /* console.log('minRentPrice:', minRentPrice) */
-    /* console.log('maxRentPrice:', maxRentPrice) */
-    /* console.log('minSalePrice:', minSalePrice) */
-    /* console.log('maxSalePrice:', maxSalePrice) */
-    /* console.log('parametros finales:',params) */
-    /* console.log('paramtro fecha:', params.orderByDate) */
-    /* console.log('ordenacion por fecha:',orderByDate) */
 
     // Reemplazar la construcción de `query` encadenando `.and()` por un objeto de condiciones.
     // Esto permite combinar AND y OR de forma flexible sin reescribir todo.
@@ -613,7 +602,6 @@ const allAdsGetByIdConsultant = async (req, res, next) => {
   try {
     const { consultantId } = req.params;
     const ad = await Ad.find({ consultant: consultantId });
-    /* console.log('ad',ad.length); */
     return res.status(200).json(ad);
   } catch (err) {
     return next(err);
@@ -766,9 +754,49 @@ const adCreate = async (req, res, next) => {
       description,
       images,
     });
+    // Add initial CREATION entry to changesHistory (persisted)
+    try {
+      let consultantInfo = null;
+      if (req.body.consultant) {
+        // If consultant is an object with fullName, use it; otherwise try to resolve by id
+        if (
+          typeof req.body.consultant === "object" &&
+          req.body.consultant.fullName
+        ) {
+          consultantInfo = {
+            _id: req.body.consultant._id,
+            fullName: req.body.consultant.fullName,
+          };
+        } else {
+          try {
+            const c = await Consultant.findById(
+              req.body.consultant,
+              "fullName"
+            ).lean();
+            if (c) consultantInfo = { _id: c._id, fullName: c.fullName };
+          } catch (e) {
+            // ignore resolution errors and leave consultantInfo null
+          }
+        }
+      }
+
+      const creationEntry = {
+        type: "CREATION",
+        field: "createdAt",
+        oldValue: null,
+        newValue: new Date(),
+        date: new Date(),
+        consultant: consultantInfo,
+        note: "Creación del anuncio",
+      };
+
+      newAd.changesHistory = [creationEntry];
+    } catch (e) {
+      // If anything goes wrong while preparing the history, continue without blocking creation
+      console.error("Failed to prepare creation history entry:", e);
+    }
 
     const adCreated = await newAd.save();
-    /* console.log(adCreated) */
 
     return res.status(200).json(adCreated);
   } catch (err) {
@@ -992,8 +1020,13 @@ const adOthersImagesDelete = async (req, res, next) => {
 const adUpdate = async (req, res, next) => {
   try {
     const { id } = req.body;
-
     const fieldsToUpdate = {};
+
+    // Load current ad to compare and to populate names for history entries
+    const currentAd = await Ad.findById(id)
+      .populate("owner", "fullName")
+      .populate("consultant", "fullName")
+      .lean();
 
     fieldsToUpdate.title = req.body.title;
     fieldsToUpdate.showOnWeb = req.body.showOnWeb;
@@ -1111,6 +1144,160 @@ const adUpdate = async (req, res, next) => {
       distribution: req.body.distribution,
     };
 
+    // Build history entries by comparing currentAd and incoming values
+    const historyEntries = [];
+
+    // Resolve consultant info (prefer provided consultant, fallback to currentAd.consultant)
+    let consultantInfo = null;
+    if (req.body.consultant) {
+      try {
+        if (
+          typeof req.body.consultant === "object" &&
+          req.body.consultant.fullName
+        ) {
+          consultantInfo = {
+            _id: req.body.consultant._id,
+            fullName: req.body.consultant.fullName,
+          };
+        } else {
+          const c = await Consultant.findById(
+            req.body.consultant,
+            "fullName"
+          ).lean();
+          if (c) consultantInfo = { _id: c._id, fullName: c.fullName };
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    if (!consultantInfo && currentAd && currentAd.consultant) {
+      consultantInfo =
+        currentAd.consultant && currentAd.consultant.fullName
+          ? {
+              _id: currentAd.consultant._id,
+              fullName: currentAd.consultant.fullName,
+            }
+          : { _id: currentAd.consultant };
+    }
+
+    // Price changes: sale
+    if (req.body.saleValue !== undefined) {
+      const oldSale =
+        currentAd && currentAd.sale ? currentAd.sale.saleValue : null;
+      const newSale = req.body.saleValue;
+      if (
+        oldSale || oldSale === 0
+          ? Number(oldSale) !== Number(newSale)
+          : newSale !== undefined && newSale !== null
+      ) {
+        historyEntries.push({
+          type: "PRICE_CHANGE",
+          field: "sale.saleValue",
+          oldValue: oldSale,
+          newValue: newSale,
+          date: new Date(),
+          consultant: consultantInfo,
+          note: "Cambio de precio de venta",
+        });
+      }
+    }
+
+    // Price changes: rent
+    if (req.body.rentValue !== undefined) {
+      const oldRent =
+        currentAd && currentAd.rent ? currentAd.rent.rentValue : null;
+      const newRent = req.body.rentValue;
+      if (
+        oldRent || oldRent === 0
+          ? Number(oldRent) !== Number(newRent)
+          : newRent !== undefined && newRent !== null
+      ) {
+        historyEntries.push({
+          type: "PRICE_CHANGE",
+          field: "rent.rentValue",
+          oldValue: oldRent,
+          newValue: newRent,
+          date: new Date(),
+          consultant: consultantInfo,
+          note: "Cambio de precio de alquiler",
+        });
+      }
+    }
+
+    // Owner change
+    if (req.body.owner !== undefined) {
+      const oldOwnerId =
+        currentAd && currentAd.owner
+          ? currentAd.owner._id
+            ? String(currentAd.owner._id)
+            : String(currentAd.owner)
+          : null;
+      const newOwnerId = req.body.owner ? String(req.body.owner) : null;
+      if (oldOwnerId !== newOwnerId) {
+        // resolve owner names when possible
+        let oldOwnerName = null;
+        let newOwnerName = null;
+        try {
+          if (oldOwnerId) {
+            const o = await Contact.findById(oldOwnerId, "fullName").lean();
+            if (o) oldOwnerName = o.fullName;
+          }
+        } catch (e) {}
+        try {
+          if (newOwnerId) {
+            const n = await Contact.findById(newOwnerId, "fullName").lean();
+            if (n) newOwnerName = n.fullName;
+          }
+        } catch (e) {}
+
+        historyEntries.push({
+          type: "OWNER_CHANGE",
+          field: "owner",
+          oldValue: { _id: oldOwnerId, name: oldOwnerName },
+          newValue: { _id: newOwnerId, name: newOwnerName },
+          date: new Date(),
+          consultant: consultantInfo,
+          note: "Cambio de propietario",
+        });
+      }
+    }
+
+    // Ad type change
+    if (req.body.adType !== undefined) {
+      const oldType = currentAd && currentAd.adType ? currentAd.adType : null;
+      const newType = req.body.adType;
+      const oldStr = JSON.stringify(oldType || []);
+      const newStr = JSON.stringify(newType || []);
+      if (oldStr !== newStr) {
+        historyEntries.push({
+          type: "ADTYPE_CHANGE",
+          field: "adType",
+          oldValue: oldType,
+          newValue: newType,
+          date: new Date(),
+          consultant: consultantInfo,
+          note: "Cambio de tipo de anuncio",
+        });
+      }
+    }
+
+    // GV operation close change
+    if (req.body.gvOperationClose !== undefined) {
+      const oldGV = currentAd ? currentAd.gvOperationClose : null;
+      const newGV = req.body.gvOperationClose;
+      if (oldGV !== newGV) {
+        historyEntries.push({
+          type: "GV_OPERATION_CHANGE",
+          field: "gvOperationClose",
+          oldValue: oldGV,
+          newValue: newGV,
+          date: new Date(),
+          consultant: consultantInfo,
+          note: "Cambio de cierre de operación GV",
+        });
+      }
+    }
+
     if (req.body.updateSameRef && req.body.adReference) {
       await Ad.updateMany(
         {
@@ -1122,11 +1309,50 @@ const adUpdate = async (req, res, next) => {
         }
       );
     }
-    const updatedAd = await Ad.findByIdAndUpdate(id, fieldsToUpdate, {
-      new: true,
-    });
-    /* console.log(updatedAd) */
+    // Build update operation: $set for fields, and $push for history if entries exist
+    const updateOps = { $set: fieldsToUpdate };
 
+    // If the current ad has no changesHistory, always add a synthetic CREATION entry (without consultant)
+    const needCreation =
+      !currentAd ||
+      !Array.isArray(currentAd.changesHistory) ||
+      currentAd.changesHistory.length === 0;
+    if (needCreation) {
+      const creationEntry = {
+        type: "CREATION",
+        field: "createdAt",
+        oldValue: null,
+        newValue:
+          currentAd && currentAd.createdAt ? currentAd.createdAt : new Date(),
+        date:
+          currentAd && currentAd.createdAt ? currentAd.createdAt : new Date(),
+        consultant: null,
+        note: "Creación sintética del campo",
+      };
+
+      // Ensure the creation entry is first in the pushed entries
+      historyEntries.unshift(creationEntry);
+    }
+
+    if (historyEntries.length > 0) {
+      // If we added a creation entry we want to insert at position 0 to keep it first
+      if (needCreation) {
+        updateOps.$push = {
+          changesHistory: { $each: historyEntries, $position: 0 },
+        };
+      } else {
+        updateOps.$push = { changesHistory: { $each: historyEntries } };
+      }
+    }
+
+    await Ad.findByIdAndUpdate(id, updateOps);
+
+    // Return updated ad with populated consultant/owner and normalized history
+    const updatedAd = await Ad.findById(id)
+      .populate("consultant", "fullName")
+      .populate("owner", "fullName")
+      .lean();
+    if (updatedAd) updatedAd.changesHistory = normalizeAdHistory(updatedAd);
     return res.status(200).json(updatedAd);
   } catch (err) {
     return next(err);
@@ -1136,13 +1362,9 @@ const adUpdate = async (req, res, next) => {
 const adUpdateSendedTo = async (req, res, next) => {
   try {
     const { _id } = req.body;
-    /* console.log('enviados a:',req.body.sendedTo) */
-    /* console.log('id:',_id) */
     const fieldsToUpdate = {};
     fieldsToUpdate.sendedTo = req.body.sendedTo;
-    /* console.log(fieldsToUpdate) */
     const updatedAd = await Ad.findByIdAndUpdate(_id, fieldsToUpdate);
-    /* console.log(updatedAd) */
     return res.status(200).json(updatedAd);
   } catch (err) {
     return next(err);
@@ -1152,14 +1374,11 @@ const adUpdateSendedTo = async (req, res, next) => {
 const adUpdateManyConsultantByConsultantId = async (req, res, next) => {
   try {
     const { currentConsultant } = req.params;
-    /* console.log(req.body) */
-    /* console.log(currentConsultant) */
 
     const updatedAds = await Ad.updateMany(
       { consultant: currentConsultant },
       { consultant: req.body[0].consultant }
     );
-    /* console.log('resultado',updatedAds) */
     if (updatedAds !== null) {
       return res.status(200).json(req.body);
     } else {
@@ -1175,10 +1394,8 @@ const adUpdateManyConsultantByConsultantId = async (req, res, next) => {
 
 const adDelete = async (req, res, next) => {
   try {
-    /* console.log(req.params) */
     const { id } = req.params;
     let response = "";
-    /* console.log(id) */
 
     const deleted = await Ad.findByIdAndDelete(id);
     if (deleted) response = "Anuncio borrado de la base de datos";
