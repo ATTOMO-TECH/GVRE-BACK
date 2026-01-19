@@ -1,21 +1,24 @@
-const express = require('express');
-const { isAuth, isAdmin } = require('../middlewares/auth.middleware');
+const express = require("express");
+
 const {
-    zonesGetResidentials,
-    zonesGetPatrimonials,
-    zonesGetOthers,
-    zoneCreate,
-    zoneDelete
-} = require('../controllers/zone.controller');
+  zonesGetResidentials,
+  zonesGetPatrimonials,
+  zonesGetOthers,
+  zoneCreate,
+  zoneDelete,
+  zonesGetTaxonomy,
+} = require("../controllers/zone.controller");
 
 const router = express.Router();
 
-router.get('/residentials', zonesGetResidentials);
-router.get('/patrimonials', zonesGetPatrimonials);
-router.get('/others', zonesGetOthers);
+router.get("/residentials", zonesGetResidentials);
+router.get("/patrimonials", zonesGetPatrimonials);
+router.get("/others", zonesGetOthers);
 
-router.post('/create', zoneCreate);
+router.get("/taxonomia", zonesGetTaxonomy);
 
-router.delete('/delete/:id', zoneDelete);
+router.post("/create", zoneCreate);
+
+router.delete("/delete/:id", zoneDelete);
 
 module.exports = router;

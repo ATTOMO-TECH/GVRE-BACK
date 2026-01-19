@@ -47,7 +47,7 @@ const consultantSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 const Consultant = mongoose.model("consultants", consultantSchema);
