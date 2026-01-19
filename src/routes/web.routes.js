@@ -20,6 +20,9 @@ const {
   webInvestmentServicesUpload,
   webAssetManagementServicesUpload,
   webCommercializationServicesUpload,
+  webVideoSectionUpload,
+  getMapData,
+  getAdCardData,
 } = require("../controllers/web.controller");
 
 const router = express.Router();
@@ -138,5 +141,20 @@ router.put(
   // upload.single("investMentImage"),
   webCommercializationServicesUpload
 );
+
+// NUEVA WEB:
+
+// HOME
+
+router.put(
+  "/home/videosection/edit/:id",
+  upload.array("videos", 5),
+  webVideoSectionUpload
+);
+
+// MAP DATA FOR RESIDENTIAL ADS
+router.get("/map-stats", getMapData);
+
+router.get("/ad-card-data", getAdCardData);
 
 module.exports = router;
