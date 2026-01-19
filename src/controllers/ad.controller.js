@@ -734,6 +734,8 @@ const adCreate = async (req, res, next) => {
       consultant: req.body.consultant,
       adBuildingType: req.body.adBuildingType,
       zone: req.body.zone,
+      distrito: req.body.distrito,
+      barrio: req.body.barrio,
       department: req.body.department,
       webSubtitle: req.body.webSubtitle,
       buildSurface: req.body.buildSurface,
@@ -1052,7 +1054,8 @@ const adUpdate = async (req, res, next) => {
     fieldsToUpdate.monthlyRent = req.body.monthlyRent;
     fieldsToUpdate.expenses = req.body.expenses;
     fieldsToUpdate.expensesIncluded = req.body.expensesIncluded;
-    fieldsToUpdate.buildingYear = req.body.buildingYear;
+    fieldsToUpdate.distrito = req.body.distrito;
+    fieldsToUpdate.barrio = req.body.barrio;
 
     fieldsToUpdate.adDirection = {
       address: {
