@@ -1,4 +1,5 @@
 const { deleteImage } = require("../middlewares/file.middleware");
+const Ad = require("../models/ad.model");
 const WebHome = require("../models/webHome.model");
 
 // HOME
@@ -45,6 +46,63 @@ const webHomeEdit = async (req, res, next) => {
       webHomeToUpdate,
       { new: true }
     );
+    return res.status(200).json(updatedWebHome);
+  } catch (err) {
+    console.log(err);
+    return next(err);
+  }
+};
+
+const webVideoSectionUpload = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const webHome = await WebHome.findById(id);
+
+    if (!webHome) {
+      return res.status(404).json({ message: "WebHome no encontrado" });
+    }
+
+    const webHomeToUpdate = webHome;
+
+    // 2. Actualizamos el Título (si viene en el body)
+    // Usamos el operador ternario o if para no borrar el título si no se envía nada
+    if (req.body.title) {
+      webHomeToUpdate.videoSection.title = req.body.title;
+    }
+
+    if (req.body.subtitle) {
+      webHomeToUpdate.videoSection.subtitle = req.body.subtitle;
+    }
+
+    // 3. Gestión de los Videos (req.files es un ARRAY)
+    if (req.files && req.files.length > 0) {
+      // A) LIMPIEZA: Si ya había videos antes, los borramos de la nube para no acumular basura
+      if (
+        webHomeToUpdate.videoSection.videos &&
+        webHomeToUpdate.videoSection.videos.length > 0
+      ) {
+        // Recorremos el array de videos viejos y los borramos uno a uno
+        webHomeToUpdate.videoSection.videos.forEach((videoUrl) => {
+          deleteImage(videoUrl);
+        });
+      }
+
+      // B) GUARDADO: Mapeamos los archivos nuevos para sacar sus URLs (location)
+      // req.files devuelve un array de objetos, queremos un array de strings (urls)
+      const newVideoUrls = req.files.map((file) => file.location);
+
+      // Asignamos el nuevo array al modelo
+      webHomeToUpdate.videoSection.videos = newVideoUrls;
+    }
+
+    // 4. Guardamos en Base de Datos
+    const updatedWebHome = await WebHome.findByIdAndUpdate(
+      id,
+      webHomeToUpdate,
+      { new: true }
+    );
+
     return res.status(200).json(updatedWebHome);
   } catch (err) {
     console.log(err);
@@ -565,10 +623,130 @@ const webInteriorismServicesUpload = async (req, res, next) => {
   }
 };
 
+const getMapData = async (req, res, next) => {
+  try {
+    const { department } = req.query;
+
+    const targetDepartment = department || "Residencial";
+
+    const distritosQuery = Ad.aggregate([
+      {
+        $match: {
+          adStatus: "Activo",
+          department: targetDepartment,
+          showOnWeb: true,
+          distrito: { $exists: true, $ne: null },
+        },
+      },
+      { $group: { _id: "$distrito", count: { $sum: 1 } } },
+    ]);
+
+    const barriosQuery = Ad.aggregate([
+      {
+        $match: {
+          adStatus: "Activo",
+          department: targetDepartment,
+          showOnWeb: true,
+          barrio: { $exists: true, $ne: null },
+        },
+      },
+      { $group: { _id: "$barrio", count: { $sum: 1 } } },
+    ]);
+
+    const [distritosStats, barriosStats] = await Promise.all([
+      distritosQuery,
+      barriosQuery,
+    ]);
+
+    const distritosMap = distritosStats.reduce((acc, curr) => {
+      acc[curr._id] = curr.count;
+      return acc;
+    }, {});
+
+    const barriosMap = barriosStats.reduce((acc, curr) => {
+      acc[curr._id] = curr.count;
+      return acc;
+    }, {});
+
+    res.status(200).json({
+      distritos: distritosMap,
+      barrios: barriosMap,
+    });
+  } catch (error) {
+    console.error("Error en getMapData:", error);
+    next(error);
+  }
+};
+
+const getAdCardData = async (req, res, next) => {
+  try {
+    // 1. Recibimos el nuevo parámetro 'operation'
+    const { department, adStatus, searchZone, operation } = req.query;
+
+    // 2. Filtro de SEGURIDAD (Siempre showOnWeb: true)
+    const filter = {
+      showOnWeb: true,
+    };
+
+    // 3. Filtros opcionales básicos
+    if (department) filter.department = department;
+    if (adStatus) filter.adStatus = adStatus;
+
+    // 4. LÓGICA VENTA / ALQUILER
+    // Asumimos que en tu BD 'adType' es un string tipo "Venta de piso" o "Alquiler..."
+    if (operation) {
+      if (operation === "sale") {
+        filter.adType = { $regex: "Venta", $options: "i" };
+      } else if (operation === "rent") {
+        filter.adType = { $regex: "Alquiler", $options: "i" };
+      }
+    }
+
+    // 5. Filtro de Zona (Barrio o Distrito)
+    if (searchZone && searchZone !== "Madrid") {
+      filter.$or = [
+        { distrito: { $regex: searchZone, $options: "i" } },
+        { barrio: { $regex: searchZone, $options: "i" } },
+      ];
+    }
+
+    // Campos a seleccionar (optimización)
+    const fieldsToSelect = [
+      "_id",
+      "title",
+      "adType",
+      "sale",
+      "rent",
+      "monthlyRent",
+      "barrio",
+      "distrito",
+      "images.main",
+      "adBuildingType",
+      "buildSurface",
+      "plotSurface",
+      "quality.bedrooms",
+      "quality.bathrooms",
+      "quality.parking",
+      "quality.reformed",
+      "quality.swimmingPool",
+      "quality.others.terrace",
+      "quality.others.swimmingPool",
+    ];
+
+    const ads = await Ad.find(filter).select(fieldsToSelect.join(" ")).lean();
+
+    res.status(200).json(ads);
+  } catch (error) {
+    console.error("Error en getResientialCardData:", error);
+    next(error);
+  }
+};
+
 module.exports = {
   webHomeGet,
   webHomeCreate,
   webHomeEdit,
+  webVideoSectionUpload,
   webResidentialCategoryImageUpload,
   webPatrimonialCategoryImageUpload,
   webCommercializationServicesUpload,
@@ -585,4 +763,6 @@ module.exports = {
   webHomeTalkWithUs,
   webDevelopmentServicesUpload,
   webInteriorismServicesUpload,
+  getMapData,
+  getAdCardData,
 };

@@ -7,6 +7,11 @@ const webHomeSchema = new Schema(
     mainTitle: { type: String },
     mainSubtitle: { type: String },
     portraidImage: { type: String },
+    videoSection: {
+      title: { type: String },
+      subtitle: { type: [String] },
+      videos: { type: [String] },
+    },
     categoriesImages: {
       residential: { type: String },
       patrimonial: { type: String },

@@ -58,6 +58,8 @@ const adSchema = new Schema(
       required: true,
     },
     zone: [{ type: mongoose.Types.ObjectId, ref: "zones" }],
+    distrito: { type: String, index: true },
+    barrio: { type: String, index: true },
     department: {
       type: String,
       enum: [
@@ -162,6 +164,31 @@ const adSchema = new Schema(
       emailPDF: { type: String },
       distribution: { type: String },
     },
+    changesHistory: [
+      {
+        type: {
+          type: String,
+          enum: [
+            "CREATION",
+            "PRICE_CHANGE",
+            "OWNER_CHANGE",
+            "ADTYPE_CHANGE",
+            "GV_OPERATION_CHANGE",
+            "OTHER",
+          ],
+          required: true,
+        },
+        field: { type: String },
+        oldValue: { type: Schema.Types.Mixed },
+        newValue: { type: Schema.Types.Mixed },
+        date: { type: Date, default: Date.now },
+        consultant: {
+          _id: { type: mongoose.Types.ObjectId, ref: "consultants" },
+          fullName: { type: String },
+        },
+        note: { type: String },
+      },
+    ],
     images: {
       main: { type: String },
       blueprint: { type: Array },

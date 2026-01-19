@@ -1,4 +1,6 @@
 const Zone = require("../models/zone.model");
+const fs = require("fs");
+const path = require("path");
 
 const zonesGetResidentials = async (req, res, next) => {
   try {
@@ -73,6 +75,53 @@ const zoneDelete = async (req, res, next) => {
   }
 };
 
+const barriosPath = path.join(__dirname, "../data/madrid-barrios.json");
+let taxonomiaCache = null;
+
+try {
+  const rawData = fs.readFileSync(barriosPath);
+  const geojson = JSON.parse(rawData);
+
+  taxonomiaCache = {};
+
+  geojson.features.forEach((feature) => {
+    const distrito = feature.properties.district;
+    const barrio = feature.properties.name;
+
+    // Si el distrito no existe en el objeto, lo inicializamos
+    if (!taxonomiaCache[distrito]) {
+      taxonomiaCache[distrito] = [];
+    }
+
+    // Añadimos el barrio si no está ya (por seguridad)
+    if (!taxonomiaCache[distrito].includes(barrio)) {
+      taxonomiaCache[distrito].push(barrio);
+    }
+  });
+
+  // Ordenamos alfabéticamente barrios y distritos para que se vea bonito en el CRM
+  const orderedTaxonomy = {};
+  Object.keys(taxonomiaCache)
+    .sort()
+    .forEach((key) => {
+      orderedTaxonomy[key] = taxonomiaCache[key].sort();
+    });
+  taxonomiaCache = orderedTaxonomy;
+} catch (error) {
+  console.error("❌ Error cargando madrid-barrios.json:", error.message);
+}
+
+const zonesGetTaxonomy = (req, res) => {
+  if (!taxonomiaCache) {
+    return res.status(500).json({
+      message:
+        "Error: Los datos de barrios no están disponibles en el servidor.",
+    });
+  }
+  // Devolvemos el objeto limpio al frontend
+  res.status(200).json(taxonomiaCache);
+};
+
 module.exports = {
   zonesGetResidentials,
   zonesGetPatrimonials,
@@ -80,4 +129,5 @@ module.exports = {
   zoneGetOne,
   zoneCreate,
   zoneDelete,
+  zonesGetTaxonomy,
 };

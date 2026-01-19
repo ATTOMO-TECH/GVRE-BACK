@@ -36,7 +36,7 @@ app.use((req, res, next) => {
   res.header("Access-Control-Allow-Credentials", true);
   res.header(
     "Access-Control-Allow-Headers",
-    "x-www-form-urlencoded, Origin, X-Requested-With, Content-Type, Accept, Authorization, *"
+    "x-www-form-urlencoded, Origin, X-Requested-With, Content-Type, Accept, Authorization, *",
   );
   return next();
 });
@@ -67,10 +67,11 @@ app.use(
       "https://crmfront-gvre.vercel.app",
       "https://crm-gvre.netlify.app",
       "https://new-gvre-web.netlify.app",
+      "https://crm-gvre-development.netlify.app",
     ],
     credentials: true,
     optionsSuccessStatus: 200,
-  })
+  }),
 );
 app.set("trust proxy", 1);
 app.use(
@@ -83,7 +84,7 @@ app.use(
       maxAge: 8760 * 3600 * 1000,
     },
     store: MongoStore.create({ mongoUrl: db.DB_URL }),
-  })
+  }),
 );
 
 app.use(passport.initialize());

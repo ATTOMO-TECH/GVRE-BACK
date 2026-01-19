@@ -65,7 +65,7 @@ const getAllTags = async (req, res) => {
   try {
     const tags = await Tag.find({});
     if (!tags || tags.length === 0) {
-      return res.status(404).json({ message: "No se encontraron etiquetas." });
+      return res.status(204).json({ message: "No se encontraron etiquetas." });
     }
     res.status(200).json({
       message: "Etiquetas recuperadas exitosamente.",
