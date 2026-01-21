@@ -759,26 +759,15 @@ const adCreate = async (req, res, next) => {
     // Add initial CREATION entry to changesHistory (persisted)
     try {
       let consultantInfo = null;
-      if (req.body.consultant) {
-        // If consultant is an object with fullName, use it; otherwise try to resolve by id
-        if (
-          typeof req.body.consultant === "object" &&
-          req.body.consultant.fullName
-        ) {
-          consultantInfo = {
-            _id: req.body.consultant._id,
-            fullName: req.body.consultant.fullName,
-          };
-        } else {
-          try {
-            const c = await Consultant.findById(
-              req.body.consultant,
-              "fullName",
-            ).lean();
-            if (c) consultantInfo = { _id: c._id, fullName: c.fullName };
-          } catch (e) {
-            // ignore resolution errors and leave consultantInfo null
-          }
+      if (req.body.userId) {
+        try {
+          const c = await Consultant.findById(
+            req.body.userId,
+            "fullName",
+          ).lean();
+          if (c) consultantInfo = { _id: c._id, fullName: c.fullName };
+        } catch (e) {
+          // ignore resolution errors and leave consultantInfo null
         }
       }
 
@@ -1152,23 +1141,10 @@ const adUpdate = async (req, res, next) => {
 
     // Resolve consultant info (prefer provided consultant, fallback to currentAd.consultant)
     let consultantInfo = null;
-    if (req.body.consultant) {
+    if (req.body.userId) {
       try {
-        if (
-          typeof req.body.consultant === "object" &&
-          req.body.consultant.fullName
-        ) {
-          consultantInfo = {
-            _id: req.body.consultant._id,
-            fullName: req.body.consultant.fullName,
-          };
-        } else {
-          const c = await Consultant.findById(
-            req.body.consultant,
-            "fullName",
-          ).lean();
-          if (c) consultantInfo = { _id: c._id, fullName: c.fullName };
-        }
+        const c = await Consultant.findById(req.body.userId, "fullName").lean();
+        if (c) consultantInfo = { _id: c._id, fullName: c.fullName };
       } catch (e) {
         // ignore
       }
