@@ -1,6 +1,7 @@
 const { deleteImage } = require("../middlewares/file.middleware");
 const Ad = require("../models/ad.model");
 const WebHome = require("../models/webHome.model");
+const Consultant = require("../models/consultant.model");
 
 // HOME
 const webHomeGet = async (req, res, next) => {
@@ -14,8 +15,6 @@ const webHomeGet = async (req, res, next) => {
 
 const webHomeCreate = async (req, res, next) => {
   try {
-    // console.log(req.body);
-    // console.log(req.file);
     const newWebHome = new WebHome({
       mainTitle: req.body.mainTitle,
       mainSubtitle: req.body.mainSubtitle,
@@ -44,7 +43,7 @@ const webHomeEdit = async (req, res, next) => {
     const updatedWebHome = await WebHome.findByIdAndUpdate(
       id,
       webHomeToUpdate,
-      { new: true }
+      { new: true },
     );
     return res.status(200).json(updatedWebHome);
   } catch (err) {
@@ -100,7 +99,7 @@ const webVideoSectionUpload = async (req, res, next) => {
     const updatedWebHome = await WebHome.findByIdAndUpdate(
       id,
       webHomeToUpdate,
-      { new: true }
+      { new: true },
     );
 
     return res.status(200).json(updatedWebHome);
@@ -124,7 +123,7 @@ const webResidentialCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -153,7 +152,7 @@ const webPatrimonialCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -182,7 +181,7 @@ const webArtCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -211,7 +210,7 @@ const webCatalogCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -240,7 +239,7 @@ const webCoastCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -269,7 +268,7 @@ const webRusticCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -298,7 +297,7 @@ const webSingularCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -333,7 +332,7 @@ const webInteriorismTextAndImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -367,7 +366,7 @@ const webSellTextAndImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -402,7 +401,7 @@ const webOfficeTextAndImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -419,8 +418,6 @@ const webOfficeTextAndImageUpload = async (req, res, next) => {
 
 const webHomeTalkWithUs = async (req, res, next) => {
   try {
-    // console.log(req.body);
-    // console.log(req.params);
     const { id } = req.params;
     const webHome = await WebHome.findById(id);
     const webHomeToUpdate = webHome;
@@ -432,16 +429,118 @@ const webHomeTalkWithUs = async (req, res, next) => {
       }
       webHomeToUpdate.talkWithUs.titleHome = req.body.titleHome;
       webHomeToUpdate.talkWithUs.titleContact = req.body.titleContact;
-      webHomeToUpdate.talkWithUs.directions = req.body.directions;
+
+      // Preserve old directions to detect changes and update consultant offices
+      const oldDirections = Array.isArray(webHomeToUpdate.talkWithUs.directions)
+        ? webHomeToUpdate.talkWithUs.directions
+        : [];
+
+      // Normalize incoming directions into an array
+      let newDirections = req.body.directions;
+      if (typeof newDirections === "string") {
+        try {
+          newDirections = JSON.parse(newDirections);
+        } catch (e) {
+          // fallback: split by comma
+          newDirections = newDirections.split(",").map((s) => s.trim());
+        }
+      }
+      newDirections = Array.isArray(newDirections) ? newDirections : [];
+
+      webHomeToUpdate.talkWithUs.directions = newDirections;
+
       webHomeToUpdate.talkWithUs.phones = req.body.phones;
       webHomeToUpdate.talkWithUs.email = req.body.email;
       webHomeToUpdate.talkWithUs.contactButton = req.body.contactButton;
       webHomeToUpdate.talkWithUs.descriptionContact =
         req.body.descriptionContact;
+
+      // Build replacements map by comparing old/new by index. If an entry changed,
+      // update consultant.offices entries that equal the old string and replace with the new string.
+      const maxLen = Math.max(oldDirections.length, newDirections.length);
+      const replacements = [];
+      for (let i = 0; i < maxLen; i++) {
+        const oldDir = oldDirections[i];
+        const newDir = newDirections[i];
+        if (oldDir && newDir && oldDir !== newDir) {
+          replacements.push({ from: oldDir, to: newDir });
+        }
+      }
+
+      if (replacements.length > 0) {
+        // Try to run atomic updateMany operations with arrayFilters. If that fails,
+        // fall back to read-modify-write per consultant.
+        try {
+          for (const { from, to } of replacements) {
+            // Use updateMany with arrayFilters to replace matching array elements
+            await Consultant.updateMany(
+              { offices: from },
+              { $set: { "offices.$[elem]": to } },
+              { arrayFilters: [{ elem: from }] },
+            );
+          }
+        } catch (errUpdate) {
+          console.error(
+            "Atomic consultant offices update failed, falling back:",
+            errUpdate,
+          );
+          try {
+            for (const { from, to } of replacements) {
+              const consultants = await Consultant.find({ offices: from });
+              for (const consultant of consultants) {
+                const updatedOffices = (consultant.offices || []).map((o) =>
+                  o === from ? to : o,
+                );
+                consultant.offices = updatedOffices;
+                await consultant.save();
+              }
+            }
+          } catch (errFallback) {
+            console.error(
+              "Fallback update of consultant offices failed:",
+              errFallback,
+            );
+          }
+        }
+
+        // Remove any office strings that are not present in the new directions
+        try {
+          if (Array.isArray(newDirections)) {
+            // atomic removal using $pull with $nin
+            await Consultant.updateMany(
+              { offices: { $elemMatch: { $nin: newDirections } } },
+              { $pull: { offices: { $nin: newDirections } } },
+            );
+          }
+        } catch (errPull) {
+          console.error(
+            "Atomic removal of non-matching offices failed, falling back:",
+            errPull,
+          );
+          try {
+            // fallback: read-modify-write
+            const consultantsToFix = await Consultant.find({
+              offices: { $elemMatch: { $nin: newDirections } },
+            });
+            for (const c of consultantsToFix) {
+              const filtered = (c.offices || []).filter((o) =>
+                newDirections.includes(o),
+              );
+              c.offices = filtered;
+              await c.save();
+            }
+          } catch (errFallbackPull) {
+            console.error(
+              "Fallback filtering of consultant offices failed:",
+              errFallbackPull,
+            );
+          }
+        }
+      }
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -475,7 +574,7 @@ const webDevelopmentServicesUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -504,7 +603,7 @@ const webInvestmentServicesUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -539,7 +638,7 @@ const webAssetManagementServicesUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
 
       return res.status(200).json(updatedWebHome);
@@ -561,8 +660,6 @@ const webCommercializationServicesUpload = async (req, res, next) => {
     const webHome = await WebHome.findById(id);
     const webHomeToUpdate = webHome;
 
-    console.log(req.body);
-
     if (webHome) {
       webHomeToUpdate.services.commercialization.title = req.body.title;
       webHomeToUpdate.services.commercialization.description1 =
@@ -575,7 +672,7 @@ const webCommercializationServicesUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
 
       return res.status(200).json(updatedWebHome);
@@ -608,7 +705,7 @@ const webInteriorismServicesUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {

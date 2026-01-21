@@ -55,7 +55,7 @@ const sendEmailCampaignToContacts = async (req, res) => {
           if (error) {
             console.error(
               `Error sending email to ${mailOptions.to}:`,
-              error.message
+              error.message,
             );
             reject(error); // Rechaza la promesa si hay error
           } else {
@@ -473,9 +473,12 @@ const sendEmailCampaignToContacts = async (req, res) => {
                                       }
                                       <br />
                                       ${
-                                        req.office1
-                                          ? `${req.office1} | ${req.office2}`
-                                          : `${req.office1}`
+                                        req.body.consultant.offices &&
+                                        req.body.consultant.offices.length > 0
+                                          ? req.body.consultant.offices.join(
+                                              " | ",
+                                            )
+                                          : ""
                                       }
                                       <br />
                                       <a href="mailto:${consultantEmail}" target="_blank">

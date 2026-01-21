@@ -25,6 +25,7 @@ const consultantSchema = new Schema(
     profession: { type: String },
     office1: { type: String },
     office2: { type: String },
+    offices: [{ type: String }],
     consultantComments: { type: String },
     ads: { type: mongoose.Types.ObjectId, ref: "ads" },
     consultantEmailSignZones: {

@@ -1,41 +1,39 @@
-const nodemailer = require('nodemailer'); // email sender function 
-const { getPasswordByEmail } = require('./utils')
+const nodemailer = require("nodemailer"); // email sender function
+const { getPasswordByEmail } = require("./utils");
 
 const maskTemplate = (value, ref) => {
   let render = "";
 
-  if ((ref === "sale" && value === 999999999) || (ref === "rent" && value === 999999999)) {
+  if (
+    (ref === "sale" && value === 999999999) ||
+    (ref === "rent" && value === 999999999)
+  ) {
     render = `<p>Valor máx.</p>`;
   } else if ((ref === "sale" || ref === "rent") && value === 0) {
     render = `<p>Sin precio</p>`;
-  } else if ((ref !== "sale" && ref !== "rent") && value === 0) {
+  } else if (ref !== "sale" && ref !== "rent" && value === 0) {
     render = `<p>Sin datos</p>`;
   } else {
     if (ref === "sale" || ref === "rent")
-      render = (
-        `<p>${value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} ${ref === "sale" ? " €" : " €/mes"}</p>`
-      );
+      render = `<p>${value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} ${ref === "sale" ? " €" : " €/mes"}</p>`;
     else
-      render = (
-        `<p>
+      render = `<p>
           ${value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} m<sup>2</sup>
-        </p>`
-      );
+        </p>`;
   }
   return render;
 };
 
 const sendAdsToContact = (req, res) => {
-
   const createAdsRows = (ads) => {
-    return ads.map(ad => {
-      return (
-        `${ad.adDirectionSelected !== undefined
+    return ads.map((ad) => {
+      return `${
+        ad.adDirectionSelected !== undefined
           ? `<div style="max-width: 600px; margin: auto">
               <strong>${ad.adDirectionSelected}:</strong>
             </div>`
           : ``
-        }
+      }
          <div style="max-width: 600px; margin: auto">
          <div
           id="m_-4520741529468623966gmail-m_8445976314637867845listing-a0E3Y00001LXsawUAD"
@@ -53,8 +51,9 @@ const sendAdsToContact = (req, res) => {
                     style="border-spacing: 0px"
                   >
                     <tbody>
-                    ${ad.adComment ?
-          `<tr>
+                    ${
+                      ad.adComment
+                        ? `<tr>
                         <td valign="top" style="border-collapse: collapse; vertical-align: top">
                           <span>&nbsp;</span>
                           <span>&nbsp;</span>  
@@ -73,13 +72,14 @@ const sendAdsToContact = (req, res) => {
                           <br /><br />
                           </div>
                         </td>
-                      </tr>` : ``
-        }
+                      </tr>`
+                        : ``
+                    }
                       <tr>
                         <td valign="top" style="border-collapse: collapse; vertical-align: top">
                           <h2 style="font-family: Helvetica; font-weight: bold; text-align: center">
                             <a
-                              href="${ad.department === "Residencial" ? 'https://gvre.es/residentialItem/' + ad._id : 'https://gvre.es/patrimonialItem/' + ad._id}"
+                              href="${ad.department === "Residencial" ? "https://gvre.es/residentialItem/" + ad._id : "https://gvre.es/patrimonialItem/" + ad._id}"
                               style="text-decoration: none; font-size: 19px; color: rgb(43, 54, 61)"
                               target="_blank"
                               >
@@ -92,7 +92,7 @@ const sendAdsToContact = (req, res) => {
                       <tr>
                         <td valign="top" style="border-collapse: collapse; vertical-align: top">
                            <a
-                           href="${ad.department === "Residencial" ? 'https://gvre.es/residentialItem/' + ad._id : 'https://gvre.es/patrimonialItem/' + ad._id}"
+                           href="${ad.department === "Residencial" ? "https://gvre.es/residentialItem/" + ad._id : "https://gvre.es/patrimonialItem/" + ad._id}"
                            target="_blank"
 			   style="font-size:larger !important;color:rgb(43,54,61) !important;text-decoration:none !important;"
                            >
@@ -134,7 +134,7 @@ const sendAdsToContact = (req, res) => {
                                 font-weight:bold;
                                 text-align:center !important;
                                 " >
-                                 ${ad.buildSurface && ad.buildSurface != 0 && ad.buildSurface != 999999999 ? ad.buildSurface+` m<sup>2</sup>` : ''}
+                                 ${ad.buildSurface && ad.buildSurface != 0 && ad.buildSurface != 999999999 ? ad.buildSurface + ` m<sup>2</sup>` : ""}
                               </span>
                             </div>
                           </a>
@@ -189,7 +189,7 @@ const sendAdsToContact = (req, res) => {
                           >
                             ${ad.description.emailPDF}<span>&nbsp;</span
                             ><a
-                              href="${ad.department === "Residencial" ? 'https://gvre.es/residentialItem/' + ad._id : 'https://gvre.es/patrimonialItem/' + ad._id}"
+                              href="${ad.department === "Residencial" ? "https://gvre.es/residentialItem/" + ad._id : "https://gvre.es/patrimonialItem/" + ad._id}"
                               target="_blank"
                               data-saferedirecturl="https://www.google.com/url?q="
                               style="font-size:larger !important;color:rgb(255, 255, 255) !important;text-decoration:none !important;"
@@ -207,8 +207,10 @@ const sendAdsToContact = (req, res) => {
                             <span>&nbsp;</span>
                             <span>&nbsp;</span>  
                               <tr style="text-align: center">
-                              ${(ad.plotSurface !== 0 && ad.plotSurface !== 999999999) ?
-          `<th>
+                              ${
+                                ad.plotSurface !== 0 &&
+                                ad.plotSurface !== 999999999
+                                  ? `<th>
                                   <img
                                     width="25px"
                                     height="25px"
@@ -218,10 +220,12 @@ const sendAdsToContact = (req, res) => {
                                     class="CToWUd"
                                   />
                                 </th>`
-          : ``
-        }
-                              ${(ad.buildSurface !== 0 && ad.buildSurface !== 999999999) ?
-          `<th>
+                                  : ``
+                              }
+                              ${
+                                ad.buildSurface !== 0 &&
+                                ad.buildSurface !== 999999999
+                                  ? `<th>
                                   <img
                                     width="25px"
                                     height="25px"
@@ -230,10 +234,12 @@ const sendAdsToContact = (req, res) => {
                                     style="display: block; font-size: 0px; margin: 0px auto"
                                     class="CToWUd"
                                   />
-                                </th>` : ``
-        }
-                              ${ad.quality.outdoorPool !== 0 ?
-          `<th>
+                                </th>`
+                                  : ``
+                              }
+                              ${
+                                ad.quality.outdoorPool !== 0
+                                  ? `<th>
                                   <img
                                     width="25px"
                                     height="25px"
@@ -242,10 +248,13 @@ const sendAdsToContact = (req, res) => {
                                     style="display: block; font-size: 0px; margin: 0px auto"
                                     class="CToWUd"
                                   />
-                                </th>` : ``
-        }
-                              ${(ad.quality.bathrooms !== 0 && ad.quality.bathrooms !== 999) ?
-          `<th>
+                                </th>`
+                                  : ``
+                              }
+                              ${
+                                ad.quality.bathrooms !== 0 &&
+                                ad.quality.bathrooms !== 999
+                                  ? `<th>
                                   <img
                                     width="25px"
                                     height="25px"
@@ -254,10 +263,13 @@ const sendAdsToContact = (req, res) => {
                                     style="display: block; font-size: 0px; margin: 0px auto"
                                     class="CToWUd"
                                   />
-                                </th>` : ``
-        }
-                              ${(ad.quality.bedrooms !== 0 && ad.quality.bedrooms !== 999) ?
-          `<th>
+                                </th>`
+                                  : ``
+                              }
+                              ${
+                                ad.quality.bedrooms !== 0 &&
+                                ad.quality.bedrooms !== 999
+                                  ? `<th>
                                   <img
                                     width="25px"
                                     height="25px"
@@ -266,35 +278,50 @@ const sendAdsToContact = (req, res) => {
                                     style="display: block; font-size: 0px; margin: 0px auto"
                                     class="CToWUd"
                                   />
-                                </th>` : ``
-        }
+                                </th>`
+                                  : ``
+                              }
                               </tr>
                               <tr style="text-align: center; color: rgb(43, 54, 61)">
-                              ${(ad.plotSurface !== 0 && ad.plotSurface !== 999999999) ?
-          `<td style="border-collapse: collapse; vertical-align: top">
+                              ${
+                                ad.plotSurface !== 0 &&
+                                ad.plotSurface !== 999999999
+                                  ? `<td style="border-collapse: collapse; vertical-align: top">
                                     ${maskTemplate(ad.plotSurface, "plotSurface")}
-                                  </td>` : ``
-        }
-                              ${(ad.buildSurface !== 0 && ad.buildSurface !== 999999999) ?
-          `<td style="border-collapse: collapse; vertical-align: top">
+                                  </td>`
+                                  : ``
+                              }
+                              ${
+                                ad.buildSurface !== 0 &&
+                                ad.buildSurface !== 999999999
+                                  ? `<td style="border-collapse: collapse; vertical-align: top">
                                     ${maskTemplate(ad.buildSurface, "buildSurface")}
-                                  </td>` : ``
-        }
-                              ${ad.quality.outdoorPool !== 0 ?
-          `<td style="border-collapse: collapse; vertical-align: top">
+                                  </td>`
+                                  : ``
+                              }
+                              ${
+                                ad.quality.outdoorPool !== 0
+                                  ? `<td style="border-collapse: collapse; vertical-align: top">
                                     <p>${ad.quality.outdoorPool}</p>
-                                  </td>` : ``
-        }
-                              ${(ad.quality.bathrooms !== 0 && ad.quality.bathrooms !== 999) ?
-          `<td style="border-collapse: collapse; vertical-align: top">
+                                  </td>`
+                                  : ``
+                              }
+                              ${
+                                ad.quality.bathrooms !== 0 &&
+                                ad.quality.bathrooms !== 999
+                                  ? `<td style="border-collapse: collapse; vertical-align: top">
                                     <p>${ad.quality.bathrooms}</p>
-                                 </td>` : ``
-        }
-                              ${(ad.quality.bedrooms !== 0 && ad.quality.bedrooms !== 999) ?
-          `<td style="border-collapse: collapse; vertical-align: top">
+                                 </td>`
+                                  : ``
+                              }
+                              ${
+                                ad.quality.bedrooms !== 0 &&
+                                ad.quality.bedrooms !== 999
+                                  ? `<td style="border-collapse: collapse; vertical-align: top">
                                     <p>${ad.quality.bedrooms}</p>
-                                  </td>` : ``
-        }
+                                  </td>`
+                                  : ``
+                              }
                               </tr>
                             </tbody>
                           </table>
@@ -333,17 +360,16 @@ const sendAdsToContact = (req, res) => {
             </tbody>
           </table>
         </div>
-      </div>`
-      )
-    })
-  }
+      </div>`;
+    });
+  };
 
   const transporter = nodemailer.createTransport({
-    service: 'Gmail',
+    service: "Gmail",
     auth: {
       user: `${req.body.consultant.consultantEmail}`,
-      pass: getPasswordByEmail(req.body.consultant.consultantEmail)
-    }
+      pass: getPasswordByEmail(req.body.consultant.consultantEmail),
+    },
   });
 
   transporter.verify(function (error, success) {
@@ -358,8 +384,7 @@ const sendAdsToContact = (req, res) => {
     from: `GV Real Estate`,
     to: `${req.body.contact.email}`,
     subject: `${req.body.subject}`,
-    html:
-      `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    html: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
     <html
       xmlns="http://www.w3.org/1999/xhtml"
       xmlns:v="urn:schemas-microsoft-com:vml"
@@ -721,11 +746,18 @@ const sendAdsToContact = (req, res) => {
                                   <br />
                                   ${req.body.consultant.profession ? `${req.body.consultant.position} | ${req.body.consultant.profession}` : `${req.body.consultant.position}`}
                                   <br />
-                                  ${req.body.consultant.consultantPhoneNumber
-        ? `${req.body.consultant.consultantMobileNumber} | ${req.body.consultant.consultantPhoneNumber}`
-        : `${req.body.consultant.consultantMobileNumber}`}
+                                  ${
+                                    req.body.consultant.consultantPhoneNumber
+                                      ? `${req.body.consultant.consultantMobileNumber} | ${req.body.consultant.consultantPhoneNumber}`
+                                      : `${req.body.consultant.consultantMobileNumber}`
+                                  }
                                   <br />
-                                  ${req.body.consultant.office2 ? `${req.body.consultant.office1} | ${req.body.consultant.office2}` : `${req.body.consultant.office1}`}
+                                  ${
+                                    req.body.consultant.offices &&
+                                    req.body.consultant.offices.length > 0
+                                      ? req.body.consultant.offices.join(" | ")
+                                      : ""
+                                  }
                                   <br />
                                   <a href="mailto:${req.body.consultant.consultantEmail}" target="_blank">
                                      ${req.body.consultant.consultantEmail}
@@ -798,7 +830,7 @@ const sendAdsToContact = (req, res) => {
           />
         </div>
       </body>
-    </html>`
+    </html>`,
   };
 
   transporter.sendMail(mailOptions, function (error, info) {
@@ -808,20 +840,22 @@ const sendAdsToContact = (req, res) => {
       res.status(200).json("Mensaje enviado");
     }
   });
-}
+};
 
 const sendAdToContacts = (req, res) => {
-
   const setClientToMessage = (client) => {
-    return req.body.messageP1.replace(req.body.request.requestContact.fullName, client)
-  }
+    return req.body.messageP1.replace(
+      req.body.request.requestContact.fullName,
+      client,
+    );
+  };
 
   const transporter = nodemailer.createTransport({
-    service: 'Gmail',
+    service: "Gmail",
     auth: {
       user: `${req.body.consultant.consultantEmail}`,
-      pass: getPasswordByEmail(req.body.consultant.consultantEmail)
-    }
+      pass: getPasswordByEmail(req.body.consultant.consultantEmail),
+    },
   });
 
   transporter.verify(function (error, success) {
@@ -1135,12 +1169,13 @@ const sendAdToContacts = (req, res) => {
                             <div style="max-width: 600px; margin: auto"><br /></div>
                             <span>&nbsp;</span>
                             <span>&nbsp;</span>
-                            ${req.body.ad.adDirectionSelected !== undefined
-        ? `<div style="max-width: 600px; margin: auto">
+                            ${
+                              req.body.ad.adDirectionSelected !== undefined
+                                ? `<div style="max-width: 600px; margin: auto">
                                   <strong> ${req.body.ad.adDirectionSelected}:</strong>
                                 </div>`
-        : ``
-      }
+                                : ``
+                            }
                             <div style="max-width: 600px; margin: auto">
                               <div
                                 id="m_-4520741529468623966gmail-m_8445976314637867845listing-a0E3Y00001LXsawUAD"
@@ -1158,8 +1193,9 @@ const sendAdToContacts = (req, res) => {
                                           style="border-spacing: 0px"
                                         >
                                           <tbody>
-                                          ${req.body.ad.adComment ?
-        `<tr>
+                                          ${
+                                            req.body.ad.adComment
+                                              ? `<tr>
                                                 <td valign="top" style="border-collapse: collapse; vertical-align: top">
                                                   <span>&nbsp;</span>
                                                   <span>&nbsp;</span>  
@@ -1178,13 +1214,14 @@ const sendAdToContacts = (req, res) => {
                                                   <br /><br />
                                                   </div>
                                                 </td>
-                                              </tr>` : ``
-      }
+                                              </tr>`
+                                              : ``
+                                          }
                                             <tr>
                                               <td valign="top" style="border-collapse: collapse; vertical-align: top">
                                                 <h2 style="font-family: Helvetica; font-weight: bold; text-align: center">
                                                   <a
-                                                    href="${req.body.ad.department === "Residencial" ? 'https://gvre.es/residentialItem/' + req.body.ad._id : 'https://gvre.es/patrimonialItem/' + req.body.ad._id}"
+                                                    href="${req.body.ad.department === "Residencial" ? "https://gvre.es/residentialItem/" + req.body.ad._id : "https://gvre.es/patrimonialItem/" + req.body.ad._id}"
                                                     style="text-decoration: none; font-size: 19px; color: rgb(43, 54, 61)"
                                                     target="_blank"
                                                     >
@@ -1197,7 +1234,7 @@ const sendAdToContacts = (req, res) => {
                                             <tr>
                                               <td valign="top" style="border-collapse: collapse; vertical-align: top">
                                                 <a
-                                                href="${req.body.ad.department === "Residencial" ? 'https://gvre.es/residentialItem/' + req.body.ad._id : 'https://gvre.es/patrimonialItem/' + req.body.ad._id}"
+                                                href="${req.body.ad.department === "Residencial" ? "https://gvre.es/residentialItem/" + req.body.ad._id : "https://gvre.es/patrimonialItem/" + req.body.ad._id}"
                                                 target="_blank" style="font-size:larger !important;color:rgb(43,54,61) !important;text-decoration:none !important;"
                            >
                              <div style="
@@ -1238,7 +1275,7 @@ const sendAdToContacts = (req, res) => {
                                 font-weight:bold;
                                 text-align:center !important;
                                 " >
-	                         ${req.body.ad.buildSurface && req.body.ad.buildSurface != 0 && req.body.ad.buildSurface != 999999999 ? req.body.ad.buildSurface+` m<sup>2</sup>` : ''}
+	                         ${req.body.ad.buildSurface && req.body.ad.buildSurface != 0 && req.body.ad.buildSurface != 999999999 ? req.body.ad.buildSurface + ` m<sup>2</sup>` : ""}
                               </span>
                             </div>
                                                 
@@ -1251,9 +1288,21 @@ const sendAdToContacts = (req, res) => {
                                                   id="m_-4520741529468623966gmail-m_8445976314637867845price"
                                                   style="padding: 10px 15px 10 15px; color: rgb(43, 54, 61); font-size: 22px"
                                                 >
-                                                  ${req.body.ad.adType.includes("Venta")
-        ? maskTemplate(req.body.ad.sale.saleValue, "sale")
-        : maskTemplate(req.body.ad.rent.rentValue, "rent")}
+                                                  ${
+                                                    req.body.ad.adType.includes(
+                                                      "Venta",
+                                                    )
+                                                      ? maskTemplate(
+                                                          req.body.ad.sale
+                                                            .saleValue,
+                                                          "sale",
+                                                        )
+                                                      : maskTemplate(
+                                                          req.body.ad.rent
+                                                            .rentValue,
+                                                          "rent",
+                                                        )
+                                                  }
                                                 </h2>
                                               </td>
                                             </tr>
@@ -1296,7 +1345,7 @@ const sendAdToContacts = (req, res) => {
                                                 >
                                                   ${req.body.ad.description.emailPDF}<span>&nbsp;</span
                                                   ><a
-                                                    href="${req.body.ad.department === "Residencial" ? 'https://gvre.es/residentialItem/' + req.body.ad._id : 'https://gvre.es/patrimonialItem/' + req.body.ad._id}"
+                                                    href="${req.body.ad.department === "Residencial" ? "https://gvre.es/residentialItem/" + req.body.ad._id : "https://gvre.es/patrimonialItem/" + req.body.ad._id}"
                                                     target="_blank"
                                                     data-saferedirecturl="https://www.google.com/url?q="
                                                     style="font-size:larger !important;color:rgb(255, 255, 255) !important;text-decoration:none !important;"
@@ -1313,8 +1362,13 @@ const sendAdToContacts = (req, res) => {
                                                   <span>&nbsp;</span>
                                                   <span>&nbsp;</span>  
                                                     <tr style="text-align: center">
-                                                    ${(req.body.ad.plotSurface !== 0 && req.body.ad.plotSurface !== 999999999) ?
-        `<th>
+                                                    ${
+                                                      req.body.ad
+                                                        .plotSurface !== 0 &&
+                                                      req.body.ad
+                                                        .plotSurface !==
+                                                        999999999
+                                                        ? `<th>
                                                         <img
                                                           width="25px"
                                                           height="25px"
@@ -1324,10 +1378,15 @@ const sendAdToContacts = (req, res) => {
                                                           class="CToWUd"
                                                         />
                                                       </th>`
-        : ``
-      }
-                                                    ${(req.body.ad.buildSurface !== 0 && req.body.ad.buildSurface !== 999999999) ?
-        `<th>
+                                                        : ``
+                                                    }
+                                                    ${
+                                                      req.body.ad
+                                                        .buildSurface !== 0 &&
+                                                      req.body.ad
+                                                        .buildSurface !==
+                                                        999999999
+                                                        ? `<th>
                                                         <img
                                                           width="25px"
                                                           height="25px"
@@ -1336,10 +1395,13 @@ const sendAdToContacts = (req, res) => {
                                                           style="display: block; font-size: 0px; margin: 0px auto"
                                                           class="CToWUd"
                                                         />
-                                                      </th>` : ``
-      }
-                                                    ${req.body.ad.quality.outdoorPool !== 0 ?
-        `<th>
+                                                      </th>`
+                                                        : ``
+                                                    }
+                                                    ${
+                                                      req.body.ad.quality
+                                                        .outdoorPool !== 0
+                                                        ? `<th>
                                                         <img
                                                           width="25px"
                                                           height="25px"
@@ -1348,10 +1410,15 @@ const sendAdToContacts = (req, res) => {
                                                           style="display: block; font-size: 0px; margin: 0px auto"
                                                           class="CToWUd"
                                                         />
-                                                      </th>` : ``
-      }
-                                                    ${(req.body.ad.quality.bathrooms !== 0 && req.body.ad.quality.bathrooms !== 999) ?
-        `<th>
+                                                      </th>`
+                                                        : ``
+                                                    }
+                                                    ${
+                                                      req.body.ad.quality
+                                                        .bathrooms !== 0 &&
+                                                      req.body.ad.quality
+                                                        .bathrooms !== 999
+                                                        ? `<th>
                                                         <img
                                                           width="25px"
                                                           height="25px"
@@ -1360,10 +1427,15 @@ const sendAdToContacts = (req, res) => {
                                                           style="display: block; font-size: 0px; margin: 0px auto"
                                                           class="CToWUd"
                                                         />
-                                                      </th>` : ``
-      }
-                                                    ${(req.body.ad.quality.bedrooms !== 0 && req.body.ad.quality.bedrooms !== 999) ?
-        `<th>
+                                                      </th>`
+                                                        : ``
+                                                    }
+                                                    ${
+                                                      req.body.ad.quality
+                                                        .bedrooms !== 0 &&
+                                                      req.body.ad.quality
+                                                        .bedrooms !== 999
+                                                        ? `<th>
                                                         <img
                                                           width="25px"
                                                           height="25px"
@@ -1372,35 +1444,61 @@ const sendAdToContacts = (req, res) => {
                                                           style="display: block; font-size: 0px; margin: 0px auto"
                                                           class="CToWUd"
                                                         />
-                                                      </th>` : ``
-      }
+                                                      </th>`
+                                                        : ``
+                                                    }
                                                     </tr>
                                                     <tr style="text-align: center; color: rgb(43, 54, 61)">
-                                                      ${(req.body.ad.plotSurface !== 0 && req.body.ad.plotSurface !== 999999999) ?
-        `<td style="border-collapse: collapse; vertical-align: top">
+                                                      ${
+                                                        req.body.ad
+                                                          .plotSurface !== 0 &&
+                                                        req.body.ad
+                                                          .plotSurface !==
+                                                          999999999
+                                                          ? `<td style="border-collapse: collapse; vertical-align: top">
                                                             ${maskTemplate(req.body.ad.plotSurface, "plotSurface")}
-                                                          </td>` : ``
-      }
-                                                      ${(req.body.ad.buildSurface !== 0 && req.body.ad.buildSurface !== 999999999) ?
-        `<td style="border-collapse: collapse; vertical-align: top">
+                                                          </td>`
+                                                          : ``
+                                                      }
+                                                      ${
+                                                        req.body.ad
+                                                          .buildSurface !== 0 &&
+                                                        req.body.ad
+                                                          .buildSurface !==
+                                                          999999999
+                                                          ? `<td style="border-collapse: collapse; vertical-align: top">
                                                             ${maskTemplate(req.body.ad.buildSurface, "buildSurface")}
-                                                          </td>` : ``
-      }
-                                                      ${req.body.ad.quality.outdoorPool !== 0 ?
-        `<td style="border-collapse: collapse; vertical-align: top">
+                                                          </td>`
+                                                          : ``
+                                                      }
+                                                      ${
+                                                        req.body.ad.quality
+                                                          .outdoorPool !== 0
+                                                          ? `<td style="border-collapse: collapse; vertical-align: top">
                                                             <p>${req.body.ad.quality.outdoorPool}</p>
-                                                          </td>` : ``
-      }
-                                                      ${(req.body.ad.quality.bathrooms !== 0 && req.body.ad.quality.bathrooms !== 999) ?
-        `<td style="border-collapse: collapse; vertical-align: top">
+                                                          </td>`
+                                                          : ``
+                                                      }
+                                                      ${
+                                                        req.body.ad.quality
+                                                          .bathrooms !== 0 &&
+                                                        req.body.ad.quality
+                                                          .bathrooms !== 999
+                                                          ? `<td style="border-collapse: collapse; vertical-align: top">
                                                             <p>${req.body.ad.quality.bathrooms}</p>
-                                                         </td>` : ``
-      }
-                                                      ${(req.body.ad.quality.bedrooms !== 0 && req.body.ad.quality.bedrooms !== 999) ?
-        `<td style="border-collapse: collapse; vertical-align: top">
+                                                         </td>`
+                                                          : ``
+                                                      }
+                                                      ${
+                                                        req.body.ad.quality
+                                                          .bedrooms !== 0 &&
+                                                        req.body.ad.quality
+                                                          .bedrooms !== 999
+                                                          ? `<td style="border-collapse: collapse; vertical-align: top">
                                                             <p>${req.body.ad.quality.bedrooms}</p>
-                                                          </td>` : ``
-      }
+                                                          </td>`
+                                                          : ``
+                                                      }
                                                     </tr>
                                                   </tbody>
                                                 </table>
@@ -1503,11 +1601,21 @@ const sendAdToContacts = (req, res) => {
                                       <br />
                                       ${req.body.consultant.profession ? `${req.body.consultant.position} | ${req.body.consultant.profession}` : `${req.body.consultant.position}`}
                                       <br />
-                                      ${req.body.consultant.consultantPhoneNumber
-        ? `${req.body.consultant.consultantMobileNumber} | ${req.body.consultant.consultantPhoneNumber}`
-        : `${req.body.consultant.consultantMobileNumber}`}
+                                      ${
+                                        req.body.consultant
+                                          .consultantPhoneNumber
+                                          ? `${req.body.consultant.consultantMobileNumber} | ${req.body.consultant.consultantPhoneNumber}`
+                                          : `${req.body.consultant.consultantMobileNumber}`
+                                      }
                                       <br />
-                                      ${req.body.consultant.office2 ? `${req.body.consultant.office1} | ${req.body.consultant.office2}` : `${req.body.consultant.office1}`}
+                                      ${
+                                        req.body.consultant.offices &&
+                                        req.body.consultant.offices.length > 0
+                                          ? req.body.consultant.offices.join(
+                                              " | ",
+                                            )
+                                          : ""
+                                      }                                     
                                       <br />
                                       <a href="mailto:${req.body.consultant.consultantEmail}" target="_blank">
                                          ${req.body.consultant.consultantEmail}
@@ -1580,7 +1688,7 @@ const sendAdToContacts = (req, res) => {
             />
           </div>
         </body>
-      </html>`
+      </html>`,
   };
 
   transporter.sendMail(mailOptions, function (error, info) {
@@ -1590,8 +1698,6 @@ const sendAdToContacts = (req, res) => {
       res.status(200).json("Mensaje enviado");
     }
   });
-}
+};
 
-
-module.exports = { sendAdsToContact, sendAdToContacts }
-
+module.exports = { sendAdsToContact, sendAdToContacts };

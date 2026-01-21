@@ -13,12 +13,7 @@ const {
 const router = express.Router();
 
 router.post("/sendAdsToContact", getConsultantTokenById, sendAdsToContact);
-router.post(
-  "/sendAdToContacts",
-  getConsultantTokenById,
-  // createTransporter,
-  sendAdToContacts
-);
+router.post("/sendAdToContacts", getConsultantTokenById, sendAdToContacts);
 router.post("/webReservations", sendEmailReservationToClient);
 router.get("/unsubscribe/:id", unsubscribeEmails);
 
