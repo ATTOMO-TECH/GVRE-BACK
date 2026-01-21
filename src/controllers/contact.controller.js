@@ -164,7 +164,7 @@ const contactUpdate = async (req, res, next) => {
     const contactUpdated = await Contact.findByIdAndUpdate(
       req.body.id,
       fieldsToUpdate,
-      { new: true }
+      { new: true },
     );
 
     return res.status(200).json(contactUpdated);
@@ -187,10 +187,10 @@ const contactReceiveEmail = async (req, res, next) => {
     const contactUpdated = await Contact.findByIdAndUpdate(
       req.body.contact._id,
       newReceivedEmails,
-      { new: true }
+      { new: true },
     );
 
-    return res.status(200);
+    return res.status(200).json({ message: "Registro actualizado" });
   } catch (err) {
     return next(err);
   }
