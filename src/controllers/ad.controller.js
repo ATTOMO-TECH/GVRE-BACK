@@ -30,7 +30,7 @@ const repairAds = async (req, res, next) => {
     return res
       .status(200)
       .json(
-        `${count} anuncios han sido corregidos. La reparación ha finalizado correctamente`
+        `${count} anuncios han sido corregidos. La reparación ha finalizado correctamente`,
       );
   } catch (e) {
     return next(e);
@@ -327,7 +327,7 @@ const adGetByFilters = async (req, res, next) => {
             $regex: new RegExp(createAccentInsensitiveRegex(search), "i"),
           },
         },
-        "_id"
+        "_id",
       ).then((contacts) => contacts.map((contact) => contact._id));
 
       const consultantIds = await Consultant.find(
@@ -336,7 +336,7 @@ const adGetByFilters = async (req, res, next) => {
             $regex: new RegExp(createAccentInsensitiveRegex(search), "i"),
           },
         },
-        "_id"
+        "_id",
       ).then((consultants) => consultants.map((consultant) => consultant._id));
 
       const searchParts = search.split(" ");
@@ -353,7 +353,7 @@ const adGetByFilters = async (req, res, next) => {
       // Preparamos las regex para la calle y el número, insensibles a tildes y mayúsculas
       const streetRegex = new RegExp(
         createAccentInsensitiveRegex(streetPart),
-        "i"
+        "i",
       );
       const numberRegex = new RegExp(numberPart, "i"); // Usado solo si isNumber es true
 
@@ -759,26 +759,15 @@ const adCreate = async (req, res, next) => {
     // Add initial CREATION entry to changesHistory (persisted)
     try {
       let consultantInfo = null;
-      if (req.body.consultant) {
-        // If consultant is an object with fullName, use it; otherwise try to resolve by id
-        if (
-          typeof req.body.consultant === "object" &&
-          req.body.consultant.fullName
-        ) {
-          consultantInfo = {
-            _id: req.body.consultant._id,
-            fullName: req.body.consultant.fullName,
-          };
-        } else {
-          try {
-            const c = await Consultant.findById(
-              req.body.consultant,
-              "fullName"
-            ).lean();
-            if (c) consultantInfo = { _id: c._id, fullName: c.fullName };
-          } catch (e) {
-            // ignore resolution errors and leave consultantInfo null
-          }
+      if (req.body.userId) {
+        try {
+          const c = await Consultant.findById(
+            req.body.userId,
+            "fullName",
+          ).lean();
+          if (c) consultantInfo = { _id: c._id, fullName: c.fullName };
+        } catch (e) {
+          // ignore resolution errors and leave consultantInfo null
         }
       }
 
@@ -855,7 +844,7 @@ const adBlueprintImageUpload = async (req, res, next) => {
     const newImageUrls = req.files
       ? req.files.map(
           (file) =>
-            `https://${file.bucket}.fra1.digitaloceanspaces.com/${file.key}`
+            `https://${file.bucket}.fra1.digitaloceanspaces.com/${file.key}`,
         )
       : [];
 
@@ -869,7 +858,7 @@ const adBlueprintImageUpload = async (req, res, next) => {
       {
         $push: { "images.blueprint": { $each: newImageUrls } },
       },
-      { new: true }
+      { new: true },
     );
 
     if (!updatedAd) {
@@ -890,7 +879,7 @@ const adOthersImagesUpload = async (req, res, next) => {
     const newImageUrls = req.files
       ? req.files.map(
           (file) =>
-            `https://${file.bucket}.fra1.digitaloceanspaces.com/${file.key}`
+            `https://${file.bucket}.fra1.digitaloceanspaces.com/${file.key}`,
         )
       : [];
 
@@ -907,7 +896,7 @@ const adOthersImagesUpload = async (req, res, next) => {
       {
         $push: { "images.others": { $each: newImageUrls } },
       },
-      { new: true } // Esta opción nos devuelve el documento ya actualizado.
+      { new: true }, // Esta opción nos devuelve el documento ya actualizado.
     );
 
     if (!updatedAd) {
@@ -976,7 +965,7 @@ const adBlueprintImagesDelete = async (req, res, next) => {
     await Promise.all(imagesToDelete.map((img) => deleteImage(img)));
     // Filtrar las imágenes del array
     fieldsToUpdate.images.blueprint = fieldsToUpdate.images.blueprint.filter(
-      (location) => !imagesToDelete.includes(location)
+      (location) => !imagesToDelete.includes(location),
     );
 
     // Guardar en la base de datos
@@ -1006,7 +995,7 @@ const adOthersImagesDelete = async (req, res, next) => {
 
     // ✅ Filtra del array original
     fieldsToUpdate.images.others = fieldsToUpdate.images.others.filter(
-      (location) => !imagesToDelete.includes(location)
+      (location) => !imagesToDelete.includes(location),
     );
 
     const updatedAd = await Ad.findByIdAndUpdate(id, fieldsToUpdate, {
@@ -1152,23 +1141,10 @@ const adUpdate = async (req, res, next) => {
 
     // Resolve consultant info (prefer provided consultant, fallback to currentAd.consultant)
     let consultantInfo = null;
-    if (req.body.consultant) {
+    if (req.body.userId) {
       try {
-        if (
-          typeof req.body.consultant === "object" &&
-          req.body.consultant.fullName
-        ) {
-          consultantInfo = {
-            _id: req.body.consultant._id,
-            fullName: req.body.consultant.fullName,
-          };
-        } else {
-          const c = await Consultant.findById(
-            req.body.consultant,
-            "fullName"
-          ).lean();
-          if (c) consultantInfo = { _id: c._id, fullName: c.fullName };
-        }
+        const c = await Consultant.findById(req.body.userId, "fullName").lean();
+        if (c) consultantInfo = { _id: c._id, fullName: c.fullName };
       } catch (e) {
         // ignore
       }
@@ -1309,7 +1285,7 @@ const adUpdate = async (req, res, next) => {
         },
         {
           $set: { surfacesBox: req.body.surfacesBox },
-        }
+        },
       );
     }
     // Build update operation: $set for fields, and $push for history if entries exist
@@ -1380,7 +1356,7 @@ const adUpdateManyConsultantByConsultantId = async (req, res, next) => {
 
     const updatedAds = await Ad.updateMany(
       { consultant: currentConsultant },
-      { consultant: req.body[0].consultant }
+      { consultant: req.body[0].consultant },
     );
     if (updatedAds !== null) {
       return res.status(200).json(req.body);
@@ -1446,7 +1422,7 @@ const adUpdateImageOrder = async (req, res, next) => {
     const updatedAd = await Ad.findByIdAndUpdate(
       id,
       { $set: { [fieldToUpdate]: urls } }, // Usamos corchetes para usar la variable como nombre de la clave
-      { new: true }
+      { new: true },
     );
 
     // 5. Verificamos si se encontró y actualizó el anuncio
