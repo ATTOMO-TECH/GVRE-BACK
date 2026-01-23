@@ -20,11 +20,12 @@ const {
   webInvestmentServicesUpload,
   webAssetManagementServicesUpload,
   webCommercializationServicesUpload,
-  webVideoSectionUpload,
   getMapData,
   getAdCardData,
   updateCategoriesSection,
   getHighlightAds,
+  webVideoSectionUpdate,
+  getAdsByReference,
 } = require("../controllers/web.controller");
 
 const router = express.Router();
@@ -148,11 +149,9 @@ router.put(
 
 // HOME
 
-router.put(
-  "/home/videosection/edit/:id",
-  upload.array("videos", 5),
-  webVideoSectionUpload,
-);
+router.put("/home/videosection/edit/:id", webVideoSectionUpdate);
+
+router.get("/home/ads/search", getAdsByReference);
 
 // CATEGORIES SECTION
 router.put(
