@@ -131,10 +131,68 @@ const webHomeEdit = async (req, res, next) => {
   }
 };
 
-const webVideoSectionUpload = async (req, res, next) => {
+// const webVideoSectionUpload = async (req, res, next) => {
+//   try {
+//     const { id } = req.params;
+
+//     const webHome = await WebHome.findById(id);
+
+//     if (!webHome) {
+//       return res.status(404).json({ message: "WebHome no encontrado" });
+//     }
+
+//     const webHomeToUpdate = webHome;
+
+//     // 2. Actualizamos el Título (si viene en el body)
+//     // Usamos el operador ternario o if para no borrar el título si no se envía nada
+//     if (req.body.title) {
+//       webHomeToUpdate.videoSection.title = req.body.title;
+//     }
+
+//     if (req.body.subtitle) {
+//       webHomeToUpdate.videoSection.subtitle = req.body.subtitle;
+//     }
+
+//     // 3. Gestión de los Videos (req.files es un ARRAY)
+//     if (req.files && req.files.length > 0) {
+//       // A) LIMPIEZA: Si ya había videos antes, los borramos de la nube para no acumular basura
+//       if (
+//         webHomeToUpdate.videoSection.videos &&
+//         webHomeToUpdate.videoSection.videos.length > 0
+//       ) {
+//         // Recorremos el array de videos viejos y los borramos uno a uno
+//         webHomeToUpdate.videoSection.videos.forEach((videoUrl) => {
+//           deleteImage(videoUrl);
+//         });
+//       }
+
+//       // B) GUARDADO: Mapeamos los archivos nuevos para sacar sus URLs (location)
+//       // req.files devuelve un array de objetos, queremos un array de strings (urls)
+//       const newVideoUrls = req.files.map((file) => file.location);
+
+//       // Asignamos el nuevo array al modelo
+//       webHomeToUpdate.videoSection.videos = newVideoUrls;
+//     }
+
+//     // 4. Guardamos en Base de Datos
+//     const updatedWebHome = await WebHome.findByIdAndUpdate(
+//       id,
+//       webHomeToUpdate,
+//       { new: true },
+//     );
+
+//     return res.status(200).json(updatedWebHome);
+//   } catch (err) {
+//     console.log(err);
+//     return next(err);
+//   }
+// };
+
+const webVideoSectionUpdate = async (req, res, next) => {
   try {
     const { id } = req.params;
 
+    // 1. Buscamos el documento WebHome
     const webHome = await WebHome.findById(id);
 
     if (!webHome) {
@@ -143,47 +201,78 @@ const webVideoSectionUpload = async (req, res, next) => {
 
     const webHomeToUpdate = webHome;
 
-    // 2. Actualizamos el Título (si viene en el body)
-    // Usamos el operador ternario o if para no borrar el título si no se envía nada
-    if (req.body.title) {
-      webHomeToUpdate.videoSection.title = req.body.title;
-    }
-
-    if (req.body.subtitle) {
+    // 2. Actualizamos Título y Subtítulo de la sección (si vienen)
+    if (req.body.title) webHomeToUpdate.videoSection.title = req.body.title;
+    if (req.body.subtitle)
       webHomeToUpdate.videoSection.subtitle = req.body.subtitle;
+
+    // 3. Gestión de Anuncios Seleccionados (Lógica Principal)
+    // Esperamos un array de IDs de anuncios en el body, ej: req.body.selectedAdIds
+    if (
+      req.body.selectedAdIds &&
+      Array.isArray(req.body.selectedAdIds) &&
+      req.body.selectedAdIds.length > 0
+    ) {
+      // A) Buscamos los anuncios en la base de datos
+      const foundAds = await Ad.find({
+        _id: { $in: req.body.selectedAdIds },
+      }).select("title adReference adType sale rent images");
+
+      // B) Mapeamos los anuncios encontrados al formato que necesita el WebHome
+      // Nota: Hacemos un map sobre los IDs recibidos para mantener el ORDEN que el usuario eligió en el front
+      const newVideoCollection = req.body.selectedAdIds
+        .map((adId) => {
+          const ad = foundAds.find((a) => a._id.toString() === adId);
+
+          if (!ad) return null; // Si por alguna razón el ID no existe, lo saltamos
+
+          // Lógica de Precios (Venta, Alquiler o Ambos)
+          let priceObj = { sale: null, rent: null, label: "" };
+          let labels = [];
+
+          // Verificar si es venta y tiene precio
+          if (ad.adType.includes("Venta") && ad.sale && ad.sale.saleValue) {
+            priceObj.sale = ad.sale.saleValue;
+            labels.push("Venta");
+          }
+
+          // Verificar si es alquiler y tiene precio
+          if (ad.adType.includes("Alquiler") && ad.rent && ad.rent.rentValue) {
+            priceObj.rent = ad.rent.rentValue;
+            labels.push("Alquiler");
+          }
+
+          priceObj.label = labels.join(" / "); // Ej: "Venta / Alquiler" o solo "Venta"
+
+          // Retornamos el objeto estructurado para WebHome
+          return {
+            adId: ad._id,
+            videoUrl: ad.images?.media || "", // El video del anuncio
+            title: ad.title,
+            adReference: ad.adReference,
+            price: priceObj,
+          };
+        })
+        .filter((item) => item !== null); // Eliminamos nulos si hubo IDs inválidos
+
+      // C) Asignamos el nuevo array de objetos
+      webHomeToUpdate.videoSection.videos = newVideoCollection;
+    } else if (req.body.selectedAdIds && req.body.selectedAdIds.length === 0) {
+      // Si nos envían un array vacío explícitamente, limpiamos la sección
+      webHomeToUpdate.videoSection.videos = [];
     }
 
-    // 3. Gestión de los Videos (req.files es un ARRAY)
-    if (req.files && req.files.length > 0) {
-      // A) LIMPIEZA: Si ya había videos antes, los borramos de la nube para no acumular basura
-      if (
-        webHomeToUpdate.videoSection.videos &&
-        webHomeToUpdate.videoSection.videos.length > 0
-      ) {
-        // Recorremos el array de videos viejos y los borramos uno a uno
-        webHomeToUpdate.videoSection.videos.forEach((videoUrl) => {
-          deleteImage(videoUrl);
-        });
-      }
-
-      // B) GUARDADO: Mapeamos los archivos nuevos para sacar sus URLs (location)
-      // req.files devuelve un array de objetos, queremos un array de strings (urls)
-      const newVideoUrls = req.files.map((file) => file.location);
-
-      // Asignamos el nuevo array al modelo
-      webHomeToUpdate.videoSection.videos = newVideoUrls;
-    }
+    // NOTA: He eliminado la lógica de 'deleteImage'.
+    // Al ser videos vinculados a Anuncios, NO debemos borrarlos de la nube
+    // solo porque se quiten de la Home. Pertenecen al inventario.
 
     // 4. Guardamos en Base de Datos
-    const updatedWebHome = await WebHome.findByIdAndUpdate(
-      id,
-      webHomeToUpdate,
-      { new: true },
-    );
+    const updatedWebHome = await webHomeToUpdate.save();
+    // Usamos .save() suele disparar validaciones del schema mejor que findByIdAndUpdate
 
     return res.status(200).json(updatedWebHome);
   } catch (err) {
-    console.log(err);
+    console.error("Error en webVideoSectionUpdate:", err);
     return next(err);
   }
 };
@@ -799,6 +888,25 @@ const webInteriorismServicesUpload = async (req, res, next) => {
   }
 };
 
+const getAdsByReference = async (req, res, next) => {
+  try {
+    const { ref } = req.query;
+
+    if (!ref) return res.json([]);
+
+    const ads = await Ad.find({
+      adReference: { $regex: ref, $options: "i" },
+    })
+      .select("adReference title _id")
+      .limit(10);
+
+    return res.json(ads);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error buscando anuncios" });
+  }
+};
+
 const updateCategoriesSection = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -997,7 +1105,6 @@ module.exports = {
   webHomeGet,
   webHomeCreate,
   webHomeEdit,
-  webVideoSectionUpload,
   webResidentialCategoryImageUpload,
   webPatrimonialCategoryImageUpload,
   webCommercializationServicesUpload,
@@ -1014,6 +1121,8 @@ module.exports = {
   webHomeTalkWithUs,
   webDevelopmentServicesUpload,
   webInteriorismServicesUpload,
+  webVideoSectionUpdate,
+  getAdsByReference,
   updateCategoriesSection,
   getMapData,
   getAdCardData,

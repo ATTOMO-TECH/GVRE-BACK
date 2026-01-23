@@ -10,7 +10,19 @@ const webHomeSchema = new Schema(
     videoSection: {
       title: { type: String },
       subtitle: { type: [String] },
-      videos: { type: [String] },
+      videos: [
+        {
+          adId: { type: mongoose.Types.ObjectId, ref: "ads" },
+          videoUrl: { type: String },
+          title: { type: String },
+          adReference: { type: String },
+          price: {
+            sale: { type: Number },
+            rent: { type: Number },
+            label: { type: String },
+          },
+        },
+      ],
     },
     categoriesImages: {
       residential: { type: String },
