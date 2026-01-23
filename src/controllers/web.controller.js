@@ -2,12 +2,91 @@ const { deleteImage } = require("../middlewares/file.middleware");
 const Ad = require("../models/ad.model");
 const WebHome = require("../models/webHome.model");
 
-// HOME
 const webHomeGet = async (req, res, next) => {
   try {
-    const webData = await WebHome.find();
-    return res.status(200).json(webData);
+    // 1. Obtenemos la configuración visual
+    const webDocs = await WebHome.find();
+
+    if (!webDocs || webDocs.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    // Convertimos a objeto JS para poder modificarlo libremente
+    let webData = webDocs[0].toObject();
+
+    // 2. Filtro Base
+    const activeFilter = {
+      adStatus: "Activo",
+      showOnWeb: true,
+    };
+
+    // 3. Obtenemos nombres de ciudades
+    // Usamos el operador ?. por seguridad, aunque tengan defaults
+    const city1 = webData.categoriesSection?.location1?.title || "Madrid";
+    const city2 = webData.categoriesSection?.location2?.title || "Marbella";
+    const city3 = webData.categoriesSection?.location3?.title || "Sotogrande";
+    const city4 =
+      webData.categoriesSection?.location4?.title || "Puerto de Santa María";
+
+    // 4. Conteos en paralelo
+    const [
+      countResidential,
+      countPatrimonial,
+      countOthers,
+      countLocation1,
+      countLocation2,
+      countLocation3,
+      countLocation4,
+    ] = await Promise.all([
+      // A. Departamentos
+      Ad.countDocuments({ ...activeFilter, department: "Residencial" }),
+      Ad.countDocuments({ ...activeFilter, department: "Patrimonio" }),
+      Ad.countDocuments({ ...activeFilter, department: "Otros" }),
+
+      // B. Ciudades (Ubicaciones)
+      Ad.countDocuments({
+        ...activeFilter,
+        "adDirection.city": { $regex: new RegExp(`^${city1}$`, "i") },
+      }),
+      Ad.countDocuments({
+        ...activeFilter,
+        "adDirection.city": { $regex: new RegExp(`^${city2}$`, "i") },
+      }),
+      Ad.countDocuments({
+        ...activeFilter,
+        "adDirection.city": { $regex: new RegExp(`^${city3}$`, "i") },
+      }),
+      Ad.countDocuments({
+        ...activeFilter,
+        "adDirection.city": { $regex: new RegExp(`^${city4}$`, "i") },
+      }),
+    ]);
+
+    // 5. INYECCIÓN DIRECTA EN CADA OBJETO
+    // Verificamos que el objeto exista antes de asignarle el count para evitar errores
+    if (webData.categoriesSection) {
+      if (webData.categoriesSection.residential)
+        webData.categoriesSection.residential.count = countResidential;
+      if (webData.categoriesSection.patrimonial)
+        webData.categoriesSection.patrimonial.count = countPatrimonial;
+      if (webData.categoriesSection.others)
+        webData.categoriesSection.others.count = countOthers;
+
+      if (webData.categoriesSection.location1)
+        webData.categoriesSection.location1.count = countLocation1;
+      if (webData.categoriesSection.location2)
+        webData.categoriesSection.location2.count = countLocation2;
+      if (webData.categoriesSection.location3)
+        webData.categoriesSection.location3.count = countLocation3;
+      if (webData.categoriesSection.location4)
+        webData.categoriesSection.location4.count = countLocation4;
+    }
+
+    // Nota: Ya no creamos webData.categoriesSection.counts
+
+    return res.status(200).json([webData]);
   } catch (err) {
+    console.error("Error obteniendo datos de home:", err);
     return next(err);
   }
 };
@@ -44,7 +123,7 @@ const webHomeEdit = async (req, res, next) => {
     const updatedWebHome = await WebHome.findByIdAndUpdate(
       id,
       webHomeToUpdate,
-      { new: true }
+      { new: true },
     );
     return res.status(200).json(updatedWebHome);
   } catch (err) {
@@ -100,7 +179,7 @@ const webVideoSectionUpload = async (req, res, next) => {
     const updatedWebHome = await WebHome.findByIdAndUpdate(
       id,
       webHomeToUpdate,
-      { new: true }
+      { new: true },
     );
 
     return res.status(200).json(updatedWebHome);
@@ -124,7 +203,7 @@ const webResidentialCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -153,7 +232,7 @@ const webPatrimonialCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -182,7 +261,7 @@ const webArtCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -211,7 +290,7 @@ const webCatalogCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -240,7 +319,7 @@ const webCoastCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -269,7 +348,7 @@ const webRusticCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -298,7 +377,7 @@ const webSingularCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -333,7 +412,7 @@ const webInteriorismTextAndImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -367,7 +446,7 @@ const webSellTextAndImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -402,7 +481,7 @@ const webOfficeTextAndImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -441,7 +520,7 @@ const webHomeTalkWithUs = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -475,7 +554,7 @@ const webDevelopmentServicesUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -504,7 +583,7 @@ const webInvestmentServicesUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -539,7 +618,7 @@ const webAssetManagementServicesUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
 
       return res.status(200).json(updatedWebHome);
@@ -575,7 +654,7 @@ const webCommercializationServicesUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
 
       return res.status(200).json(updatedWebHome);
@@ -608,7 +687,7 @@ const webInteriorismServicesUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -619,6 +698,72 @@ const webInteriorismServicesUpload = async (req, res, next) => {
     }
   } catch (err) {
     console.log(err);
+    return next(err);
+  }
+};
+
+const updateCategoriesSection = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { title, subtitle, key } = req.body;
+    const file = req.file;
+
+    // 1. Validación de seguridad
+    if (!key) {
+      return res
+        .status(400)
+        .json({ message: "Falta la clave (key) de la sección a editar" });
+    }
+
+    const webHome = await WebHome.findById(id);
+    if (!webHome) {
+      return res.status(404).json({ message: "WebHome no encontrado" });
+    }
+
+    // 2. Aseguramos que la estructura existe en el objeto
+    // (Esto evita errores de "Cannot read property of undefined")
+    if (!webHome.categoriesSection) {
+      webHome.categoriesSection = {};
+    }
+    if (!webHome.categoriesSection[key]) {
+      webHome.categoriesSection[key] = {};
+    }
+
+    // 3. Actualizamos el Título (solo si viene en el body)
+    if (title) {
+      webHome.categoriesSection[key].title = title;
+    }
+
+    if (subtitle) {
+      webHome.categoriesSection[key].subtitle = subtitle;
+    }
+
+    // 4. Actualizamos la Imagen (solo si viene un archivo nuevo)
+    if (file) {
+      // A) LIMPIEZA: Obtenemos la imagen antigua
+      const oldImageUrl = webHome.categoriesSection[key].image;
+
+      // Si existe una imagen antigua, la borramos de la nube
+      if (oldImageUrl) {
+        // Lógica idéntica a tu videoSection
+        deleteImage(oldImageUrl);
+      }
+
+      // B) GUARDADO: Asignamos la nueva URL de DigitalOcean/S3
+      // Usamos .location porque así lo tienes configurado en tu Multer S3
+      webHome.categoriesSection[key].image = file.location;
+    }
+
+    // 5. Forzamos a Mongoose a detectar el cambio
+    // Al modificar propiedades dentro de un objeto anidado (Mixed),
+    // a veces Mongoose no se entera. Esto lo asegura.
+    webHome.markModified("categoriesSection");
+
+    const updatedWebHome = await webHome.save();
+
+    return res.status(200).json(updatedWebHome);
+  } catch (err) {
+    console.error("Error en updateCategoriesSection:", err);
     return next(err);
   }
 };
@@ -737,8 +882,17 @@ const getAdCardData = async (req, res, next) => {
 
     res.status(200).json(ads);
   } catch (error) {
-    console.error("Error en getResientialCardData:", error);
+    console.error("Error obteniendo activos:", error);
     next(error);
+  }
+};
+
+const getHighlightAds = async (req, res, next) => {
+  try {
+    const ads = await Ad.find({ featuredOnMain: true });
+    res.status(200).json(ads);
+  } catch (error) {
+    console.error("Error obteniendo activos destacados:", error);
   }
 };
 
@@ -763,6 +917,8 @@ module.exports = {
   webHomeTalkWithUs,
   webDevelopmentServicesUpload,
   webInteriorismServicesUpload,
+  updateCategoriesSection,
   getMapData,
   getAdCardData,
+  getHighlightAds,
 };
