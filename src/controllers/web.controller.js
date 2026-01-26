@@ -6,30 +6,55 @@ const Consultant = require("../models/consultant.model");
 const webHomeGet = async (req, res, next) => {
   try {
     // 1. Obtenemos la configuración visual
-    const webDocs = await WebHome.find();
+    // CAMBIO: Añadimos .populate para traer el estado real del anuncio
+    const webDocs = await WebHome.find().populate({
+      path: "videoSection.videos.adId",
+      select: "adStatus showOnWeb",
+    });
 
     if (!webDocs || webDocs.length === 0) {
       return res.status(200).json([]);
     }
 
-    // Convertimos a objeto JS para poder modificarlo libremente
+    // Convertimos a objeto JS para poder modificarlo
     let webData = webDocs[0].toObject();
 
-    // 2. Filtro Base
+    // 2. Filtro Base para los conteos
     const activeFilter = {
       adStatus: "Activo",
       showOnWeb: true,
     };
 
+    // --- NUEVA LÓGICA DE SEGURIDAD PARA VIDEOS ---
+    if (webData.videoSection?.videos?.length > 0) {
+      webData.videoSection.videos = webData.videoSection.videos.filter(
+        (video) => {
+          // video.adId ahora es el objeto poblado (o null si se borró de la BD)
+          const ad = video.adId;
+
+          // Si el anuncio no existe, o no está activo, o no se muestra en web...
+          if (!ad || ad.adStatus !== "Activo" || !ad.showOnWeb) {
+            return false; // ...lo quitamos de la lista de visualización
+          }
+
+          // Si pasa el filtro, devolvemos true.
+          // Opcional: Restauramos el adId a string si tu frontend espera solo el ID
+          // video.adId = ad._id;
+
+          return true;
+        },
+      );
+    }
+    // ---------------------------------------------
+
     // 3. Obtenemos nombres de ciudades
-    // Usamos el operador ?. por seguridad, aunque tengan defaults
     const city1 = webData.categoriesSection?.location1?.title || "Madrid";
     const city2 = webData.categoriesSection?.location2?.title || "Marbella";
     const city3 = webData.categoriesSection?.location3?.title || "Sotogrande";
     const city4 =
       webData.categoriesSection?.location4?.title || "Puerto de Santa María";
 
-    // 4. Conteos en paralelo
+    // 4. Conteos en paralelo (Esto lo tenías perfecto)
     const [
       countResidential,
       countPatrimonial,
@@ -39,12 +64,9 @@ const webHomeGet = async (req, res, next) => {
       countLocation3,
       countLocation4,
     ] = await Promise.all([
-      // A. Departamentos
       Ad.countDocuments({ ...activeFilter, department: "Residencial" }),
       Ad.countDocuments({ ...activeFilter, department: "Patrimonio" }),
       Ad.countDocuments({ ...activeFilter, department: "Otros" }),
-
-      // B. Ciudades (Ubicaciones)
       Ad.countDocuments({
         ...activeFilter,
         "adDirection.city": { $regex: new RegExp(`^${city1}$`, "i") },
@@ -63,8 +85,7 @@ const webHomeGet = async (req, res, next) => {
       }),
     ]);
 
-    // 5. INYECCIÓN DIRECTA EN CADA OBJETO
-    // Verificamos que el objeto exista antes de asignarle el count para evitar errores
+    // 5. INYECCIÓN DIRECTA
     if (webData.categoriesSection) {
       if (webData.categoriesSection.residential)
         webData.categoriesSection.residential.count = countResidential;
@@ -72,7 +93,6 @@ const webHomeGet = async (req, res, next) => {
         webData.categoriesSection.patrimonial.count = countPatrimonial;
       if (webData.categoriesSection.others)
         webData.categoriesSection.others.count = countOthers;
-
       if (webData.categoriesSection.location1)
         webData.categoriesSection.location1.count = countLocation1;
       if (webData.categoriesSection.location2)
@@ -82,8 +102,6 @@ const webHomeGet = async (req, res, next) => {
       if (webData.categoriesSection.location4)
         webData.categoriesSection.location4.count = countLocation4;
     }
-
-    // Nota: Ya no creamos webData.categoriesSection.counts
 
     return res.status(200).json([webData]);
   } catch (err) {
