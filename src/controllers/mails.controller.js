@@ -90,7 +90,6 @@ const sendAdsToContact = async (req, res) => {
   const updatedConsultant = await Consultant.findOne({
     _id: req.body.consultant._id,
   });
-
   const createAdsRows = (ads) => {
     return ads.map((ad) => {
       const pathFile = ad.images.main.split(" ").join("%20");
@@ -205,11 +204,11 @@ const sendAdsToContact = async (req, res) => {
                                     ad.sale.saleValue,
                                     "sale",
                                     ad.rent.rentValue,
-                                    "rent"
+                                    "rent",
                                   )
                                 : ad.adType.includes("Venta")
-                                ? maskTemplate(ad.sale.saleValue, "sale")
-                                : maskTemplate(ad.rent.rentValue, "rent")
+                                  ? maskTemplate(ad.sale.saleValue, "sale")
+                                  : maskTemplate(ad.rent.rentValue, "rent")
                             }
                           </h2>
                         </td>
@@ -361,7 +360,7 @@ const sendAdsToContact = async (req, res) => {
                                   ? `<td style="border-collapse: collapse; vertical-align: top">
                                     ${maskTemplate(
                                       ad.plotSurface,
-                                      "plotSurface"
+                                      "plotSurface",
                                     )}
                                   </td>`
                                   : ``
@@ -372,7 +371,7 @@ const sendAdsToContact = async (req, res) => {
                                   ? `<td style="border-collapse: collapse; vertical-align: top">
                                     ${maskTemplate(
                                       ad.buildSurface,
-                                      "buildSurface"
+                                      "buildSurface",
                                     )}
                                   </td>`
                                   : ``
@@ -447,11 +446,7 @@ const sendAdsToContact = async (req, res) => {
     generateZonesHTML(updatedConsultant?.consultantEmailSignZones);
 
   const transporter = nodemailer.createTransport({
-    service: "Gmail",
-    auth: {
-      user: `${req.body.consultant.consultantEmail}`,
-      pass: req.consultantToken,
-    },
+    SES: new AWS.SES(SES_CONFIG),
   });
 
   transporter.verify(function (error, success) {
@@ -848,9 +843,10 @@ const sendAdsToContact = async (req, res) => {
                                   }
                                   <br />
                                   ${
-                                    req.body.consultant.office2
-                                      ? `${req.body.consultant.office1} | ${req.body.consultant.office2}`
-                                      : `${req.body.consultant.office1}`
+                                    req.body.consultant.offices &&
+                                    req.body.consultant.offices.length > 0
+                                      ? req.body.consultant.offices.join(" | ")
+                                      : ""
                                   }
                                   <br />
                                   <a href="mailto:${
@@ -1403,17 +1399,17 @@ const sendAdToContacts = async (req, res) => {
                                               >
                                                 ${
                                                   req.body.ad.adType.includes(
-                                                    "Venta"
+                                                    "Venta",
                                                   )
                                                     ? maskTemplate(
                                                         req.body.ad.sale
                                                           .saleValue,
-                                                        "sale"
+                                                        "sale",
                                                       )
                                                     : maskTemplate(
                                                         req.body.ad.rent
                                                           .rentValue,
-                                                        "rent"
+                                                        "rent",
                                                       )
                                                 }
                                               </h2>
@@ -1588,7 +1584,7 @@ const sendAdToContacts = async (req, res) => {
                                                           ${maskTemplate(
                                                             req.body.ad
                                                               .plotSurface,
-                                                            "plotSurface"
+                                                            "plotSurface",
                                                           )}
                                                         </td>`
                                                         : ``
@@ -1603,7 +1599,7 @@ const sendAdToContacts = async (req, res) => {
                                                           ${maskTemplate(
                                                             req.body.ad
                                                               .buildSurface,
-                                                            "buildSurface"
+                                                            "buildSurface",
                                                           )}
                                                         </td>`
                                                         : ``
@@ -1756,9 +1752,10 @@ const sendAdToContacts = async (req, res) => {
                                   }
                                   <br />
                                   ${
-                                    req.body.consultant.office2
-                                      ? `${req.body.consultant.office1} | ${req.body.consultant.office2}`
-                                      : `${req.body.consultant.office1}`
+                                    req.body.consultant.offices &&
+                                    req.body.consultant.offices.length > 0
+                                      ? req.body.consultant.offices.join(" | ")
+                                      : ""
                                   }
                                   <br />
                                   <a href="mailto:${
@@ -1853,14 +1850,14 @@ const sendAdToContacts = async (req, res) => {
       // 👇 Aquí montas el HTML personalizado para ese contacto
       const personalizedHtml = baseMailOptions.html.replace(
         /\$\{unsubscribeLink\}/g,
-        unsubscribeLink
+        unsubscribeLink,
       );
       const mailOptions = { ...baseMailOptions };
       mailOptions.from = req.body.consultant.consultantEmail;
       mailOptions.to = recipient.requestContact.email;
       mailOptions.bcc = req.body.consultant.consultantEmail;
-      (mailOptions.html = personalizedHtml),
-        await sendMailWithDelay(mailOptions, 800);
+      ((mailOptions.html = personalizedHtml),
+        await sendMailWithDelay(mailOptions, 800));
     }
   };
 
@@ -2395,7 +2392,7 @@ const unsubscribeEmails = async (req, res) => {
     const contact = await Contact.findByIdAndUpdate(
       req.params.id,
       { notReceiveCommunications: true },
-      { new: true }
+      { new: true },
     );
 
     if (!contact) {

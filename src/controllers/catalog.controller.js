@@ -23,8 +23,6 @@ const catalogGetOne = async (req, res, next) => {
 
 const catalogCreate = async (req, res, next) => {
   try {
-    // console.log(req.body);
-    // console.log(req.files);
     const newCatalog = new Catalog({
       year: req.body.year,
       portraidImage: req.files[0].location,
@@ -45,7 +43,6 @@ const catalogEdit = async (req, res, next) => {
     const { id } = req.params;
     const catalog = await Catalog.findById(id);
     const catalogToUpdate = catalog;
-    // console.log(req.files);
     catalogToUpdate.year = req.body.year;
     if (req.files.length === 2) {
       deleteImage(catalogToUpdate.portraidImage);
@@ -65,7 +62,7 @@ const catalogEdit = async (req, res, next) => {
     const updatedCatalog = await Catalog.findByIdAndUpdate(
       id,
       catalogToUpdate,
-      { new: true }
+      { new: true },
     );
     return res.status(200).json(updatedCatalog);
   } catch (err) {

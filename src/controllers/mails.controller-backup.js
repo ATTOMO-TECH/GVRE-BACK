@@ -31,7 +31,6 @@ const maskTemplate = (value, ref) => {
 const sendAdsToContact = (req, res) => {
   const createAdsRows = (ads) => {
     return ads.map((ad) => {
-      console.log("imagenURL", ad.images.main);
       return `${
         ad.adDirectionSelected !== undefined
           ? `<div style="max-width: 600px; margin: auto">
@@ -275,7 +274,7 @@ const sendAdsToContact = (req, res) => {
                                   ? `<td style="border-collapse: collapse; vertical-align: top">
                                     ${maskTemplate(
                                       ad.plotSurface,
-                                      "plotSurface"
+                                      "plotSurface",
                                     )}
                                   </td>`
                                   : ``
@@ -286,7 +285,7 @@ const sendAdsToContact = (req, res) => {
                                   ? `<td style="border-collapse: collapse; vertical-align: top">
                                     ${maskTemplate(
                                       ad.buildSurface,
-                                      "buildSurface"
+                                      "buildSurface",
                                     )}
                                   </td>`
                                   : ``
@@ -749,9 +748,10 @@ const sendAdsToContact = (req, res) => {
                                   }
                                   <br />
                                   ${
-                                    req.body.consultant.office2
-                                      ? `${req.body.consultant.office1} | ${req.body.consultant.office2}`
-                                      : `${req.body.consultant.office1}`
+                                    req.body.consultant.offices &&
+                                    req.body.consultant.offices.length > 0
+                                      ? req.body.consultant.offices.join(" | ")
+                                      : ""
                                   }
                                   <br />
                                   <a href="mailto:${
@@ -845,7 +845,7 @@ const sendAdToContacts = (req, res) => {
   const setClientToMessage = (client) => {
     return req.body.messageP1.replace(
       req.body.request.requestContact.fullName,
-      client
+      client,
     );
   };
 
@@ -1156,7 +1156,7 @@ const sendAdToContacts = (req, res) => {
                           >
                             <div style="max-width: 600px; margin: auto">
                             ${setClientToMessage(
-                              req.body.request.requestContact.fullName
+                              req.body.request.requestContact.fullName,
                             )}
                             </div>
                             <div style="max-width: 600px; margin: auto"><br /></div>
@@ -1282,17 +1282,17 @@ const sendAdToContacts = (req, res) => {
                                                 >
                                                   ${
                                                     req.body.ad.adType.includes(
-                                                      "Venta"
+                                                      "Venta",
                                                     )
                                                       ? maskTemplate(
                                                           req.body.ad.sale
                                                             .saleValue,
-                                                          "sale"
+                                                          "sale",
                                                         )
                                                       : maskTemplate(
                                                           req.body.ad.rent
                                                             .rentValue,
-                                                          "rent"
+                                                          "rent",
                                                         )
                                                   }
                                                 </h2>
@@ -1453,7 +1453,7 @@ const sendAdToContacts = (req, res) => {
                                                             ${maskTemplate(
                                                               req.body.ad
                                                                 .plotSurface,
-                                                              "plotSurface"
+                                                              "plotSurface",
                                                             )}
                                                           </td>`
                                                           : ``
@@ -1468,7 +1468,7 @@ const sendAdToContacts = (req, res) => {
                                                             ${maskTemplate(
                                                               req.body.ad
                                                                 .buildSurface,
-                                                              "buildSurface"
+                                                              "buildSurface",
                                                             )}
                                                           </td>`
                                                           : ``
@@ -1615,9 +1615,12 @@ const sendAdToContacts = (req, res) => {
                                       }
                                       <br />
                                       ${
-                                        req.body.consultant.office2
-                                          ? `${req.body.consultant.office1} | ${req.body.consultant.office2}`
-                                          : `${req.body.consultant.office1}`
+                                        req.body.consultant.offices &&
+                                        req.body.consultant.offices.length > 0
+                                          ? req.body.consultant.offices.join(
+                                              " | ",
+                                            )
+                                          : ""
                                       }
                                       <br />
                                       <a href="mailto:${

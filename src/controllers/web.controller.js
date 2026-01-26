@@ -1,21 +1,99 @@
 const { deleteImage } = require("../middlewares/file.middleware");
 const Ad = require("../models/ad.model");
 const WebHome = require("../models/webHome.model");
+const Consultant = require("../models/consultant.model");
 
-// HOME
 const webHomeGet = async (req, res, next) => {
   try {
-    const webData = await WebHome.find();
-    return res.status(200).json(webData);
+    // 1. Obtenemos la configuración visual
+    const webDocs = await WebHome.find();
+
+    if (!webDocs || webDocs.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    // Convertimos a objeto JS para poder modificarlo libremente
+    let webData = webDocs[0].toObject();
+
+    // 2. Filtro Base
+    const activeFilter = {
+      adStatus: "Activo",
+      showOnWeb: true,
+    };
+
+    // 3. Obtenemos nombres de ciudades
+    // Usamos el operador ?. por seguridad, aunque tengan defaults
+    const city1 = webData.categoriesSection?.location1?.title || "Madrid";
+    const city2 = webData.categoriesSection?.location2?.title || "Marbella";
+    const city3 = webData.categoriesSection?.location3?.title || "Sotogrande";
+    const city4 =
+      webData.categoriesSection?.location4?.title || "Puerto de Santa María";
+
+    // 4. Conteos en paralelo
+    const [
+      countResidential,
+      countPatrimonial,
+      countOthers,
+      countLocation1,
+      countLocation2,
+      countLocation3,
+      countLocation4,
+    ] = await Promise.all([
+      // A. Departamentos
+      Ad.countDocuments({ ...activeFilter, department: "Residencial" }),
+      Ad.countDocuments({ ...activeFilter, department: "Patrimonio" }),
+      Ad.countDocuments({ ...activeFilter, department: "Otros" }),
+
+      // B. Ciudades (Ubicaciones)
+      Ad.countDocuments({
+        ...activeFilter,
+        "adDirection.city": { $regex: new RegExp(`^${city1}$`, "i") },
+      }),
+      Ad.countDocuments({
+        ...activeFilter,
+        "adDirection.city": { $regex: new RegExp(`^${city2}$`, "i") },
+      }),
+      Ad.countDocuments({
+        ...activeFilter,
+        "adDirection.city": { $regex: new RegExp(`^${city3}$`, "i") },
+      }),
+      Ad.countDocuments({
+        ...activeFilter,
+        "adDirection.city": { $regex: new RegExp(`^${city4}$`, "i") },
+      }),
+    ]);
+
+    // 5. INYECCIÓN DIRECTA EN CADA OBJETO
+    // Verificamos que el objeto exista antes de asignarle el count para evitar errores
+    if (webData.categoriesSection) {
+      if (webData.categoriesSection.residential)
+        webData.categoriesSection.residential.count = countResidential;
+      if (webData.categoriesSection.patrimonial)
+        webData.categoriesSection.patrimonial.count = countPatrimonial;
+      if (webData.categoriesSection.others)
+        webData.categoriesSection.others.count = countOthers;
+
+      if (webData.categoriesSection.location1)
+        webData.categoriesSection.location1.count = countLocation1;
+      if (webData.categoriesSection.location2)
+        webData.categoriesSection.location2.count = countLocation2;
+      if (webData.categoriesSection.location3)
+        webData.categoriesSection.location3.count = countLocation3;
+      if (webData.categoriesSection.location4)
+        webData.categoriesSection.location4.count = countLocation4;
+    }
+
+    // Nota: Ya no creamos webData.categoriesSection.counts
+
+    return res.status(200).json([webData]);
   } catch (err) {
+    console.error("Error obteniendo datos de home:", err);
     return next(err);
   }
 };
 
 const webHomeCreate = async (req, res, next) => {
   try {
-    // console.log(req.body);
-    // console.log(req.file);
     const newWebHome = new WebHome({
       mainTitle: req.body.mainTitle,
       mainSubtitle: req.body.mainSubtitle,
@@ -44,7 +122,7 @@ const webHomeEdit = async (req, res, next) => {
     const updatedWebHome = await WebHome.findByIdAndUpdate(
       id,
       webHomeToUpdate,
-      { new: true }
+      { new: true },
     );
     return res.status(200).json(updatedWebHome);
   } catch (err) {
@@ -53,10 +131,68 @@ const webHomeEdit = async (req, res, next) => {
   }
 };
 
-const webVideoSectionUpload = async (req, res, next) => {
+// const webVideoSectionUpload = async (req, res, next) => {
+//   try {
+//     const { id } = req.params;
+
+//     const webHome = await WebHome.findById(id);
+
+//     if (!webHome) {
+//       return res.status(404).json({ message: "WebHome no encontrado" });
+//     }
+
+//     const webHomeToUpdate = webHome;
+
+//     // 2. Actualizamos el Título (si viene en el body)
+//     // Usamos el operador ternario o if para no borrar el título si no se envía nada
+//     if (req.body.title) {
+//       webHomeToUpdate.videoSection.title = req.body.title;
+//     }
+
+//     if (req.body.subtitle) {
+//       webHomeToUpdate.videoSection.subtitle = req.body.subtitle;
+//     }
+
+//     // 3. Gestión de los Videos (req.files es un ARRAY)
+//     if (req.files && req.files.length > 0) {
+//       // A) LIMPIEZA: Si ya había videos antes, los borramos de la nube para no acumular basura
+//       if (
+//         webHomeToUpdate.videoSection.videos &&
+//         webHomeToUpdate.videoSection.videos.length > 0
+//       ) {
+//         // Recorremos el array de videos viejos y los borramos uno a uno
+//         webHomeToUpdate.videoSection.videos.forEach((videoUrl) => {
+//           deleteImage(videoUrl);
+//         });
+//       }
+
+//       // B) GUARDADO: Mapeamos los archivos nuevos para sacar sus URLs (location)
+//       // req.files devuelve un array de objetos, queremos un array de strings (urls)
+//       const newVideoUrls = req.files.map((file) => file.location);
+
+//       // Asignamos el nuevo array al modelo
+//       webHomeToUpdate.videoSection.videos = newVideoUrls;
+//     }
+
+//     // 4. Guardamos en Base de Datos
+//     const updatedWebHome = await WebHome.findByIdAndUpdate(
+//       id,
+//       webHomeToUpdate,
+//       { new: true },
+//     );
+
+//     return res.status(200).json(updatedWebHome);
+//   } catch (err) {
+//     console.log(err);
+//     return next(err);
+//   }
+// };
+
+const webVideoSectionUpdate = async (req, res, next) => {
   try {
     const { id } = req.params;
 
+    // 1. Buscamos el documento WebHome
     const webHome = await WebHome.findById(id);
 
     if (!webHome) {
@@ -65,47 +201,78 @@ const webVideoSectionUpload = async (req, res, next) => {
 
     const webHomeToUpdate = webHome;
 
-    // 2. Actualizamos el Título (si viene en el body)
-    // Usamos el operador ternario o if para no borrar el título si no se envía nada
-    if (req.body.title) {
-      webHomeToUpdate.videoSection.title = req.body.title;
-    }
-
-    if (req.body.subtitle) {
+    // 2. Actualizamos Título y Subtítulo de la sección (si vienen)
+    if (req.body.title) webHomeToUpdate.videoSection.title = req.body.title;
+    if (req.body.subtitle)
       webHomeToUpdate.videoSection.subtitle = req.body.subtitle;
+
+    // 3. Gestión de Anuncios Seleccionados (Lógica Principal)
+    // Esperamos un array de IDs de anuncios en el body, ej: req.body.selectedAdIds
+    if (
+      req.body.selectedAdIds &&
+      Array.isArray(req.body.selectedAdIds) &&
+      req.body.selectedAdIds.length > 0
+    ) {
+      // A) Buscamos los anuncios en la base de datos
+      const foundAds = await Ad.find({
+        _id: { $in: req.body.selectedAdIds },
+      }).select("title adReference adType sale rent images");
+
+      // B) Mapeamos los anuncios encontrados al formato que necesita el WebHome
+      // Nota: Hacemos un map sobre los IDs recibidos para mantener el ORDEN que el usuario eligió en el front
+      const newVideoCollection = req.body.selectedAdIds
+        .map((adId) => {
+          const ad = foundAds.find((a) => a._id.toString() === adId);
+
+          if (!ad) return null; // Si por alguna razón el ID no existe, lo saltamos
+
+          // Lógica de Precios (Venta, Alquiler o Ambos)
+          let priceObj = { sale: null, rent: null, label: "" };
+          let labels = [];
+
+          // Verificar si es venta y tiene precio
+          if (ad.adType.includes("Venta") && ad.sale && ad.sale.saleValue) {
+            priceObj.sale = ad.sale.saleValue;
+            labels.push("Venta");
+          }
+
+          // Verificar si es alquiler y tiene precio
+          if (ad.adType.includes("Alquiler") && ad.rent && ad.rent.rentValue) {
+            priceObj.rent = ad.rent.rentValue;
+            labels.push("Alquiler");
+          }
+
+          priceObj.label = labels.join(" / "); // Ej: "Venta / Alquiler" o solo "Venta"
+
+          // Retornamos el objeto estructurado para WebHome
+          return {
+            adId: ad._id,
+            videoUrl: ad.images?.media || "", // El video del anuncio
+            title: ad.title,
+            adReference: ad.adReference,
+            price: priceObj,
+          };
+        })
+        .filter((item) => item !== null); // Eliminamos nulos si hubo IDs inválidos
+
+      // C) Asignamos el nuevo array de objetos
+      webHomeToUpdate.videoSection.videos = newVideoCollection;
+    } else if (req.body.selectedAdIds && req.body.selectedAdIds.length === 0) {
+      // Si nos envían un array vacío explícitamente, limpiamos la sección
+      webHomeToUpdate.videoSection.videos = [];
     }
 
-    // 3. Gestión de los Videos (req.files es un ARRAY)
-    if (req.files && req.files.length > 0) {
-      // A) LIMPIEZA: Si ya había videos antes, los borramos de la nube para no acumular basura
-      if (
-        webHomeToUpdate.videoSection.videos &&
-        webHomeToUpdate.videoSection.videos.length > 0
-      ) {
-        // Recorremos el array de videos viejos y los borramos uno a uno
-        webHomeToUpdate.videoSection.videos.forEach((videoUrl) => {
-          deleteImage(videoUrl);
-        });
-      }
-
-      // B) GUARDADO: Mapeamos los archivos nuevos para sacar sus URLs (location)
-      // req.files devuelve un array de objetos, queremos un array de strings (urls)
-      const newVideoUrls = req.files.map((file) => file.location);
-
-      // Asignamos el nuevo array al modelo
-      webHomeToUpdate.videoSection.videos = newVideoUrls;
-    }
+    // NOTA: He eliminado la lógica de 'deleteImage'.
+    // Al ser videos vinculados a Anuncios, NO debemos borrarlos de la nube
+    // solo porque se quiten de la Home. Pertenecen al inventario.
 
     // 4. Guardamos en Base de Datos
-    const updatedWebHome = await WebHome.findByIdAndUpdate(
-      id,
-      webHomeToUpdate,
-      { new: true }
-    );
+    const updatedWebHome = await webHomeToUpdate.save();
+    // Usamos .save() suele disparar validaciones del schema mejor que findByIdAndUpdate
 
     return res.status(200).json(updatedWebHome);
   } catch (err) {
-    console.log(err);
+    console.error("Error en webVideoSectionUpdate:", err);
     return next(err);
   }
 };
@@ -124,7 +291,7 @@ const webResidentialCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -153,7 +320,7 @@ const webPatrimonialCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -182,7 +349,7 @@ const webArtCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -211,7 +378,7 @@ const webCatalogCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -240,7 +407,7 @@ const webCoastCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -269,7 +436,7 @@ const webRusticCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -298,7 +465,7 @@ const webSingularCategoryImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -333,7 +500,7 @@ const webInteriorismTextAndImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -367,7 +534,7 @@ const webSellTextAndImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -402,7 +569,7 @@ const webOfficeTextAndImageUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -419,8 +586,6 @@ const webOfficeTextAndImageUpload = async (req, res, next) => {
 
 const webHomeTalkWithUs = async (req, res, next) => {
   try {
-    // console.log(req.body);
-    // console.log(req.params);
     const { id } = req.params;
     const webHome = await WebHome.findById(id);
     const webHomeToUpdate = webHome;
@@ -432,16 +597,118 @@ const webHomeTalkWithUs = async (req, res, next) => {
       }
       webHomeToUpdate.talkWithUs.titleHome = req.body.titleHome;
       webHomeToUpdate.talkWithUs.titleContact = req.body.titleContact;
-      webHomeToUpdate.talkWithUs.directions = req.body.directions;
+
+      // Preserve old directions to detect changes and update consultant offices
+      const oldDirections = Array.isArray(webHomeToUpdate.talkWithUs.directions)
+        ? webHomeToUpdate.talkWithUs.directions
+        : [];
+
+      // Normalize incoming directions into an array
+      let newDirections = req.body.directions;
+      if (typeof newDirections === "string") {
+        try {
+          newDirections = JSON.parse(newDirections);
+        } catch (e) {
+          // fallback: split by comma
+          newDirections = newDirections.split(",").map((s) => s.trim());
+        }
+      }
+      newDirections = Array.isArray(newDirections) ? newDirections : [];
+
+      webHomeToUpdate.talkWithUs.directions = newDirections;
+
       webHomeToUpdate.talkWithUs.phones = req.body.phones;
       webHomeToUpdate.talkWithUs.email = req.body.email;
       webHomeToUpdate.talkWithUs.contactButton = req.body.contactButton;
       webHomeToUpdate.talkWithUs.descriptionContact =
         req.body.descriptionContact;
+
+      // Build replacements map by comparing old/new by index. If an entry changed,
+      // update consultant.offices entries that equal the old string and replace with the new string.
+      const maxLen = Math.max(oldDirections.length, newDirections.length);
+      const replacements = [];
+      for (let i = 0; i < maxLen; i++) {
+        const oldDir = oldDirections[i];
+        const newDir = newDirections[i];
+        if (oldDir && newDir && oldDir !== newDir) {
+          replacements.push({ from: oldDir, to: newDir });
+        }
+      }
+
+      if (replacements.length > 0) {
+        // Try to run atomic updateMany operations with arrayFilters. If that fails,
+        // fall back to read-modify-write per consultant.
+        try {
+          for (const { from, to } of replacements) {
+            // Use updateMany with arrayFilters to replace matching array elements
+            await Consultant.updateMany(
+              { offices: from },
+              { $set: { "offices.$[elem]": to } },
+              { arrayFilters: [{ elem: from }] },
+            );
+          }
+        } catch (errUpdate) {
+          console.error(
+            "Atomic consultant offices update failed, falling back:",
+            errUpdate,
+          );
+          try {
+            for (const { from, to } of replacements) {
+              const consultants = await Consultant.find({ offices: from });
+              for (const consultant of consultants) {
+                const updatedOffices = (consultant.offices || []).map((o) =>
+                  o === from ? to : o,
+                );
+                consultant.offices = updatedOffices;
+                await consultant.save();
+              }
+            }
+          } catch (errFallback) {
+            console.error(
+              "Fallback update of consultant offices failed:",
+              errFallback,
+            );
+          }
+        }
+
+        // Remove any office strings that are not present in the new directions
+        try {
+          if (Array.isArray(newDirections)) {
+            // atomic removal using $pull with $nin
+            await Consultant.updateMany(
+              { offices: { $elemMatch: { $nin: newDirections } } },
+              { $pull: { offices: { $nin: newDirections } } },
+            );
+          }
+        } catch (errPull) {
+          console.error(
+            "Atomic removal of non-matching offices failed, falling back:",
+            errPull,
+          );
+          try {
+            // fallback: read-modify-write
+            const consultantsToFix = await Consultant.find({
+              offices: { $elemMatch: { $nin: newDirections } },
+            });
+            for (const c of consultantsToFix) {
+              const filtered = (c.offices || []).filter((o) =>
+                newDirections.includes(o),
+              );
+              c.offices = filtered;
+              await c.save();
+            }
+          } catch (errFallbackPull) {
+            console.error(
+              "Fallback filtering of consultant offices failed:",
+              errFallbackPull,
+            );
+          }
+        }
+      }
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -475,7 +742,7 @@ const webDevelopmentServicesUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -504,7 +771,7 @@ const webInvestmentServicesUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -539,7 +806,7 @@ const webAssetManagementServicesUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
 
       return res.status(200).json(updatedWebHome);
@@ -561,8 +828,6 @@ const webCommercializationServicesUpload = async (req, res, next) => {
     const webHome = await WebHome.findById(id);
     const webHomeToUpdate = webHome;
 
-    console.log(req.body);
-
     if (webHome) {
       webHomeToUpdate.services.commercialization.title = req.body.title;
       webHomeToUpdate.services.commercialization.description1 =
@@ -575,7 +840,7 @@ const webCommercializationServicesUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
 
       return res.status(200).json(updatedWebHome);
@@ -608,7 +873,7 @@ const webInteriorismServicesUpload = async (req, res, next) => {
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
-        { new: true }
+        { new: true },
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -619,6 +884,91 @@ const webInteriorismServicesUpload = async (req, res, next) => {
     }
   } catch (err) {
     console.log(err);
+    return next(err);
+  }
+};
+
+const getAdsByReference = async (req, res, next) => {
+  try {
+    const { ref } = req.query;
+
+    if (!ref) return res.json([]);
+
+    const ads = await Ad.find({
+      adReference: { $regex: ref, $options: "i" },
+    })
+      .select("adReference title _id")
+      .limit(10);
+
+    return res.json(ads);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error buscando anuncios" });
+  }
+};
+
+const updateCategoriesSection = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { title, subtitle, key } = req.body;
+    const file = req.file;
+
+    // 1. Validación de seguridad
+    if (!key) {
+      return res
+        .status(400)
+        .json({ message: "Falta la clave (key) de la sección a editar" });
+    }
+
+    const webHome = await WebHome.findById(id);
+    if (!webHome) {
+      return res.status(404).json({ message: "WebHome no encontrado" });
+    }
+
+    // 2. Aseguramos que la estructura existe en el objeto
+    // (Esto evita errores de "Cannot read property of undefined")
+    if (!webHome.categoriesSection) {
+      webHome.categoriesSection = {};
+    }
+    if (!webHome.categoriesSection[key]) {
+      webHome.categoriesSection[key] = {};
+    }
+
+    // 3. Actualizamos el Título (solo si viene en el body)
+    if (title) {
+      webHome.categoriesSection[key].title = title;
+    }
+
+    if (subtitle) {
+      webHome.categoriesSection[key].subtitle = subtitle;
+    }
+
+    // 4. Actualizamos la Imagen (solo si viene un archivo nuevo)
+    if (file) {
+      // A) LIMPIEZA: Obtenemos la imagen antigua
+      const oldImageUrl = webHome.categoriesSection[key].image;
+
+      // Si existe una imagen antigua, la borramos de la nube
+      if (oldImageUrl) {
+        // Lógica idéntica a tu videoSection
+        deleteImage(oldImageUrl);
+      }
+
+      // B) GUARDADO: Asignamos la nueva URL de DigitalOcean/S3
+      // Usamos .location porque así lo tienes configurado en tu Multer S3
+      webHome.categoriesSection[key].image = file.location;
+    }
+
+    // 5. Forzamos a Mongoose a detectar el cambio
+    // Al modificar propiedades dentro de un objeto anidado (Mixed),
+    // a veces Mongoose no se entera. Esto lo asegura.
+    webHome.markModified("categoriesSection");
+
+    const updatedWebHome = await webHome.save();
+
+    return res.status(200).json(updatedWebHome);
+  } catch (err) {
+    console.error("Error en updateCategoriesSection:", err);
     return next(err);
   }
 };
@@ -737,8 +1087,17 @@ const getAdCardData = async (req, res, next) => {
 
     res.status(200).json(ads);
   } catch (error) {
-    console.error("Error en getResientialCardData:", error);
+    console.error("Error obteniendo activos:", error);
     next(error);
+  }
+};
+
+const getHighlightAds = async (req, res, next) => {
+  try {
+    const ads = await Ad.find({ featuredOnMain: true });
+    res.status(200).json(ads);
+  } catch (error) {
+    console.error("Error obteniendo activos destacados:", error);
   }
 };
 
@@ -746,7 +1105,6 @@ module.exports = {
   webHomeGet,
   webHomeCreate,
   webHomeEdit,
-  webVideoSectionUpload,
   webResidentialCategoryImageUpload,
   webPatrimonialCategoryImageUpload,
   webCommercializationServicesUpload,
@@ -763,6 +1121,10 @@ module.exports = {
   webHomeTalkWithUs,
   webDevelopmentServicesUpload,
   webInteriorismServicesUpload,
+  webVideoSectionUpdate,
+  getAdsByReference,
+  updateCategoriesSection,
   getMapData,
   getAdCardData,
+  getHighlightAds,
 };

@@ -10,13 +10,62 @@ const webHomeSchema = new Schema(
     videoSection: {
       title: { type: String },
       subtitle: { type: [String] },
-      videos: { type: [String] },
+      videos: [
+        {
+          adId: { type: mongoose.Types.ObjectId, ref: "ads" },
+          videoUrl: { type: String },
+          title: { type: String },
+          adReference: { type: String },
+          price: {
+            sale: { type: Number },
+            rent: { type: Number },
+            label: { type: String },
+          },
+        },
+      ],
     },
     categoriesImages: {
       residential: { type: String },
       patrimonial: { type: String },
       art: { type: String },
       catalog: { type: String },
+    },
+    categoriesSection: {
+      residential: {
+        title: { type: String, default: "Residencial" },
+        subtitle: { type: String },
+        image: { type: String },
+      },
+      patrimonial: {
+        title: { type: String, default: "Patrimonial" },
+        subtitle: { type: String },
+        image: { type: String },
+      },
+      others: {
+        title: { type: String, default: "Otros" },
+        subtitle: { type: String },
+        image: { type: String },
+      },
+      location1: {
+        title: { type: String, default: "Madrid" },
+        subtitle: { type: String },
+        image: { type: String },
+      },
+      location2: {
+        title: { type: String, default: "Marbella" },
+        subtitle: { type: String },
+        image: { type: String },
+      },
+      location3: {
+        title: { type: String, default: "Sotogrande" },
+        subtitle: { type: String },
+        image: { type: String },
+      },
+      location4: {
+        title: { type: String, default: "Puerto de Santa María" },
+        subtitle: { type: String },
+        image: { type: String },
+      },
     },
     otherCategoriesImages: {
       coast: { type: String },
@@ -86,7 +135,7 @@ const webHomeSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 const WebHome = mongoose.model("webHome", webHomeSchema);

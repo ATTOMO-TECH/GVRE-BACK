@@ -28,7 +28,7 @@ const registerStrategy = new LocalStrategy(
       const existingEmail = await Consultant.findOne({ consultantEmail });
       if (existingEmail) {
         const error = new Error(
-          "Este correo ya se encuentra en nuestra base de datos"
+          "Este correo ya se encuentra en nuestra base de datos",
         );
         error.status = 400;
         return done(error);
@@ -39,7 +39,7 @@ const registerStrategy = new LocalStrategy(
       });
       if (existingMobile) {
         const error = new Error(
-          "Este teléfono móvil ya se encuentra en nuestra base de datos"
+          "Este teléfono móvil ya se encuentra en nuestra base de datos",
         );
         error.status = 400;
         return done(error);
@@ -47,7 +47,7 @@ const registerStrategy = new LocalStrategy(
 
       if (!isValidPassword(consultantPassword)) {
         const error = new Error(
-          "La contraseña debe contener al menos entre 8 y 16 carácteres, 1 mayúscula, 1 minúscula y 1 dígito"
+          "La contraseña debe contener al menos entre 8 y 16 carácteres, 1 mayúscula, 1 minúscula y 1 dígito",
         );
         error.status = 400;
         return done(error);
@@ -60,6 +60,32 @@ const registerStrategy = new LocalStrategy(
 
       const saltRounds = 10;
       const passwordHash = await bcrypt.hash(consultantPassword, saltRounds);
+      // Parse offices field: accept JSON string, array, or comma-separated string
+      let offices = [];
+      if (req.body.offices) {
+        if (typeof req.body.offices === "string") {
+          try {
+            const parsed = JSON.parse(req.body.offices);
+            if (Array.isArray(parsed))
+              offices = parsed.map((s) => String(s).trim()).filter(Boolean);
+            else if (typeof parsed === "string") offices = [parsed.trim()];
+          } catch (e) {
+            // fallback: comma-separated string
+            offices = req.body.offices
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean);
+          }
+        } else if (Array.isArray(req.body.offices)) {
+          offices = req.body.offices
+            .map((s) => String(s).trim())
+            .filter(Boolean);
+        }
+      } else {
+        // backward compatibility: use office1/office2 if provided
+        if (req.body.office1) offices.push(String(req.body.office1).trim());
+        if (req.body.office2) offices.push(String(req.body.office2).trim());
+      }
 
       const newConsultant = new Consultant({
         consultantEmail,
@@ -72,8 +98,7 @@ const registerStrategy = new LocalStrategy(
         consultantPhoneNumber: req.body.consultantPhoneNumber,
         position: req.body.position,
         profession: req.body.profession,
-        office1: req.body.office1,
-        office2: req.body.office2,
+        offices,
         consultantComments: comments,
       });
 
@@ -84,7 +109,7 @@ const registerStrategy = new LocalStrategy(
     } catch (error) {
       return done(error);
     }
-  }
+  },
 );
 
 module.exports = registerStrategy;

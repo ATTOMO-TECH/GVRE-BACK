@@ -20,9 +20,12 @@ const {
   webInvestmentServicesUpload,
   webAssetManagementServicesUpload,
   webCommercializationServicesUpload,
-  webVideoSectionUpload,
   getMapData,
   getAdCardData,
+  updateCategoriesSection,
+  getHighlightAds,
+  webVideoSectionUpdate,
+  getAdsByReference,
 } = require("../controllers/web.controller");
 
 const router = express.Router();
@@ -32,7 +35,7 @@ router.post(
   "/home/create",
   //   upload.single("portraidImage catalog"),
   upload.single("homeImage"),
-  webHomeCreate
+  webHomeCreate,
 );
 router.put("/home/edit/:id", upload.single("homeImage"), webHomeEdit);
 
@@ -41,120 +44,128 @@ router.put(
   "/home/categories/residential/edit/:id",
   //   upload.single("portraidImage catalog"),
   upload.single("residentialImage"),
-  webResidentialCategoryImageUpload
+  webResidentialCategoryImageUpload,
 );
 router.put(
   "/home/categories/patrimonial/edit/:id",
   //   upload.single("portraidImage catalog"),
   upload.single("patrimonialImage"),
-  webPatrimonialCategoryImageUpload
+  webPatrimonialCategoryImageUpload,
 );
 router.put(
   "/home/categories/art/edit/:id",
   //   upload.single("portraidImage catalog"),
   upload.single("artImage"),
-  webArtCategoryImageUpload
+  webArtCategoryImageUpload,
 );
 router.put(
   "/home/categories/catalog/edit/:id",
   //   upload.single("portraidImage catalog"),
   upload.single("catalogImage"),
-  webCatalogCategoryImageUpload
+  webCatalogCategoryImageUpload,
 );
 router.put(
   "/home/categories/coast/edit/:id",
   //   upload.single("portraidImage catalog"),
   upload.single("coastImage"),
-  webCoastCategoryImageUpload
+  webCoastCategoryImageUpload,
 );
 router.put(
   "/home/categories/rustic/edit/:id",
   //   upload.single("portraidImage catalog"),
   upload.single("rusticImage"),
-  webRusticCategoryImageUpload
+  webRusticCategoryImageUpload,
 );
 router.put(
   "/home/categories/singular/edit/:id",
   //   upload.single("portraidImage catalog"),
   upload.single("singularImage"),
-  webSingularCategoryImageUpload
+  webSingularCategoryImageUpload,
 );
 
 router.put(
   "/home/interiorism/edit/:id",
   //   upload.single("portraidImage catalog"),
   upload.single("interiorismImage"),
-  webInteriorismTextAndImageUpload
+  webInteriorismTextAndImageUpload,
 );
 
 router.put(
   "/home/sell/edit/:id",
   //   upload.single("portraidImage catalog"),
   upload.single("sellImage"),
-  webSellTextAndImageUpload
+  webSellTextAndImageUpload,
 );
 
 router.put(
   "/home/offices/edit/:id",
   //   upload.single("portraidImage catalog"),
   upload.single("officesImage"),
-  webOfficeTextAndImageUpload
+  webOfficeTextAndImageUpload,
 );
 
 router.put(
   "/home/talkwhitus/edit/:id",
   upload.single("contactImage"),
-  webHomeTalkWithUs
+  webHomeTalkWithUs,
 );
 
 router.put(
   "/services/interiorism/edit/:id",
   //   upload.single("portraidImage catalog"),
   upload.single("interiorimsImage"),
-  webInteriorismServicesUpload
+  webInteriorismServicesUpload,
 );
 
 router.put(
   "/services/development/edit/:id",
   //   upload.single("portraidImage catalog"),
   upload.single("developmentImage"),
-  webDevelopmentServicesUpload
+  webDevelopmentServicesUpload,
 );
 
 router.put(
   "/services/investment/edit/:id",
   //   upload.single("portraidImage catalog"),
   // upload.single("investMentImage"),
-  webInvestmentServicesUpload
+  webInvestmentServicesUpload,
 );
 
 router.put(
   "/services/assetManagement/edit/:id",
   //   upload.single("portraidImage catalog"),
   // upload.single("investMentImage"),
-  webAssetManagementServicesUpload
+  webAssetManagementServicesUpload,
 );
 
 router.put(
   "/services/commercialization/edit/:id",
   //   upload.single("portraidImage catalog"),
   // upload.single("investMentImage"),
-  webCommercializationServicesUpload
+  webCommercializationServicesUpload,
 );
 
 // NUEVA WEB:
 
 // HOME
 
+router.put("/home/videosection/edit/:id", webVideoSectionUpdate);
+
+router.get("/home/ads/search", getAdsByReference);
+
+// CATEGORIES SECTION
 router.put(
-  "/home/videosection/edit/:id",
-  upload.array("videos", 5),
-  webVideoSectionUpload
+  "/home/categories-section/edit/:id",
+  upload.single("image"), // El frontend debe enviar el archivo con el nombre "image"
+  updateCategoriesSection,
 );
 
 // MAP DATA FOR RESIDENTIAL ADS
 router.get("/map-stats", getMapData);
 
 router.get("/ad-card-data", getAdCardData);
+
+// HIGHLIGHT ADS
+router.get("/highlight-ads", getHighlightAds);
 
 module.exports = router;

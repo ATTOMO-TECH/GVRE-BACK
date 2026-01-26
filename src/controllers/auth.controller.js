@@ -86,22 +86,15 @@ const loginPost = (req, res, next) => {
 };
 
 const logoutPost = async (req, res, next) => {
-  /* console.log('usuario:',req.user) */
   if (req.user) {
-    /*console.log('sesion',req.session)*/
-    // req.logout((err)=> {
-    //         if (err) { return next(err); }
-    //         }
-    // );
     await req.session.destroy(
       () => {
         res.clearCookie("connect.sid");
         req.user = null;
         return res.json("Desconectado");
       },
-      (error) => console.log("error:", error)
+      (error) => console.log("error:", error),
     );
-    /* console.log('sesion::',req.session) */
   } else {
     return res.status(200).json("No hay usuario conectado");
   }
