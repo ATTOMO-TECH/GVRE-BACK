@@ -5,47 +5,71 @@ const Consultant = require("../models/consultant.model");
 
 const webHomeGet = async (req, res, next) => {
   try {
-    // 1. Obtenemos la configuración visual
-    // CAMBIO: Añadimos .populate para traer el estado real del anuncio
+    // 1. Obtenemos el documento
     const webDocs = await WebHome.find().populate({
       path: "videoSection.videos.adId",
-      select: "adStatus showOnWeb",
+      select: "adStatus showOnWeb gvOperationClose",
     });
 
     if (!webDocs || webDocs.length === 0) {
       return res.status(200).json([]);
     }
 
-    // Convertimos a objeto JS para poder modificarlo
-    let webData = webDocs[0].toObject();
+    const webHomeDoc = webDocs[0];
+    const originalVideoCount = webHomeDoc.videoSection.videos.length;
 
-    // 2. Filtro Base para los conteos
+    // --- LÓGICA DE LIMPIEZA (DELETE) ---
+    const validVideos = webHomeDoc.videoSection.videos.filter((video) => {
+      const ad = video.adId;
+
+      // 1. Si el anuncio no existe
+      if (!ad) return false;
+
+      // 2. CAMBIO AQUÍ: Filtro de Estado
+      // Aceptamos "Activo" Y "En preparación".
+      // Si es "Inactivo" (o cualquier otro que no esté en la lista), lo borramos.
+      const validStatuses = ["Activo", "En preparación"];
+      if (!validStatuses.includes(ad.adStatus)) return false;
+
+      // 3. Si está marcado para no mostrarse en web
+      if (!ad.showOnWeb) return false;
+
+      // 4. Si la operación está cerrada (Vendido o Alquilado)
+      if (ad.gvOperationClose && ad.gvOperationClose !== "") return false;
+
+      return true;
+    });
+
+    // --- ACTUALIZACIÓN EN BASE DE DATOS ---
+    if (validVideos.length !== originalVideoCount) {
+      console.log(
+        `Limpieza automática: Se eliminaron ${originalVideoCount - validVideos.length} videos inválidos de la Home.`,
+      );
+
+      webHomeDoc.videoSection.videos = validVideos;
+      await webHomeDoc.save();
+    }
+
+    // Convertimos a objeto plano
+    let webData = webHomeDoc.toObject();
+
+    // ---------------------------------------------
+    // ATENCIÓN: FILTROS PARA LOS CONTEOS (ActiveFilter)
+    // ---------------------------------------------
+    // Si quieres que los contadores de "Residencial: 50", "Madrid: 20", etc.
+    // TAMBIÉN cuenten los de "En preparación", debes cambiar esto:
+
+    /* Opción A: Dejarlo solo en "Activo" (Los contadores ignoran 'En preparación')
+       const activeFilter = { adStatus: "Activo", showOnWeb: true };
+       
+       Opción B: Contar también "En preparación" (Recomendado si muestras los videos)
+       Abajo te dejo la Opción B aplicada:
+    */
+
     const activeFilter = {
-      adStatus: "Activo",
+      adStatus: { $in: ["Activo", "En preparación"] },
       showOnWeb: true,
     };
-
-    // --- NUEVA LÓGICA DE SEGURIDAD PARA VIDEOS ---
-    if (webData.videoSection?.videos?.length > 0) {
-      webData.videoSection.videos = webData.videoSection.videos.filter(
-        (video) => {
-          // video.adId ahora es el objeto poblado (o null si se borró de la BD)
-          const ad = video.adId;
-
-          // Si el anuncio no existe, o no está activo, o no se muestra en web...
-          if (!ad || ad.adStatus !== "Activo" || !ad.showOnWeb) {
-            return false; // ...lo quitamos de la lista de visualización
-          }
-
-          // Si pasa el filtro, devolvemos true.
-          // Opcional: Restauramos el adId a string si tu frontend espera solo el ID
-          // video.adId = ad._id;
-
-          return true;
-        },
-      );
-    }
-    // ---------------------------------------------
 
     // 3. Obtenemos nombres de ciudades
     const city1 = webData.categoriesSection?.location1?.title || "Madrid";
@@ -54,7 +78,7 @@ const webHomeGet = async (req, res, next) => {
     const city4 =
       webData.categoriesSection?.location4?.title || "Puerto de Santa María";
 
-    // 4. Conteos en paralelo (Esto lo tenías perfecto)
+    // 4. Conteos en paralelo
     const [
       countResidential,
       countPatrimonial,
