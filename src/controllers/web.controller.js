@@ -937,7 +937,18 @@ const getAdsByReference = async (req, res, next) => {
     if (!ref) return res.json([]);
 
     const ads = await Ad.find({
+      // 1. Coincidencia por referencia
       adReference: { $regex: ref, $options: "i" },
+
+      // 2. FILTRO DE ESTADO: Solo activos o en preparación
+      adStatus: { $in: ["Activo", "En preparación"] },
+
+      // 3. FILTRO DE OPERACIÓN: Que no estén vendidos o alquilados
+      gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
+
+      // 4. TIENE QUE TENER VIDEO
+      // Verificamos que 'images.media' exista, no sea nulo y no sea una cadena vacía
+      "images.media": { $exists: true, $nin: ["", null] },
     })
       .select("adReference title _id")
       .limit(10);
