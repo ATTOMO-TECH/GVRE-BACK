@@ -198,7 +198,7 @@ const adSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 const Ad = mongoose.model("ads", adSchema);
