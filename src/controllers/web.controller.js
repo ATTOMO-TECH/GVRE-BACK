@@ -312,6 +312,13 @@ const webVideoSectionUpdate = async (req, res, next) => {
     const updatedWebHome = await webHomeToUpdate.save();
     // Usamos .save() suele disparar validaciones del schema mejor que findByIdAndUpdate
 
+    // =====================================================================
+    // 🔌 INTEGRACIÓN ISR MEJORADA (ACTUALIZACIÓN)
+    // =====================================================================
+
+    await revalidateWeb("home-data");
+    // =====================================================================
+
     return res.status(200).json(updatedWebHome);
   } catch (err) {
     console.error("Error en webVideoSectionUpdate:", err);
