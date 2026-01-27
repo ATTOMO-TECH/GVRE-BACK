@@ -951,10 +951,13 @@ const getAdsByReference = async (req, res, next) => {
       // 2. FILTRO DE ESTADO: Solo activos o en preparación
       adStatus: { $in: ["Activo", "En preparación"] },
 
-      // 3. FILTRO DE OPERACIÓN: Que no estén vendidos o alquilados
+      // 3. FILTRO DE VISUALIZACIÓN EN WEB: Que estén marcados para visualizar en la web.
+      showOnWeb: { $in: true },
+
+      // 4. FILTRO DE OPERACIÓN: Que no estén vendidos o alquilados
       gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
 
-      // 4. TIENE QUE TENER VIDEO
+      // 5. TIENE QUE TENER VIDEO
       // Verificamos que 'images.media' exista, no sea nulo y no sea una cadena vacía
       "images.media": { $exists: true, $nin: ["", null] },
     })
