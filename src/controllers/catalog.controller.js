@@ -1,6 +1,7 @@
 const { deleteImage } = require("../middlewares/file.middleware");
 const Catalog = require("../models/catalog.model");
 const CatalogPage = require("../models/catalogPage.model");
+const { revalidateWeb } = require("../utils/revalidateWeb");
 
 const catalogGetAll = async (req, res, next) => {
   try {
@@ -30,6 +31,8 @@ const catalogCreate = async (req, res, next) => {
     });
 
     const catalogCreated = await newCatalog.save();
+
+    await revalidateWeb("catalogs-data");
 
     return res.status(200).json(catalogCreated);
   } catch (err) {
@@ -64,6 +67,9 @@ const catalogEdit = async (req, res, next) => {
       catalogToUpdate,
       { new: true },
     );
+
+    await revalidateWeb("catalogs-data");
+
     return res.status(200).json(updatedCatalog);
   } catch (err) {
     console.log(err);
@@ -87,6 +93,8 @@ const catalogDelete = async (req, res, next) => {
       response =
         "No se ha podido encontrar este catálogo. ¿Estás seguro de que existe?";
 
+    if (deleted) await revalidateWeb("catalogs-data");
+
     return res.status(200).json(response);
   } catch (error) {
     next(error);
@@ -99,7 +107,10 @@ const uploadMainImageCatalogSection = async (req, res, next) => {
       imgSection: req.file.location,
     });
     await newCatalogPage.save();
-    res
+
+    await revalidateWeb("catalogs-data");
+
+    return res
       .status(201)
       .send({ message: "Image uploaded successfully", data: newCatalogPage });
   } catch (error) {
@@ -127,7 +138,12 @@ const deleteImageCatalogSection = async (req, res, next) => {
 
     const deleted = await CatalogPage.findByIdAndDelete(id);
 
-    deleted && res.status(200).json({ message: "Deleted Susscesfully" });
+    if (deleted) {
+      await revalidateWeb("catalogs-data");
+      res.status(200).json({ message: "Deleted Successfully" });
+    } else {
+      res.status(404).json({ message: "Not found" });
+    }
   } catch (error) {
     next(error);
   }

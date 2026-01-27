@@ -11,6 +11,7 @@ const {
   orderAdsDescendentByRentPrice,
   normalizeAdHistory,
 } = require("./utils");
+const { revalidateWeb } = require("../utils/revalidateWeb");
 
 const repairAds = async (req, res, next) => {
   try {
@@ -789,6 +790,33 @@ const adCreate = async (req, res, next) => {
 
     const adCreated = await newAd.save();
 
+    // =====================================================================
+    // 🔌 INTEGRACIÓN ISR: REVALIDACIÓN AUTOMÁTICA
+    // =====================================================================
+
+    // CORRECCIÓN: Definimos qué estados son visibles en la web
+    const validStatuses = ["Activo", "En preparación"];
+
+    // Evaluamos si el anuncio debe verse:
+    // 1. Tiene el check de showOnWeb en true
+    // 2. Y su estado es "Activo" O "En preparación"
+    const isVisible =
+      adCreated.showOnWeb && validStatuses.includes(adCreated.adStatus);
+
+    if (isVisible) {
+      // A. Revalidar HOME
+      await revalidateWeb("home-data");
+
+      // B. Revalidar LISTADO DE ACTIVOS
+      await revalidateWeb("ads-list");
+
+      // C. Revalidar DESTACADOS
+      // Solo si está marcado como destacado
+      if (adCreated.featuredOnMain) {
+        await revalidateWeb("featured-ads");
+      }
+    }
+
     return res.status(200).json(adCreated);
   } catch (err) {
     return next(err);
@@ -1332,6 +1360,40 @@ const adUpdate = async (req, res, next) => {
       .populate("owner", "fullName")
       .lean();
     if (updatedAd) updatedAd.changesHistory = normalizeAdHistory(updatedAd);
+
+    // =====================================================================
+    // 🔌 INTEGRACIÓN ISR MEJORADA (ACTUALIZACIÓN)
+    // =====================================================================
+
+    const validStatuses = ["Activo", "En preparación"];
+
+    // 1. ¿Es visible ahora?
+    const isVisibleNow =
+      updatedAd.showOnWeb && validStatuses.includes(updatedAd.adStatus);
+
+    // 2. ¿Hubo cambio de estado relevante?
+    // Si en el req.body venía adStatus o showOnWeb, significa que potencialmente cambió la visibilidad.
+    // Necesitamos revalidar para LIMPIAR si antes era visible y ahora no.
+    const visibilityMightHaveChanged =
+      req.body.adStatus !== undefined || req.body.showOnWeb !== undefined;
+
+    // 3. ¿Hubo cambio en destacados?
+    const featuredChanged = req.body.featuredOnMain !== undefined;
+
+    // A. Revalidar HOME y LISTADO
+    // Si es visible ahora O si hemos tocado la visibilidad (para ocultarlo si hace falta)
+    if (isVisibleNow || visibilityMightHaveChanged) {
+      await revalidateWeb("home-data");
+      await revalidateWeb("ads-list");
+    }
+
+    // B. Revalidar DESTACADOS
+    // Si es destacado ahora O si hemos tocado el check de destacado (para quitarlo si hace falta)
+    if (updatedAd.featuredOnMain || featuredChanged) {
+      await revalidateWeb("featured-ads");
+    }
+    // =====================================================================
+
     return res.status(200).json(updatedAd);
   } catch (err) {
     return next(err);
@@ -1376,11 +1438,41 @@ const adDelete = async (req, res, next) => {
     const { id } = req.params;
     let response = "";
 
-    const deleted = await Ad.findByIdAndDelete(id);
-    if (deleted) response = "Anuncio borrado de la base de datos";
-    else
-      response =
-        "No se ha podido encontrar este anuncio. ¿Estás seguro de que existe?";
+    // 1. Buscamos y Borramos
+    // adToDelete contendrá los datos del anuncio borrado (snapshot).
+    const adToDelete = await Ad.findByIdAndDelete(id);
+
+    if (!adToDelete) {
+      return res
+        .status(404)
+        .json(
+          "No se ha podido encontrar este anuncio. ¿Estás seguro de que existe?",
+        );
+    }
+
+    response = "Anuncio borrado de la base de datos";
+
+    // =====================================================================
+    // 🔌 INTEGRACIÓN ISR (BORRADO)
+    // =====================================================================
+
+    const validStatuses = ["Activo", "En preparación"];
+
+    // Verificamos si el anuncio QUE ACABAMOS DE BORRAR era visible
+    const wasVisible =
+      adToDelete.showOnWeb && validStatuses.includes(adToDelete.adStatus);
+
+    if (wasVisible) {
+      // Siempre limpiamos Home y Listado
+      await revalidateWeb("home-data");
+      await revalidateWeb("ads-list");
+
+      // Si era destacado, limpiamos esa sección
+      if (adToDelete.featuredOnMain) {
+        await revalidateWeb("featured-ads");
+      }
+    }
+    // =====================================================================
 
     return res.status(200).json(response);
   } catch (error) {
