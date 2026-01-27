@@ -2,6 +2,7 @@ const { deleteImage } = require("../middlewares/file.middleware");
 const Ad = require("../models/ad.model");
 const WebHome = require("../models/webHome.model");
 const Consultant = require("../models/consultant.model");
+const { revalidateWeb } = require("../utils/revalidateWeb");
 
 const webHomeGet = async (req, res, next) => {
   try {
