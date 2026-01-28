@@ -446,7 +446,11 @@ const sendAdsToContact = async (req, res) => {
     generateZonesHTML(updatedConsultant?.consultantEmailSignZones);
 
   const transporter = nodemailer.createTransport({
-    SES: new AWS.SES(SES_CONFIG),
+    service: "Gmail",
+    auth: {
+      user: `${req.body.consultant.consultantEmail}`,
+      pass: req.consultantToken,
+    },
   });
 
   transporter.verify(function (error, success) {
@@ -1855,6 +1859,7 @@ const sendAdToContacts = async (req, res) => {
       const mailOptions = { ...baseMailOptions };
       mailOptions.from = req.body.consultant.consultantEmail;
       mailOptions.to = recipient.requestContact.email;
+      mailOptions.bcc = req.body.consultant.consultantEmail;
       ((mailOptions.html = personalizedHtml),
         await sendMailWithDelay(mailOptions, 800));
     }
