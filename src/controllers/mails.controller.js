@@ -461,7 +461,6 @@ const sendAdsToContact = async (req, res) => {
     from: `<${req.body.consultant.consultantEmail}>`,
     to: `${req.body.contact.email}`,
     subject: `${req.body.subject}`,
-    bcc: req.body.consultant.consultantEmail,
     html: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
     <html
       xmlns="http://www.w3.org/1999/xhtml"
@@ -1856,7 +1855,6 @@ const sendAdToContacts = async (req, res) => {
       const mailOptions = { ...baseMailOptions };
       mailOptions.from = req.body.consultant.consultantEmail;
       mailOptions.to = recipient.requestContact.email;
-      mailOptions.bcc = req.body.consultant.consultantEmail;
       ((mailOptions.html = personalizedHtml),
         await sendMailWithDelay(mailOptions, 800));
     }
