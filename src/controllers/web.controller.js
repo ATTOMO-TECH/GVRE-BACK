@@ -6,125 +6,79 @@ const { revalidateWeb } = require("../utils/revalidateWeb");
 
 const webHomeGet = async (req, res, next) => {
   try {
+    // Populamos solo para comprobaciones de seguridad
     const webDocs = await WebHome.find().populate({
       path: "videoSection.videos.adId",
-      select: "adStatus showOnWeb gvOperationClose slug",
+      select: "adStatus showOnWeb gvOperationClose",
     });
 
-    if (!webDocs || webDocs.length === 0) {
-      return res.status(200).json([]);
-    }
+    if (!webDocs || webDocs.length === 0) return res.status(200).json([]);
 
     const webHomeDoc = webDocs[0];
-    const originalVideoCount = webHomeDoc.videoSection.videos.length;
+    const initialCount = webHomeDoc.videoSection.videos.length;
 
-    // Filtramos los videos cuyo anuncio original ya no cumple los requisitos
+    // 1. Limpieza automática de videos (Seguridad)
     const validVideos = webHomeDoc.videoSection.videos.filter((video) => {
-      const ad = video.adId; // Esto es un objeto completo gracias al populate
-
-      // a. Si el anuncio fue borrado de la BD
+      const ad = video.adId;
       if (!ad) return false;
 
-      // b. Filtro de Estado (Activo o En preparación)
-      const validStatuses = ["Activo", "En preparación"];
-      if (!validStatuses.includes(ad.adStatus)) return false;
+      const isVisible = ad.showOnWeb;
+      const isActive = ["Activo", "En preparación"].includes(ad.adStatus);
+      const isNotClosed = !ad.gvOperationClose || ad.gvOperationClose === "";
 
-      // c. Si está marcado para no mostrarse en web
-      if (!ad.showOnWeb) return false;
-
-      // d. Si la operación está cerrada (Vendido o Alquilado)
-      if (ad.gvOperationClose && ad.gvOperationClose !== "") return false;
-
-      return true;
+      return isVisible && isActive && isNotClosed;
     });
 
-    // Si la cantidad cambió, guardamos el documento limpio
-    if (validVideos.length !== originalVideoCount) {
+    // Si algún video ya no es válido, guardamos la versión limpia
+    if (validVideos.length !== initialCount) {
       webHomeDoc.videoSection.videos = validVideos;
       await webHomeDoc.save();
     }
 
-    // Convertimos a objeto plano JS para manipularlo sin afectar a Mongoose
-    let webData = webHomeDoc.toObject();
+    // Convertimos a objeto plano para los conteos dinámicos
+    const webData = webHomeDoc.toObject();
 
-    // Recreamos el objeto a enviar
-    if (webData.videoSection && webData.videoSection.videos) {
-      webData.videoSection.videos = webData.videoSection.videos.map((video) => {
-        const adObject = video.adId;
-
-        // Si por alguna razón adObject es null (caso raro post-filtro), protegemos el código
-        if (!adObject) return video;
-
-        return {
-          ...video,
-          slug: adObject.slug,
-          adId: adObject._id.toString(),
-        };
-      });
-    }
-
-    // Filtro para contar propiedades (incluye 'En preparación' para ser consistente)
+    // 2. Conteos dinámicos para las categorías de la Home
     const activeFilter = {
       adStatus: { $in: ["Activo", "En preparación"] },
       showOnWeb: true,
     };
+    const cities = [
+      webData.categoriesSection?.location1?.title || "Madrid",
+      webData.categoriesSection?.location2?.title || "Marbella",
+      webData.categoriesSection?.location3?.title || "Sotogrande",
+      webData.categoriesSection?.location4?.title || "Puerto de Santa María",
+    ];
 
-    // Obtenemos nombres de ciudades dinámicamente desde la config de la home
-    const city1 = webData.categoriesSection?.location1?.title || "Madrid";
-    const city2 = webData.categoriesSection?.location2?.title || "Marbella";
-    const city3 = webData.categoriesSection?.location3?.title || "Sotogrande";
-    const city4 =
-      webData.categoriesSection?.location4?.title || "Puerto de Santa María";
-
-    // Ejecutamos todos los conteos en paralelo (más rápido)
-    const [
-      countResidential,
-      countPatrimonial,
-      countOthers,
-      countLocation1,
-      countLocation2,
-      countLocation3,
-      countLocation4,
-    ] = await Promise.all([
+    const counts = await Promise.all([
       Ad.countDocuments({ ...activeFilter, department: "Residencial" }),
       Ad.countDocuments({ ...activeFilter, department: "Patrimonio" }),
       Ad.countDocuments({ ...activeFilter, department: "Otros" }),
-      Ad.countDocuments({
-        ...activeFilter,
-        "adDirection.city": { $regex: new RegExp(`^${city1}$`, "i") },
-      }),
-      Ad.countDocuments({
-        ...activeFilter,
-        "adDirection.city": { $regex: new RegExp(`^${city2}$`, "i") },
-      }),
-      Ad.countDocuments({
-        ...activeFilter,
-        "adDirection.city": { $regex: new RegExp(`^${city3}$`, "i") },
-      }),
-      Ad.countDocuments({
-        ...activeFilter,
-        "adDirection.city": { $regex: new RegExp(`^${city4}$`, "i") },
-      }),
+      ...cities.map((city) =>
+        Ad.countDocuments({
+          ...activeFilter,
+          "adDirection.city": { $regex: new RegExp(`^${city}$`, "i") },
+        }),
+      ),
     ]);
 
-    if (webData.categoriesSection) {
-      if (webData.categoriesSection.residential)
-        webData.categoriesSection.residential.count = countResidential;
-      if (webData.categoriesSection.patrimonial)
-        webData.categoriesSection.patrimonial.count = countPatrimonial;
-      if (webData.categoriesSection.others)
-        webData.categoriesSection.others.count = countOthers;
+    // Asignación de conteos al objeto de respuesta
+    const sections = [
+      "residential",
+      "patrimonial",
+      "others",
+      "location1",
+      "location2",
+      "location3",
+      "location4",
+    ];
+    sections.forEach((section, index) => {
+      if (webData.categoriesSection[section]) {
+        webData.categoriesSection[section].count = counts[index];
+      }
+    });
 
-      if (webData.categoriesSection.location1)
-        webData.categoriesSection.location1.count = countLocation1;
-      if (webData.categoriesSection.location2)
-        webData.categoriesSection.location2.count = countLocation2;
-      if (webData.categoriesSection.location3)
-        webData.categoriesSection.location3.count = countLocation3;
-      if (webData.categoriesSection.location4)
-        webData.categoriesSection.location4.count = countLocation4;
-    }
-
+    // 🚀 La respuesta ya incluye el 'slug' en cada video porque se guardó en el Update
     return res.status(200).json([webData]);
   } catch (err) {
     console.error("Error obteniendo datos de home:", err);
@@ -231,91 +185,64 @@ const webHomeEdit = async (req, res, next) => {
 const webVideoSectionUpdate = async (req, res, next) => {
   try {
     const { id } = req.params;
-
-    // 1. Buscamos el documento WebHome
     const webHome = await WebHome.findById(id);
 
     if (!webHome) {
       return res.status(404).json({ message: "WebHome no encontrado" });
     }
 
-    const webHomeToUpdate = webHome;
+    // Actualización de textos básicos
+    if (req.body.title) webHome.videoSection.title = req.body.title;
+    if (req.body.subtitle) webHome.videoSection.subtitle = req.body.subtitle;
 
-    // 2. Actualizamos Título y Subtítulo de la sección (si vienen)
-    if (req.body.title) webHomeToUpdate.videoSection.title = req.body.title;
-    if (req.body.subtitle)
-      webHomeToUpdate.videoSection.subtitle = req.body.subtitle;
+    // Gestión de Colección de Videos
+    if (req.body.selectedAdIds && Array.isArray(req.body.selectedAdIds)) {
+      if (req.body.selectedAdIds.length > 0) {
+        // Buscamos anuncios incluyendo el SLUG
+        const foundAds = await Ad.find({
+          _id: { $in: req.body.selectedAdIds },
+        }).select("title adReference adType sale rent images slug");
 
-    // 3. Gestión de Anuncios Seleccionados (Lógica Principal)
-    // Esperamos un array de IDs de anuncios en el body, ej: req.body.selectedAdIds
-    if (
-      req.body.selectedAdIds &&
-      Array.isArray(req.body.selectedAdIds) &&
-      req.body.selectedAdIds.length > 0
-    ) {
-      // A) Buscamos los anuncios en la base de datos
-      const foundAds = await Ad.find({
-        _id: { $in: req.body.selectedAdIds },
-      }).select("title adReference adType sale rent images");
+        const newVideoCollection = req.body.selectedAdIds
+          .map((adId) => {
+            const ad = foundAds.find((a) => a._id.toString() === adId);
+            if (!ad) return null;
 
-      // B) Mapeamos los anuncios encontrados al formato que necesita el WebHome
-      // Nota: Hacemos un map sobre los IDs recibidos para mantener el ORDEN que el usuario eligió en el front
-      const newVideoCollection = req.body.selectedAdIds
-        .map((adId) => {
-          const ad = foundAds.find((a) => a._id.toString() === adId);
+            // Lógica de Precios Dual
+            let priceObj = { sale: null, rent: null, label: "" };
+            let labels = [];
 
-          if (!ad) return null; // Si por alguna razón el ID no existe, lo saltamos
+            if (ad.adType.includes("Venta") && ad.sale?.saleValue) {
+              priceObj.sale = ad.sale.saleValue;
+              labels.push("Venta");
+            }
+            if (ad.adType.includes("Alquiler") && ad.rent?.rentValue) {
+              priceObj.rent = ad.rent.rentValue;
+              labels.push("Alquiler");
+            }
+            priceObj.label = labels.join(" / ");
 
-          // Lógica de Precios (Venta, Alquiler o Ambos)
-          let priceObj = { sale: null, rent: null, label: "" };
-          let labels = [];
+            return {
+              adId: ad._id,
+              videoUrl: ad.images?.media || "",
+              title: ad.title,
+              slug: ad.slug,
+              adReference: ad.adReference,
+              price: priceObj,
+            };
+          })
+          .filter(Boolean);
 
-          // Verificar si es venta y tiene precio
-          if (ad.adType.includes("Venta") && ad.sale && ad.sale.saleValue) {
-            priceObj.sale = ad.sale.saleValue;
-            labels.push("Venta");
-          }
-
-          // Verificar si es alquiler y tiene precio
-          if (ad.adType.includes("Alquiler") && ad.rent && ad.rent.rentValue) {
-            priceObj.rent = ad.rent.rentValue;
-            labels.push("Alquiler");
-          }
-
-          priceObj.label = labels.join(" / "); // Ej: "Venta / Alquiler" o solo "Venta"
-
-          // Retornamos el objeto estructurado para WebHome
-          return {
-            adId: ad._id,
-            videoUrl: ad.images?.media || "", // El video del anuncio
-            title: ad.title,
-            adReference: ad.adReference,
-            price: priceObj,
-          };
-        })
-        .filter((item) => item !== null); // Eliminamos nulos si hubo IDs inválidos
-
-      // C) Asignamos el nuevo array de objetos
-      webHomeToUpdate.videoSection.videos = newVideoCollection;
-    } else if (req.body.selectedAdIds && req.body.selectedAdIds.length === 0) {
-      // Si nos envían un array vacío explícitamente, limpiamos la sección
-      webHomeToUpdate.videoSection.videos = [];
+        webHome.videoSection.videos = newVideoCollection;
+      } else {
+        webHome.videoSection.videos = [];
+      }
     }
 
-    // NOTA: He eliminado la lógica de 'deleteImage'.
-    // Al ser videos vinculados a Anuncios, NO debemos borrarlos de la nube
-    // solo porque se quiten de la Home. Pertenecen al inventario.
+    const updatedWebHome = await webHome.save();
 
-    // 4. Guardamos en Base de Datos
-    const updatedWebHome = await webHomeToUpdate.save();
-    // Usamos .save() suele disparar validaciones del schema mejor que findByIdAndUpdate
-
-    // =====================================================================
-    // 🔌 INTEGRACIÓN ISR MEJORADA (ACTUALIZACIÓN)
-    // =====================================================================
-
+    // Revalidación para Next.js
     await revalidateWeb("home-data");
-    // =====================================================================
 
     return res.status(200).json(updatedWebHome);
   } catch (err) {
@@ -1091,29 +1018,21 @@ const getMapData = async (req, res, next) => {
 
 const getAdCardData = async (req, res, next) => {
   try {
-    // 1. Recibimos el nuevo parámetro 'operation'
     const { department, adStatus, searchZone, operation } = req.query;
 
-    // 2. Filtro de SEGURIDAD (Siempre showOnWeb: true)
     const filter = {
       showOnWeb: true,
+      gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
     };
 
-    // 3. Filtros opcionales básicos
     if (department) filter.department = department;
     if (adStatus) filter.adStatus = adStatus;
 
-    // 4. LÓGICA VENTA / ALQUILER
-    // Asumimos que en tu BD 'adType' es un string tipo "Venta de piso" o "Alquiler..."
     if (operation) {
-      if (operation === "sale") {
-        filter.adType = { $regex: "Venta", $options: "i" };
-      } else if (operation === "rent") {
-        filter.adType = { $regex: "Alquiler", $options: "i" };
-      }
+      const opValue = operation === "sale" ? "Venta" : "Alquiler";
+      filter.adType = { $regex: opValue, $options: "i" };
     }
 
-    // 5. Filtro de Zona (Barrio o Distrito)
     if (searchZone && searchZone !== "Madrid") {
       filter.$or = [
         { distrito: { $regex: searchZone, $options: "i" } },
@@ -1121,91 +1040,89 @@ const getAdCardData = async (req, res, next) => {
       ];
     }
 
-    // Campos a seleccionar (optimización)
-    const fieldsToSelect = [
-      "_id",
-      "title",
-      "slug",
-      "adType",
-      "sale",
-      "rent",
-      "monthlyRent",
-      "barrio",
-      "distrito",
-      "images.main",
-      "adBuildingType",
-      "buildSurface",
-      "plotSurface",
-      "quality.bedrooms",
-      "quality.bathrooms",
-      "quality.parking",
-      "quality.reformed",
-      "quality.swimmingPool",
-      "quality.others.terrace",
-      "quality.others.swimmingPool",
-    ];
+    // Traemos solo lo necesario para la Card
+    const ads = await Ad.find(filter)
+      .select(
+        "title slug adType sale rent barrio distrito images.main adBuildingType buildSurface plotSurface quality.bedrooms quality.bathrooms quality.reformed quality.others.terrace quality.others.swimmingPool",
+      )
+      .lean();
 
-    const ads = await Ad.find(filter).select(fieldsToSelect.join(" ")).lean();
+    const formattedAds = ads.map((ad) => {
+      // Ubicación formateada
+      const locationParts = [ad.barrio, ad.distrito].filter(Boolean);
 
-    res.status(200).json(ads);
+      // Precios validados (solo si deben mostrarse)
+      const sPrice =
+        ad.sale?.saleShowOnWeb && ad.sale?.saleValue ? ad.sale.saleValue : null;
+
+      const rPrice =
+        ad.rent?.rentShowOnWeb && ad.rent?.rentValue ? ad.rent.rentValue : null;
+
+      // Tags dinámicos (Tipo de edificio + Extras)
+      const tags = [];
+      if (ad.adBuildingType?.length) tags.push(ad.adBuildingType[0]);
+      if (ad.quality?.reformed) tags.push("Reformado");
+      if (ad.quality?.others?.terrace) tags.push("Terraza");
+
+      return {
+        id: ad._id.toString(),
+        slug: ad.slug,
+        title: ad.title,
+        salePrice: sPrice,
+        rentPrice: rPrice,
+        location:
+          locationParts.length > 0 ? locationParts.join(", ") : "Madrid",
+        image: ad.images?.main,
+        specs: {
+          beds: ad.quality?.bedrooms || 0,
+          area: ad.buildSurface || ad.plotSurface || 0,
+          bathrooms: ad.quality?.bathrooms || 0,
+        },
+        tags: tags.slice(0, 3),
+        operation: ad.adType?.join(" / ") || "",
+      };
+    });
+
+    res.status(200).json(formattedAds);
   } catch (error) {
-    console.error("Error obteniendo activos:", error);
+    console.error("Error en getAdCardData:", error);
     next(error);
   }
 };
 
 const getHighlightAds = async (req, res, next) => {
   try {
-    // 1. Buscamos solo los destacados
-    // SUGERENCIA: Usa .select() para traer solo los campos necesarios de la BD (optimización)
     const ads = await Ad.find({ featuredOnMain: true }).select(
-      "title slug adType sale rent adDirection images features newDevelopment exclusive",
+      "title slug adType sale rent adDirection images quality buildSurface plotSurface",
     );
 
-    // 2. Mapeamos los resultados para ajustarlos a la interfaz 'Property'
     const formattedAds = ads.map((ad) => {
-      // --- LÓGICA DE PRECIO Y OPERACIÓN ---
-      // Determinamos si mostramos precio de Venta o de Alquiler.
-      // Prioridad habitual: Si tiene precio de venta, mostramos venta.
-      let currentPrice = 0;
-      let operationLabel = "";
+      const sPrice =
+        ad.sale?.saleShowOnWeb && ad.sale?.saleValue ? ad.sale.saleValue : null;
 
-      if (ad.sale && ad.sale.saleValue) {
-        currentPrice = ad.sale.saleValue;
-        operationLabel = "Venta";
-      } else if (ad.rent && ad.rent.rentValue) {
-        currentPrice = ad.rent.rentValue;
-        operationLabel = "Alquiler";
-      }
-
-      // --- LÓGICA DE TAGS ---
-      // Creamos los tags dinámicamente según los booleanos del anuncio
-      const tags = [];
-      if (ad.exclusive) tags.push("Exclusiva");
-      if (ad.newDevelopment) tags.push("Obra Nueva");
+      const rPrice =
+        ad.rent?.rentShowOnWeb && ad.rent?.rentValue ? ad.rent.rentValue : null;
 
       return {
         id: ad._id.toString(),
         slug: ad.slug,
         title: ad.title,
-        price: currentPrice,
-        operation: operationLabel,
-        location: ad.adDirection?.city || "Ubicación desconocida",
+        salePrice: sPrice,
+        rentPrice: rPrice,
+        operation: ad.adType.join(" / "),
+        location: ad.adDirection?.city || "Madrid",
         image: ad.images?.main || "",
         specs: {
           beds: ad.quality?.bedrooms || 0,
-          area: ad.buildSurface || ad.plotSurface,
+          area: ad.buildSurface || ad.plotSurface || 0,
           bathrooms: ad.quality?.bathrooms || 0,
         },
-
-        tags: tags,
+        tags: ad.adType,
       };
     });
 
     res.status(200).json(formattedAds);
   } catch (error) {
-    console.error("Error obteniendo activos destacados:", error);
-    // Es buena práctica pasar el error al middleware de express
     next(error);
   }
 };

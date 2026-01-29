@@ -6,6 +6,7 @@ const Contact = require("../models/contact.model");
 const Consultant = require("../models/consultant.model");
 const { normalizeAdHistory } = require("../utils/utils");
 const { revalidateWeb } = require("../utils/revalidateWeb");
+const WebHome = require("../models/webHome.model");
 
 const repairAds = async (req, res, next) => {
   try {
@@ -1036,7 +1037,6 @@ const adUpdate = async (req, res, next) => {
     const { id } = req.body;
 
     // 1. Cargar estado ACTUAL (antes del cambio) para comparar
-    // Usamos .lean() para optimizar la comparación inicial
     const currentAd = await Ad.findById(id)
       .populate("owner", "fullName")
       .populate("consultant", "fullName")
@@ -1046,9 +1046,8 @@ const adUpdate = async (req, res, next) => {
       return res.status(404).json({ message: "Anuncio no encontrado" });
     }
 
-    // 2. Mapeo EXHAUSTIVO de campos (Sin omitir nada)
+    // 2. Mapeo EXHAUSTIVO de campos
     const fieldsToUpdate = {};
-
     fieldsToUpdate.title = req.body.title;
     fieldsToUpdate.showOnWeb = req.body.showOnWeb;
     fieldsToUpdate.adStatus = req.body.adStatus;
@@ -1076,7 +1075,6 @@ const adUpdate = async (req, res, next) => {
     fieldsToUpdate.distrito = req.body.distrito;
     fieldsToUpdate.barrio = req.body.barrio;
 
-    // Campos anidados: Dirección
     fieldsToUpdate.adDirection = {
       address: {
         street: req.body.street,
@@ -1089,8 +1087,6 @@ const adUpdate = async (req, res, next) => {
     };
 
     fieldsToUpdate.surfacesBox = req.body.surfacesBox;
-
-    // Campos anidados: Venta y Alquiler
     fieldsToUpdate.sale = {
       saleValue: req.body.saleValue,
       saleShowOnWeb: req.body.saleShowOnWeb,
@@ -1099,24 +1095,19 @@ const adUpdate = async (req, res, next) => {
       rentValue: req.body.rentValue,
       rentShowOnWeb: req.body.rentShowOnWeb,
     };
-
-    // Campos anidados: Gastos
     fieldsToUpdate.communityExpenses = {
       expensesValue: req.body.expensesValue,
       expensesShowOnWeb: req.body.expensesShowOnWeb,
     };
-
     fieldsToUpdate.ibi = {
       ibiValue: req.body.ibiValue,
       ibiShowOnWeb: req.body.ibiShowOnWeb,
     };
-
     fieldsToUpdate.trashFee = {
       trashFeeValue: req.body.trashFeeValue,
       trashFeeShowOnWeb: req.body.trashFeeShowOnWeb,
     };
 
-    // Campos anidados: Calidades (Lista completa)
     fieldsToUpdate.quality = {
       bedrooms: req.body.bedrooms,
       bathrooms: req.body.bathrooms,
@@ -1170,10 +1161,8 @@ const adUpdate = async (req, res, next) => {
       distribution: req.body.distribution,
     };
 
-    // 3. Lógica del Historial (Changes History)
+    // 3. Lógica del Historial
     const historyEntries = [];
-
-    // Resolver información del consultor
     let consultantInfo = null;
     if (req.body.userId) {
       try {
@@ -1183,8 +1172,6 @@ const adUpdate = async (req, res, next) => {
         /* ignore */
       }
     }
-
-    // Fallback al consultor actual si no viene userId
     if (!consultantInfo && currentAd && currentAd.consultant) {
       consultantInfo =
         currentAd.consultant && currentAd.consultant.fullName
@@ -1195,7 +1182,6 @@ const adUpdate = async (req, res, next) => {
           : { _id: currentAd.consultant };
     }
 
-    // Historial: Cambio de Precio Venta
     if (req.body.saleValue !== undefined) {
       const oldSale =
         currentAd && currentAd.sale ? currentAd.sale.saleValue : null;
@@ -1217,7 +1203,6 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
-    // Historial: Cambio de Precio Alquiler
     if (req.body.rentValue !== undefined) {
       const oldRent =
         currentAd && currentAd.rent ? currentAd.rent.rentValue : null;
@@ -1239,7 +1224,6 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
-    // Historial: Cambio de Propietario
     if (req.body.owner !== undefined) {
       const oldOwnerId =
         currentAd && currentAd.owner
@@ -1263,7 +1247,6 @@ const adUpdate = async (req, res, next) => {
             if (n) newOwnerName = n.fullName;
           }
         } catch (e) {}
-
         historyEntries.push({
           type: "OWNER_CHANGE",
           field: "owner",
@@ -1276,7 +1259,6 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
-    // Historial: Cambio de Tipo de Anuncio
     if (req.body.adType !== undefined) {
       const oldType = currentAd && currentAd.adType ? currentAd.adType : null;
       const newType = req.body.adType;
@@ -1295,7 +1277,6 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
-    // Historial: Cambio Operación GV
     if (req.body.gvOperationClose !== undefined) {
       const oldGV = currentAd ? currentAd.gvOperationClose : null;
       const newGV = req.body.gvOperationClose;
@@ -1312,12 +1293,12 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
-    // 4. Actualización masiva opcional (updateSameRef)
+    // 4. Actualización masiva
     if (req.body.updateSameRef && req.body.adReference) {
       await Ad.updateMany(
         {
           adReference: req.body.adReference,
-          _id: { $ne: req.body.id },
+          _id: { $ne: id },
         },
         {
           $set: { surfacesBox: req.body.surfacesBox },
@@ -1325,10 +1306,8 @@ const adUpdate = async (req, res, next) => {
       );
     }
 
-    // 5. Preparar operador de actualización MongoDB
+    // 5. Update Ops e Historial Sintético
     const updateOps = { $set: fieldsToUpdate };
-
-    // Creación sintética de historial si no existe
     const needCreation =
       !currentAd ||
       !Array.isArray(currentAd.changesHistory) ||
@@ -1358,83 +1337,87 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
-    // 6. EJECUTAR EL UPDATE PRINCIPAL (Sin revalidar slug aún)
+    // 6. Update principal
     await Ad.findByIdAndUpdate(id, updateOps);
 
-    // =====================================================================
-    // REGENERACIÓN DE SLUG + REVALIDACIÓN WEB
-    // =====================================================================
-
-    // Recuperamos el documento actualizado.
-    // IMPORTANTE: NO usamos .lean() porque necesitamos métodos como .save()
+    // 7. Regeneración de Slug y Populate
     const updatedAdDoc = await Ad.findById(id)
       .populate("consultant", "fullName")
       .populate("owner", "fullName");
-
-    // A. Lógica de Slug: ¿Necesitamos regenerarlo?
-    // Si el título cambió O si no tiene slug (caso legacy)
     const titleChanged = currentAd.title !== req.body.title;
-    const missingSlug = !updatedAdDoc.slug;
-
-    if (missingSlug || titleChanged) {
-      // 1. Si cambió el título, reseteamos slug a null para forzar recreación limpia
+    if (!updatedAdDoc.slug || titleChanged) {
       if (titleChanged) updatedAdDoc.slug = null;
-
-      // 2. Marcamos 'title' como modificado para despertar al plugin
       updatedAdDoc.markModified("title");
-
-      // 3. Guardamos. Aquí es donde mongoose-slug-updater se ejecuta.
       await updatedAdDoc.save();
     }
 
-    // Convertimos a objeto plano para manipulación final y respuesta
-    const updatedAd = updatedAdDoc.toObject();
+    // =====================================================================
+    // 🚀 SINCRONIZACIÓN CON WEBHOME (Mismo nivel que el Slug)
+    // =====================================================================
+    try {
+      const labels = [];
+      if (updatedAdDoc.sale?.saleShowOnWeb && updatedAdDoc.sale?.saleValue)
+        labels.push("Venta");
+      if (updatedAdDoc.rent?.rentShowOnWeb && updatedAdDoc.rent?.rentValue)
+        labels.push("Alquiler");
 
-    // Normalizar historial (si tienes esta función)
+      await WebHome.updateMany(
+        { "videoSection.videos.adId": id },
+        {
+          $set: {
+            "videoSection.videos.$.title": updatedAdDoc.title,
+            "videoSection.videos.$.slug": updatedAdDoc.slug,
+            "videoSection.videos.$.adReference": updatedAdDoc.adReference,
+            "videoSection.videos.$.price": {
+              sale:
+                updatedAdDoc.sale?.saleShowOnWeb && updatedAdDoc.sale.saleValue
+                  ? updatedAdDoc.sale.saleValue
+                  : null,
+              rent:
+                updatedAdDoc.rent?.rentShowOnWeb && updatedAdDoc.rent.rentValue
+                  ? updatedAdDoc.rent.rentValue
+                  : null,
+              label: labels.join(" / "),
+            },
+          },
+        },
+      );
+    } catch (syncError) {
+      console.error("Error Sync Home:", syncError);
+    }
+
+    // 8. Normalización y Revalidación
+    const updatedAd = updatedAdDoc.toObject();
     if (typeof normalizeAdHistory === "function") {
       updatedAd.changesHistory = normalizeAdHistory(updatedAd);
     }
 
-    // B. Lógica de Revalidación ISR (Next.js 16)
     const validStatuses = ["Activo", "En preparación"];
     const isVisibleNow =
       updatedAd.showOnWeb && validStatuses.includes(updatedAd.adStatus);
-
-    // Detectamos si la visibilidad pudo haber cambiado (pasó de inactivo a activo o viceversa)
-    const visibilityChanged =
-      currentAd.showOnWeb !== req.body.showOnWeb ||
-      currentAd.adStatus !== req.body.adStatus;
-
-    const featuredChanged =
-      currentAd.featuredOnMain !== req.body.featuredOnMain;
-
     const revalidationPromises = [];
 
-    // 1. Revalidar Listados Generales y Home
-    // Si es visible ahora, o si su visibilidad cambió, necesitamos actualizar las listas
-    if (isVisibleNow || visibilityChanged) {
-      revalidationPromises.push(revalidateWeb("home-data"));
-      revalidationPromises.push(revalidateWeb("ads-list"));
+    if (
+      isVisibleNow ||
+      currentAd.showOnWeb !== req.body.showOnWeb ||
+      currentAd.adStatus !== req.body.adStatus
+    ) {
+      revalidationPromises.push(
+        revalidateWeb("home-data"),
+        revalidateWeb("ads-list"),
+      );
     }
-
-    // 2. Revalidar Destacados
-    if (updatedAd.featuredOnMain || featuredChanged) {
+    if (
+      updatedAd.featuredOnMain ||
+      currentAd.featuredOnMain !== req.body.featuredOnMain
+    ) {
       revalidationPromises.push(revalidateWeb("featured-ads"));
     }
-
-    // 3. Revalidar la Página de Detalle Específica
-    // IMPORTANTE: El tag debe coincidir con el del frontend (ad-{slug})
     if (updatedAd.slug) {
-      // Revalidamos el NUEVO slug
       revalidationPromises.push(revalidateWeb(`ad-${updatedAd.slug}`));
-
-      // Opcional PRO: Si el slug cambió, revalidar también el viejo para forzar el 404 rápido
-      if (currentAd.slug && currentAd.slug !== updatedAd.slug) {
+      if (currentAd.slug && currentAd.slug !== updatedAd.slug)
         revalidationPromises.push(revalidateWeb(`ad-${currentAd.slug}`));
-      }
     }
-
-    // Ejecutamos revalidaciones en paralelo (sin await para no bloquear respuesta)
     Promise.allSettled(revalidationPromises);
 
     return res.status(200).json(updatedAd);
