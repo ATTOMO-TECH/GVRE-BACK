@@ -4,13 +4,7 @@ const { deleteImage } = require("../middlewares/file.middleware");
 const mongoose = require("mongoose");
 const Contact = require("../models/contact.model");
 const Consultant = require("../models/consultant.model");
-const {
-  orderAdsAscendentBySalePrice,
-  orderAdsDescendentBySalePrice,
-  orderAdsAscendentByRentPrice,
-  orderAdsDescendentByRentPrice,
-  normalizeAdHistory,
-} = require("./utils");
+const { normalizeAdHistory } = require("../utils/utils");
 const { revalidateWeb } = require("../utils/revalidateWeb");
 
 const repairAds = async (req, res, next) => {
@@ -804,17 +798,18 @@ const adCreate = async (req, res, next) => {
       adCreated.showOnWeb && validStatuses.includes(adCreated.adStatus);
 
     if (isVisible) {
-      // A. Revalidar HOME
-      await revalidateWeb("home-data");
+      await Promise.all([
+        // A. Home: Porque cambian los contadores (Madrid: 20 -> 21)
+        revalidateWeb("home-data"),
 
-      // B. Revalidar LISTADO DE ACTIVOS
-      await revalidateWeb("ads-list");
+        // B. Listado: Para que aparezca la nueva Card en búsquedas
+        revalidateWeb("ads-list"),
 
-      // C. Revalidar DESTACADOS
-      // Solo si está marcado como destacado
-      if (adCreated.featuredOnMain) {
-        await revalidateWeb("featured-ads");
-      }
+        // C. Destacados: Solo si está marcado
+        adCreated.featuredOnMain
+          ? revalidateWeb("featured-ads")
+          : Promise.resolve(),
+      ]);
     }
 
     return res.status(200).json(adCreated);
@@ -1039,13 +1034,20 @@ const adOthersImagesDelete = async (req, res, next) => {
 const adUpdate = async (req, res, next) => {
   try {
     const { id } = req.body;
-    const fieldsToUpdate = {};
 
-    // Load current ad to compare and to populate names for history entries
+    // 1. Cargar estado ACTUAL (antes del cambio) para comparar
+    // Usamos .lean() para optimizar la comparación inicial
     const currentAd = await Ad.findById(id)
       .populate("owner", "fullName")
       .populate("consultant", "fullName")
       .lean();
+
+    if (!currentAd) {
+      return res.status(404).json({ message: "Anuncio no encontrado" });
+    }
+
+    // 2. Mapeo EXHAUSTIVO de campos (Sin omitir nada)
+    const fieldsToUpdate = {};
 
     fieldsToUpdate.title = req.body.title;
     fieldsToUpdate.showOnWeb = req.body.showOnWeb;
@@ -1074,6 +1076,7 @@ const adUpdate = async (req, res, next) => {
     fieldsToUpdate.distrito = req.body.distrito;
     fieldsToUpdate.barrio = req.body.barrio;
 
+    // Campos anidados: Dirección
     fieldsToUpdate.adDirection = {
       address: {
         street: req.body.street,
@@ -1087,6 +1090,7 @@ const adUpdate = async (req, res, next) => {
 
     fieldsToUpdate.surfacesBox = req.body.surfacesBox;
 
+    // Campos anidados: Venta y Alquiler
     fieldsToUpdate.sale = {
       saleValue: req.body.saleValue,
       saleShowOnWeb: req.body.saleShowOnWeb,
@@ -1096,6 +1100,7 @@ const adUpdate = async (req, res, next) => {
       rentShowOnWeb: req.body.rentShowOnWeb,
     };
 
+    // Campos anidados: Gastos
     fieldsToUpdate.communityExpenses = {
       expensesValue: req.body.expensesValue,
       expensesShowOnWeb: req.body.expensesShowOnWeb,
@@ -1111,6 +1116,7 @@ const adUpdate = async (req, res, next) => {
       trashFeeShowOnWeb: req.body.trashFeeShowOnWeb,
     };
 
+    // Campos anidados: Calidades (Lista completa)
     fieldsToUpdate.quality = {
       bedrooms: req.body.bedrooms,
       bathrooms: req.body.bathrooms,
@@ -1164,19 +1170,21 @@ const adUpdate = async (req, res, next) => {
       distribution: req.body.distribution,
     };
 
-    // Build history entries by comparing currentAd and incoming values
+    // 3. Lógica del Historial (Changes History)
     const historyEntries = [];
 
-    // Resolve consultant info (prefer provided consultant, fallback to currentAd.consultant)
+    // Resolver información del consultor
     let consultantInfo = null;
     if (req.body.userId) {
       try {
         const c = await Consultant.findById(req.body.userId, "fullName").lean();
         if (c) consultantInfo = { _id: c._id, fullName: c.fullName };
       } catch (e) {
-        // ignore
+        /* ignore */
       }
     }
+
+    // Fallback al consultor actual si no viene userId
     if (!consultantInfo && currentAd && currentAd.consultant) {
       consultantInfo =
         currentAd.consultant && currentAd.consultant.fullName
@@ -1187,7 +1195,7 @@ const adUpdate = async (req, res, next) => {
           : { _id: currentAd.consultant };
     }
 
-    // Price changes: sale
+    // Historial: Cambio de Precio Venta
     if (req.body.saleValue !== undefined) {
       const oldSale =
         currentAd && currentAd.sale ? currentAd.sale.saleValue : null;
@@ -1209,7 +1217,7 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
-    // Price changes: rent
+    // Historial: Cambio de Precio Alquiler
     if (req.body.rentValue !== undefined) {
       const oldRent =
         currentAd && currentAd.rent ? currentAd.rent.rentValue : null;
@@ -1231,7 +1239,7 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
-    // Owner change
+    // Historial: Cambio de Propietario
     if (req.body.owner !== undefined) {
       const oldOwnerId =
         currentAd && currentAd.owner
@@ -1241,7 +1249,6 @@ const adUpdate = async (req, res, next) => {
           : null;
       const newOwnerId = req.body.owner ? String(req.body.owner) : null;
       if (oldOwnerId !== newOwnerId) {
-        // resolve owner names when possible
         let oldOwnerName = null;
         let newOwnerName = null;
         try {
@@ -1269,7 +1276,7 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
-    // Ad type change
+    // Historial: Cambio de Tipo de Anuncio
     if (req.body.adType !== undefined) {
       const oldType = currentAd && currentAd.adType ? currentAd.adType : null;
       const newType = req.body.adType;
@@ -1288,7 +1295,7 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
-    // GV operation close change
+    // Historial: Cambio Operación GV
     if (req.body.gvOperationClose !== undefined) {
       const oldGV = currentAd ? currentAd.gvOperationClose : null;
       const newGV = req.body.gvOperationClose;
@@ -1305,21 +1312,23 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
+    // 4. Actualización masiva opcional (updateSameRef)
     if (req.body.updateSameRef && req.body.adReference) {
       await Ad.updateMany(
         {
           adReference: req.body.adReference,
-          _id: { $ne: req.body.id }, // para no volver a actualizar el mismo anuncio
+          _id: { $ne: req.body.id },
         },
         {
           $set: { surfacesBox: req.body.surfacesBox },
         },
       );
     }
-    // Build update operation: $set for fields, and $push for history if entries exist
+
+    // 5. Preparar operador de actualización MongoDB
     const updateOps = { $set: fieldsToUpdate };
 
-    // If the current ad has no changesHistory, always add a synthetic CREATION entry (without consultant)
+    // Creación sintética de historial si no existe
     const needCreation =
       !currentAd ||
       !Array.isArray(currentAd.changesHistory) ||
@@ -1336,13 +1345,10 @@ const adUpdate = async (req, res, next) => {
         consultant: null,
         note: "Creación sintética del campo",
       };
-
-      // Ensure the creation entry is first in the pushed entries
       historyEntries.unshift(creationEntry);
     }
 
     if (historyEntries.length > 0) {
-      // If we added a creation entry we want to insert at position 0 to keep it first
       if (needCreation) {
         updateOps.$push = {
           changesHistory: { $each: historyEntries, $position: 0 },
@@ -1352,47 +1358,84 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
+    // 6. EJECUTAR EL UPDATE PRINCIPAL (Sin revalidar slug aún)
     await Ad.findByIdAndUpdate(id, updateOps);
 
-    // Return updated ad with populated consultant/owner and normalized history
-    const updatedAd = await Ad.findById(id)
+    // =====================================================================
+    // REGENERACIÓN DE SLUG + REVALIDACIÓN WEB
+    // =====================================================================
+
+    // Recuperamos el documento actualizado.
+    // IMPORTANTE: NO usamos .lean() porque necesitamos métodos como .save()
+    const updatedAdDoc = await Ad.findById(id)
       .populate("consultant", "fullName")
-      .populate("owner", "fullName")
-      .lean();
-    if (updatedAd) updatedAd.changesHistory = normalizeAdHistory(updatedAd);
+      .populate("owner", "fullName");
 
-    // =====================================================================
-    // 🔌 INTEGRACIÓN ISR MEJORADA (ACTUALIZACIÓN)
-    // =====================================================================
+    // A. Lógica de Slug: ¿Necesitamos regenerarlo?
+    // Si el título cambió O si no tiene slug (caso legacy)
+    const titleChanged = currentAd.title !== req.body.title;
+    const missingSlug = !updatedAdDoc.slug;
 
+    if (missingSlug || titleChanged) {
+      // 1. Si cambió el título, reseteamos slug a null para forzar recreación limpia
+      if (titleChanged) updatedAdDoc.slug = null;
+
+      // 2. Marcamos 'title' como modificado para despertar al plugin
+      updatedAdDoc.markModified("title");
+
+      // 3. Guardamos. Aquí es donde mongoose-slug-updater se ejecuta.
+      await updatedAdDoc.save();
+    }
+
+    // Convertimos a objeto plano para manipulación final y respuesta
+    const updatedAd = updatedAdDoc.toObject();
+
+    // Normalizar historial (si tienes esta función)
+    if (typeof normalizeAdHistory === "function") {
+      updatedAd.changesHistory = normalizeAdHistory(updatedAd);
+    }
+
+    // B. Lógica de Revalidación ISR (Next.js 16)
     const validStatuses = ["Activo", "En preparación"];
-
-    // 1. ¿Es visible ahora?
     const isVisibleNow =
       updatedAd.showOnWeb && validStatuses.includes(updatedAd.adStatus);
 
-    // 2. ¿Hubo cambio de estado relevante?
-    // Si en el req.body venía adStatus o showOnWeb, significa que potencialmente cambió la visibilidad.
-    // Necesitamos revalidar para LIMPIAR si antes era visible y ahora no.
-    const visibilityMightHaveChanged =
-      req.body.adStatus !== undefined || req.body.showOnWeb !== undefined;
+    // Detectamos si la visibilidad pudo haber cambiado (pasó de inactivo a activo o viceversa)
+    const visibilityChanged =
+      currentAd.showOnWeb !== req.body.showOnWeb ||
+      currentAd.adStatus !== req.body.adStatus;
 
-    // 3. ¿Hubo cambio en destacados?
-    const featuredChanged = req.body.featuredOnMain !== undefined;
+    const featuredChanged =
+      currentAd.featuredOnMain !== req.body.featuredOnMain;
 
-    // A. Revalidar HOME y LISTADO
-    // Si es visible ahora O si hemos tocado la visibilidad (para ocultarlo si hace falta)
-    if (isVisibleNow || visibilityMightHaveChanged) {
-      await revalidateWeb("home-data");
-      await revalidateWeb("ads-list");
+    const revalidationPromises = [];
+
+    // 1. Revalidar Listados Generales y Home
+    // Si es visible ahora, o si su visibilidad cambió, necesitamos actualizar las listas
+    if (isVisibleNow || visibilityChanged) {
+      revalidationPromises.push(revalidateWeb("home-data"));
+      revalidationPromises.push(revalidateWeb("ads-list"));
     }
 
-    // B. Revalidar DESTACADOS
-    // Si es destacado ahora O si hemos tocado el check de destacado (para quitarlo si hace falta)
+    // 2. Revalidar Destacados
     if (updatedAd.featuredOnMain || featuredChanged) {
-      await revalidateWeb("featured-ads");
+      revalidationPromises.push(revalidateWeb("featured-ads"));
     }
-    // =====================================================================
+
+    // 3. Revalidar la Página de Detalle Específica
+    // IMPORTANTE: El tag debe coincidir con el del frontend (ad-{slug})
+    if (updatedAd.slug) {
+      // Revalidamos el NUEVO slug
+      revalidationPromises.push(revalidateWeb(`ad-${updatedAd.slug}`));
+
+      // Opcional PRO: Si el slug cambió, revalidar también el viejo para forzar el 404 rápido
+      if (currentAd.slug && currentAd.slug !== updatedAd.slug) {
+        revalidationPromises.push(revalidateWeb(`ad-${currentAd.slug}`));
+      }
+    }
+
+    // Ejecutamos revalidaciones en paralelo (sin await para no bloquear respuesta)
+    Promise.allSettled(revalidationPromises);
 
     return res.status(200).json(updatedAd);
   } catch (err) {

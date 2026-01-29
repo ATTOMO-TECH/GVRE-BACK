@@ -6,10 +6,9 @@ const { revalidateWeb } = require("../utils/revalidateWeb");
 
 const webHomeGet = async (req, res, next) => {
   try {
-    // 1. Obtenemos el documento
     const webDocs = await WebHome.find().populate({
       path: "videoSection.videos.adId",
-      select: "adStatus showOnWeb gvOperationClose",
+      select: "adStatus showOnWeb gvOperationClose slug",
     });
 
     if (!webDocs || webDocs.length === 0) {
@@ -19,67 +18,65 @@ const webHomeGet = async (req, res, next) => {
     const webHomeDoc = webDocs[0];
     const originalVideoCount = webHomeDoc.videoSection.videos.length;
 
-    // --- LÓGICA DE LIMPIEZA (DELETE) ---
+    // Filtramos los videos cuyo anuncio original ya no cumple los requisitos
     const validVideos = webHomeDoc.videoSection.videos.filter((video) => {
-      const ad = video.adId;
+      const ad = video.adId; // Esto es un objeto completo gracias al populate
 
-      // 1. Si el anuncio no existe
+      // a. Si el anuncio fue borrado de la BD
       if (!ad) return false;
 
-      // 2. CAMBIO AQUÍ: Filtro de Estado
-      // Aceptamos "Activo" Y "En preparación".
-      // Si es "Inactivo" (o cualquier otro que no esté en la lista), lo borramos.
+      // b. Filtro de Estado (Activo o En preparación)
       const validStatuses = ["Activo", "En preparación"];
       if (!validStatuses.includes(ad.adStatus)) return false;
 
-      // 3. Si está marcado para no mostrarse en web
+      // c. Si está marcado para no mostrarse en web
       if (!ad.showOnWeb) return false;
 
-      // 4. Si la operación está cerrada (Vendido o Alquilado)
+      // d. Si la operación está cerrada (Vendido o Alquilado)
       if (ad.gvOperationClose && ad.gvOperationClose !== "") return false;
 
       return true;
     });
 
-    // --- ACTUALIZACIÓN EN BASE DE DATOS ---
+    // Si la cantidad cambió, guardamos el documento limpio
     if (validVideos.length !== originalVideoCount) {
-      console.log(
-        `Limpieza automática: Se eliminaron ${originalVideoCount - validVideos.length} videos inválidos de la Home.`,
-      );
-
       webHomeDoc.videoSection.videos = validVideos;
       await webHomeDoc.save();
     }
 
-    // Convertimos a objeto plano
+    // Convertimos a objeto plano JS para manipularlo sin afectar a Mongoose
     let webData = webHomeDoc.toObject();
 
-    // ---------------------------------------------
-    // ATENCIÓN: FILTROS PARA LOS CONTEOS (ActiveFilter)
-    // ---------------------------------------------
-    // Si quieres que los contadores de "Residencial: 50", "Madrid: 20", etc.
-    // TAMBIÉN cuenten los de "En preparación", debes cambiar esto:
+    // Recreamos el objeto a enviar
+    if (webData.videoSection && webData.videoSection.videos) {
+      webData.videoSection.videos = webData.videoSection.videos.map((video) => {
+        const adObject = video.adId;
 
-    /* Opción A: Dejarlo solo en "Activo" (Los contadores ignoran 'En preparación')
-       const activeFilter = { adStatus: "Activo", showOnWeb: true };
-       
-       Opción B: Contar también "En preparación" (Recomendado si muestras los videos)
-       Abajo te dejo la Opción B aplicada:
-    */
+        // Si por alguna razón adObject es null (caso raro post-filtro), protegemos el código
+        if (!adObject) return video;
 
+        return {
+          ...video,
+          slug: adObject.slug,
+          adId: adObject._id.toString(),
+        };
+      });
+    }
+
+    // Filtro para contar propiedades (incluye 'En preparación' para ser consistente)
     const activeFilter = {
       adStatus: { $in: ["Activo", "En preparación"] },
       showOnWeb: true,
     };
 
-    // 3. Obtenemos nombres de ciudades
+    // Obtenemos nombres de ciudades dinámicamente desde la config de la home
     const city1 = webData.categoriesSection?.location1?.title || "Madrid";
     const city2 = webData.categoriesSection?.location2?.title || "Marbella";
     const city3 = webData.categoriesSection?.location3?.title || "Sotogrande";
     const city4 =
       webData.categoriesSection?.location4?.title || "Puerto de Santa María";
 
-    // 4. Conteos en paralelo
+    // Ejecutamos todos los conteos en paralelo (más rápido)
     const [
       countResidential,
       countPatrimonial,
@@ -110,7 +107,6 @@ const webHomeGet = async (req, res, next) => {
       }),
     ]);
 
-    // 5. INYECCIÓN DIRECTA
     if (webData.categoriesSection) {
       if (webData.categoriesSection.residential)
         webData.categoriesSection.residential.count = countResidential;
@@ -118,6 +114,7 @@ const webHomeGet = async (req, res, next) => {
         webData.categoriesSection.patrimonial.count = countPatrimonial;
       if (webData.categoriesSection.others)
         webData.categoriesSection.others.count = countOthers;
+
       if (webData.categoriesSection.location1)
         webData.categoriesSection.location1.count = countLocation1;
       if (webData.categoriesSection.location2)
@@ -1128,6 +1125,7 @@ const getAdCardData = async (req, res, next) => {
     const fieldsToSelect = [
       "_id",
       "title",
+      "slug",
       "adType",
       "sale",
       "rent",
@@ -1158,10 +1156,170 @@ const getAdCardData = async (req, res, next) => {
 
 const getHighlightAds = async (req, res, next) => {
   try {
-    const ads = await Ad.find({ featuredOnMain: true });
-    res.status(200).json(ads);
+    // 1. Buscamos solo los destacados
+    // SUGERENCIA: Usa .select() para traer solo los campos necesarios de la BD (optimización)
+    const ads = await Ad.find({ featuredOnMain: true }).select(
+      "title slug adType sale rent adDirection images features newDevelopment exclusive",
+    );
+
+    // 2. Mapeamos los resultados para ajustarlos a la interfaz 'Property'
+    const formattedAds = ads.map((ad) => {
+      // --- LÓGICA DE PRECIO Y OPERACIÓN ---
+      // Determinamos si mostramos precio de Venta o de Alquiler.
+      // Prioridad habitual: Si tiene precio de venta, mostramos venta.
+      let currentPrice = 0;
+      let operationLabel = "";
+
+      if (ad.sale && ad.sale.saleValue) {
+        currentPrice = ad.sale.saleValue;
+        operationLabel = "Venta";
+      } else if (ad.rent && ad.rent.rentValue) {
+        currentPrice = ad.rent.rentValue;
+        operationLabel = "Alquiler";
+      }
+
+      // --- LÓGICA DE TAGS ---
+      // Creamos los tags dinámicamente según los booleanos del anuncio
+      const tags = [];
+      if (ad.exclusive) tags.push("Exclusiva");
+      if (ad.newDevelopment) tags.push("Obra Nueva");
+
+      return {
+        id: ad._id.toString(),
+        slug: ad.slug,
+        title: ad.title,
+        price: currentPrice,
+        operation: operationLabel,
+        location: ad.adDirection?.city || "Ubicación desconocida",
+        image: ad.images?.main || "",
+        specs: {
+          beds: ad.quality?.bedrooms || 0,
+          area: ad.buildSurface || ad.plotSurface,
+          bathrooms: ad.quality?.bathrooms || 0,
+        },
+
+        tags: tags,
+      };
+    });
+
+    res.status(200).json(formattedAds);
   } catch (error) {
     console.error("Error obteniendo activos destacados:", error);
+    // Es buena práctica pasar el error al middleware de express
+    next(error);
+  }
+};
+
+const getAdDetails = async (req, res, next) => {
+  try {
+    const slug = req.params.slug;
+
+    if (!slug) {
+      return res.status(400).json({ message: "Falta el slug del inmueble" });
+    }
+
+    // 1. Búsqueda con filtros de visibilidad y estado de operación
+    const ad = await Ad.findOne({
+      slug: slug,
+      showOnWeb: true,
+      adStatus: { $in: ["Activo", "En preparación"] },
+      gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
+    });
+
+    if (!ad) {
+      return res.status(404).json({ message: "Inmueble no encontrado" });
+    }
+
+    // 2. Lógica de Precios Dual (Venta / Alquiler)
+    const salePrice = ad.sale?.saleShowOnWeb ? ad.sale.saleValue : null;
+    const rentPrice = ad.rent?.rentShowOnWeb ? ad.rent.rentValue : null;
+
+    let priceLabel = "";
+    let period = "";
+
+    if (salePrice && rentPrice) {
+      priceLabel = "Venta y Alquiler";
+      period = "mes";
+    } else if (salePrice) {
+      priceLabel = "Venta";
+    } else if (rentPrice) {
+      priceLabel = "Alquiler";
+      period = "mes";
+    } else {
+      priceLabel = "Consultar";
+    }
+
+    // 3. Unificación de Galería de Imágenes
+    let gallery = [];
+    if (ad.images?.main) gallery.push(ad.images.main);
+    if (ad.images?.others && Array.isArray(ad.images.others)) {
+      gallery = [...gallery, ...ad.images.others];
+    }
+
+    // 4. Mapeo de Características (Sin 'garden')
+    const featuresList = {
+      pool:
+        ad.quality?.others?.swimmingPool ||
+        ad.quality?.indoorPool > 0 ||
+        ad.quality?.outdoorPool > 0,
+      terrace: ad.quality?.others?.terrace || false,
+      garage: ad.quality?.garage > 0 || ad.quality?.others?.garage,
+      airConditioning: ad.quality?.others?.airConditioning || false,
+      heating:
+        ad.quality?.others?.centralHeating ||
+        ad.quality?.others?.subfloorHeating,
+      lift: ad.quality?.others?.lift || false,
+      storage: ad.quality?.others?.storage || false,
+    };
+
+    // 5. Construcción del objeto final (PropertyDetail)
+    const propertyDetail = {
+      id: ad._id,
+      slug: ad.slug,
+      title: ad.title,
+      reference: ad.adReference,
+      description: ad.description?.web || "Sin descripción disponible.",
+
+      // Precios independientes para el Front
+      salePrice: salePrice,
+      rentPrice: rentPrice,
+      priceLabel: priceLabel,
+      period: period,
+
+      location: {
+        city: ad.adDirection?.city || "",
+        district: ad.distrito || "",
+        neighborhood: ad.barrio || "",
+        address: ad.adDirection?.address?.street || "",
+        coordinates: null, // No se utilizan de momento
+      },
+
+      specs: {
+        beds: ad.quality?.bedrooms || 0,
+        baths: ad.quality?.bathrooms || 0,
+        area: ad.buildSurface || 0,
+        plot: ad.plotSurface || 0,
+        year: ad.buildingYear,
+        floor: ad.floor || "",
+      },
+
+      features: featuresList,
+      images: gallery,
+      mainImage: ad.images?.main || "",
+      surfacesBox: ad.surfacesBox || [],
+      tags: [],
+    };
+
+    // 6. Tags dinámicos basados en el tipo y calidades
+    if (ad.adBuildingType && ad.adBuildingType.length > 0)
+      propertyDetail.tags.push(ad.adBuildingType[0]);
+    if (ad.quality?.reformed) propertyDetail.tags.push("Reformado");
+    if (ad.quality?.toReform) propertyDetail.tags.push("A reformar");
+
+    return res.status(200).json(propertyDetail);
+  } catch (error) {
+    console.error("Error obteniendo detalle del anuncio:", error);
+    return next(error);
   }
 };
 
@@ -1191,4 +1349,5 @@ module.exports = {
   getMapData,
   getAdCardData,
   getHighlightAds,
+  getAdDetails,
 };
