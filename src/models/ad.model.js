@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 
+const slug = require("mongoose-slug-updater");
+
 const Schema = mongoose.Schema;
 
 const adSchema = new Schema(
@@ -11,6 +13,12 @@ const adSchema = new Schema(
       default: "En preparación",
     },
     title: { type: String, required: true },
+    slug: {
+      type: String,
+      slug: "title",
+      unique: true,
+      permanent: true,
+    },
     showOnWeb: { type: Boolean, default: true },
     featuredOnMain: { type: Boolean },
     featuredDrawings: { type: Boolean },
@@ -200,6 +208,8 @@ const adSchema = new Schema(
     timestamps: true,
   },
 );
+
+adSchema.plugin(slug);
 
 const Ad = mongoose.model("ads", adSchema);
 

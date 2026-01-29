@@ -26,6 +26,7 @@ const {
   getHighlightAds,
   webVideoSectionUpdate,
   getAdsByReference,
+  getAdDetails,
 } = require("../controllers/web.controller");
 
 const router = express.Router();
@@ -147,25 +148,27 @@ router.put(
 
 // NUEVA WEB:
 
+// ------------------------------------------------------------------
+
 // HOME
-
 router.put("/home/videosection/edit/:id", webVideoSectionUpdate);
-
 router.get("/home/ads/search", getAdsByReference);
+router.put("/home/categories-section/edit/:id", upload.single("image"));
 
-// CATEGORIES SECTION
-router.put(
-  "/home/categories-section/edit/:id",
-  upload.single("image"), // El frontend debe enviar el archivo con el nombre "image"
-  updateCategoriesSection,
-);
+// ------------------------------------------------------------------
 
-// MAP DATA FOR RESIDENTIAL ADS
+// ADS DATA FOR MAPS
 router.get("/map-stats", getMapData);
-
 router.get("/ad-card-data", getAdCardData);
+
+// ------------------------------------------------------------------
 
 // HIGHLIGHT ADS
 router.get("/highlight-ads", getHighlightAds);
+
+// ------------------------------------------------------------------
+
+// AD DETAILS
+router.get("/ad-details/:slug", getAdDetails);
 
 module.exports = router;

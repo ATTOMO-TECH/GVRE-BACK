@@ -1,24 +1,34 @@
 /**
- * Llama al webhook de Next.js para purgar el caché usando fetch nativo
- * @param {string} tag - La etiqueta a revalidar (ej: 'home-data')
+ * Llama al webhook de Next.js para purgar el caché.
+ * @param {string} tag - La etiqueta a revalidar (ej: 'home-data', 'property-slug')
+ * @returns {Promise<boolean>} - Retorna true si tuvo éxito, false si falló.
  */
-
-const revalidateWeb = async (tag = "home-data") => {
+const revalidateWeb = async (tag) => {
   const frontendUrl = process.env.FRONTEND_URL;
   const secret = process.env.REVALIDATE_TOKEN;
 
+  // 1. Validación temprana
   if (!frontendUrl || !secret) {
     console.error(
-      "⚠️ Faltan variables de entorno FRONTEND_URL o REVALIDATE_TOKEN",
+      "⚠️ [Revalidate] Faltan variables de entorno FRONTEND_URL o REVALIDATE_TOKEN",
     );
-    return;
+    return false;
   }
 
-  // 1. Construimos la URL con parámetros de forma segura
-  const url = new URL(`${frontendUrl}/api/revalidate`);
+  if (!tag) {
+    console.warn(
+      "⚠️ [Revalidate] Se intentó revalidar sin especificar un tag.",
+    );
+    return false;
+  }
+
+  // 2. Construcción robusta de la URL
+  // new URL(path, base) maneja automáticamente las barras duplicadas
+  const url = new URL("/api/revalidate", frontendUrl);
   url.searchParams.append("tag", tag);
   url.searchParams.append("secret", secret);
 
+  // 3. Configuración de Timeout (5 segundos)
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000);
 
@@ -28,19 +38,24 @@ const revalidateWeb = async (tag = "home-data") => {
       signal: controller.signal,
     });
 
+    // Intentamos leer la respuesta para logs más detallados
+    const data = await response.json().catch(() => ({}));
+
     if (!response.ok) {
-      throw new Error(`Error HTTP: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Status ${response.status}: ${data.message || response.statusText}`,
+      );
     }
+
+    return true;
   } catch (error) {
     if (error.name === "AbortError") {
-      console.error(
-        "❌ Error: La petición de revalidación excedió el tiempo límite (timeout).",
-      );
+      console.error(`❌ [Revalidate] Timeout (5s) para el tag: '${tag}'`);
     } else {
-      console.error("❌ Error al revalidar Next.js:", error.message);
+      console.error(`❌ [Revalidate] Error en '${tag}': ${error.message}`);
     }
+    return false;
   } finally {
-    // Importante: Limpiamos el temporizador para no dejar procesos colgados
     clearTimeout(timeoutId);
   }
 };

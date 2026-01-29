@@ -1,5 +1,5 @@
 const nodemailer = require("nodemailer"); // email sender function
-const { getPasswordByEmail } = require("./utils");
+const { getPasswordByEmail, getTaggedEmail } = require("../utils/utils");
 const Consultant = require("../models/consultant.model");
 const AWS = require("aws-sdk");
 const Contact = require("./../models/contact.model");
@@ -457,11 +457,16 @@ const sendAdsToContact = async (req, res) => {
     }
   });
 
+  const bccWithTag = getTaggedEmail(
+    req.body.consultant.consultantEmail,
+    "peticiones",
+  );
+
   const mailOptions = {
     from: `<${req.body.consultant.consultantEmail}>`,
     to: `${req.body.contact.email}`,
     subject: `${req.body.subject}`,
-    bcc: req.body.consultant.consultantEmail,
+    bcc: bccWithTag,
     html: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
     <html
       xmlns="http://www.w3.org/1999/xhtml"
@@ -1843,6 +1848,11 @@ const sendAdToContacts = async (req, res) => {
     </html>`,
   };
 
+  const bccWithTag = getTaggedEmail(
+    req.body.consultant.consultantEmail,
+    "activos",
+  );
+
   const sendEmails = async () => {
     for (let index = 0; index < req.body.requestsToSend.length; index++) {
       const recipient = req.body.requestsToSend[index];
@@ -1856,7 +1866,7 @@ const sendAdToContacts = async (req, res) => {
       const mailOptions = { ...baseMailOptions };
       mailOptions.from = req.body.consultant.consultantEmail;
       mailOptions.to = recipient.requestContact.email;
-      mailOptions.bcc = req.body.consultant.consultantEmail;
+      mailOptions.bcc = bccWithTag;
       ((mailOptions.html = personalizedHtml),
         await sendMailWithDelay(mailOptions, 800));
     }

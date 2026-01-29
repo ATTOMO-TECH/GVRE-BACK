@@ -2,7 +2,6 @@ const LocalStrategy = require("passport-local").Strategy;
 const Consultant = require("../models/consultant.model");
 const bcrypt = require("bcrypt");
 const { isValidPassword, isValidEmail } = require("./utils");
-const { getDate } = require("../controllers/utils");
 
 /**************************************
  * Register Consultant Strategy
