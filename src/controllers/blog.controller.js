@@ -81,33 +81,38 @@ const getBlogs = async (req, res) => {
 // 4. Obtener Blogs Paginados
 const getPaginatedBlogs = async (req, res) => {
   try {
-    // 1. Extraemos parámetros de la query
-    // page: número de página (empieza en 1)
-    // limit: cuántos posts por carga (por defecto 6)
-    // tag: etiqueta para filtrar
-    const { page = 1, limit = 6, tag } = req.query;
+    const { page = 1, limit = 6, tag, sort = "newest" } = req.query;
 
-    // 2. Construimos el filtro
-    const query = { active: true }; // Solo blogs publicados
-    if (tag) {
-      query.tags = tag; // Mongoose busca automáticamente dentro del array
+    const query = { active: true };
+    if (tag) query.tags = tag;
+
+    // Mapeo de criterios de ordenación
+    let sortOptions = {};
+    switch (sort) {
+      case "oldest":
+        sortOptions = { createdAt: 1 };
+        break;
+      case "alpha-asc":
+        sortOptions = { title: 1 };
+        break;
+      case "alpha-desc":
+        sortOptions = { title: -1 };
+        break;
+      case "newest":
+      default:
+        sortOptions = { createdAt: -1 };
+        break;
     }
 
-    // 3. Ejecutamos la consulta con paginación
     const blogs = await Blog.find(query)
-      .sort({ createdAt: -1 }) // Los más nuevos primero
+      .sort(sortOptions)
       .limit(Number(limit))
       .skip((Number(page) - 1) * Number(limit));
 
-    // 4. Contamos el total para que el front sepa si hay más
     const totalBlogs = await Blog.countDocuments(query);
     const hasMore = Number(page) * Number(limit) < totalBlogs;
 
-    res.status(200).json({
-      blogs,
-      hasMore,
-      total: totalBlogs,
-    });
+    res.status(200).json({ blogs, hasMore, total: totalBlogs });
   } catch (error) {
     res.status(500).json({ msg: "Error al obtener los artículos" });
   }
@@ -176,6 +181,16 @@ const getRelatedBlogs = async (req, res) => {
   }
 };
 
+// 8. Obtener tags únicos para categorias dinamicas
+const getDistinctTags = async (req, res) => {
+  try {
+    const tags = await Blog.distinct("tags", { active: true });
+    res.status(200).json(tags.sort());
+  } catch (error) {
+    res.status(500).json({ msg: "Error al obtener las categorías" });
+  }
+};
+
 module.exports = {
   createBlog,
   updateBlog,
@@ -184,4 +199,5 @@ module.exports = {
   deleteBlog,
   getBlogDetails,
   getRelatedBlogs,
+  getDistinctTags,
 };

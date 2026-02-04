@@ -8,6 +8,7 @@ const {
   deleteBlog,
   getBlogDetails,
   getRelatedBlogs,
+  getDistinctTags,
 } = require("../controllers/blog.controller");
 
 const router = express.Router();
@@ -19,5 +20,6 @@ router.get("/getAllPaginated", getPaginatedBlogs);
 router.delete("/delete/:id", deleteBlog);
 router.get("/getDetails/:slug", getBlogDetails);
 router.get("/getRelated", getRelatedBlogs);
+router.get("/getTags", getDistinctTags);
 
 module.exports = router;
