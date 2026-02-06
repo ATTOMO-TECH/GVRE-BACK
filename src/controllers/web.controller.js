@@ -1018,51 +1018,89 @@ const getMapData = async (req, res, next) => {
 
 const getAdCardData = async (req, res, next) => {
   try {
-    const { department, adStatus, searchZone, operation } = req.query;
+    const { department, searchZone, operation } = req.query;
 
+    // 1. Configuración del Filtro Base
     const filter = {
       showOnWeb: true,
+      department: department,
+      adStatus: { $in: ["Activo", "En preparación"] },
       gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
     };
 
-    if (department) filter.department = department;
-    if (adStatus) filter.adStatus = adStatus;
-
+    // 2. Filtro de Operación (Venta / Alquiler)
+    // Se valida que no solo coincida el tipo, sino que exista el precio correspondiente
     if (operation) {
-      const opValue = operation === "sale" ? "Venta" : "Alquiler";
-      filter.adType = { $regex: opValue, $options: "i" };
+      if (operation === "sale") {
+        filter.adType = { $in: ["Venta"] }; // adType es un Array en tu esquema
+        filter["sale.saleValue"] = { $exists: true, $ne: null };
+      } else if (operation === "rent") {
+        filter.adType = { $in: ["Alquiler"] };
+        filter["rent.rentValue"] = { $exists: true, $ne: null };
+      }
     }
 
-    if (searchZone && searchZone !== "Madrid") {
-      filter.$or = [
-        { distrito: { $regex: searchZone, $options: "i" } },
-        { barrio: { $regex: searchZone, $options: "i" } },
-      ];
+    if (searchZone) {
+      // Quitamos el "&& searchZone !== 'Madrid'"
+      const escapeRegExp = (string) => {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      };
+
+      const safeZone = escapeRegExp(searchZone);
+      const regex = new RegExp(safeZone, "i");
+
+      // Ahora si searchZone es "Madrid", filtrará explícitamente por city: "Madrid"
+      filter["adDirection.city"] = regex;
     }
 
-    // Traemos solo lo necesario para la Card
-    const ads = await Ad.find(filter)
-      .select(
-        "title slug adType sale rent barrio distrito images.main adBuildingType buildSurface plotSurface quality.bedrooms quality.bathrooms quality.reformed quality.others.terrace quality.others.swimmingPool",
-      )
-      .lean();
+    // 4. Selección de campos (Projection) para optimizar la query
+    // Solo traemos lo que usa la tarjeta, ahorrando ancho de banda
+    const fields = [
+      "_id",
+      "slug",
+      "title",
+      "adType",
+      "sale",
+      "rent",
+      "adDirection",
+      "images.main",
+      "adBuildingType",
+      "buildSurface",
+      "plotSurface",
+      "quality.bedrooms",
+      "quality.bathrooms",
+      "quality.reformed",
+      "quality.others.terrace",
+      "quality.others.swimmingPool",
+    ].join(" ");
 
+    // Usamos .lean() para obtener objetos JS puros (mucho más rápido que documentos Mongoose)
+    const ads = await Ad.find(filter).select(fields).lean();
+
+    // 5. Formateo de datos para el Frontend (Adapter)
     const formattedAds = ads.map((ad) => {
-      // Ubicación formateada
-      const locationParts = [ad.barrio, ad.distrito].filter(Boolean);
+      // A. Ubicación: Solo Ciudad
+      const rawCity = ad.adDirection?.city || "Ubicación no disponible";
+      // Capitalizamos: "marbella" -> "Marbella"
+      const locationLabel = rawCity.charAt(0).toUpperCase() + rawCity.slice(1);
 
-      // Precios validados (solo si deben mostrarse)
+      // B. Precios
       const sPrice =
         ad.sale?.saleShowOnWeb && ad.sale?.saleValue ? ad.sale.saleValue : null;
 
       const rPrice =
         ad.rent?.rentShowOnWeb && ad.rent?.rentValue ? ad.rent.rentValue : null;
 
-      // Tags dinámicos (Tipo de edificio + Extras)
+      // C. Tags
       const tags = [];
-      if (ad.adBuildingType?.length) tags.push(ad.adBuildingType[0]);
+      if (ad.adBuildingType && ad.adBuildingType.length > 0) {
+        tags.push(ad.adBuildingType[0]);
+      }
       if (ad.quality?.reformed) tags.push("Reformado");
       if (ad.quality?.others?.terrace) tags.push("Terraza");
+      if (ad.quality?.others?.swimmingPool) tags.push("Piscina");
+
+      const area = ad.buildSurface || ad.plotSurface || 0;
 
       return {
         id: ad._id.toString(),
@@ -1070,16 +1108,15 @@ const getAdCardData = async (req, res, next) => {
         title: ad.title,
         salePrice: sPrice,
         rentPrice: rPrice,
-        location:
-          locationParts.length > 0 ? locationParts.join(", ") : "Madrid",
-        image: ad.images?.main,
+        location: locationLabel, // Ahora siempre será la Ciudad
+        image: ad.images?.main || null,
         specs: {
           beds: ad.quality?.bedrooms || 0,
-          area: ad.buildSurface || ad.plotSurface || 0,
           bathrooms: ad.quality?.bathrooms || 0,
+          area: area,
         },
         tags: tags.slice(0, 3),
-        operation: ad.adType?.join(" / ") || "",
+        operation: ad.adType ? ad.adType.join(" / ") : "",
       };
     });
 
