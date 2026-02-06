@@ -730,8 +730,6 @@ const adCreate = async (req, res, next) => {
       consultant: req.body.consultant,
       adBuildingType: req.body.adBuildingType,
       zone: req.body.zone,
-      distrito: req.body.distrito,
-      barrio: req.body.barrio,
       department: req.body.department,
       webSubtitle: req.body.webSubtitle,
       buildSurface: req.body.buildSurface,
@@ -1072,8 +1070,6 @@ const adUpdate = async (req, res, next) => {
     fieldsToUpdate.monthlyRent = req.body.monthlyRent;
     fieldsToUpdate.expenses = req.body.expenses;
     fieldsToUpdate.expensesIncluded = req.body.expensesIncluded;
-    fieldsToUpdate.distrito = req.body.distrito;
-    fieldsToUpdate.barrio = req.body.barrio;
 
     fieldsToUpdate.adDirection = {
       address: {
@@ -1418,7 +1414,13 @@ const adUpdate = async (req, res, next) => {
       if (currentAd.slug && currentAd.slug !== updatedAd.slug)
         revalidationPromises.push(revalidateWeb(`ad-${currentAd.slug}`));
     }
-    Promise.allSettled(revalidationPromises);
+    const results = await Promise.allSettled(revalidationPromises);
+
+    results.forEach((result, index) => {
+      if (result.status === "rejected") {
+        console.error(`❌ Falló revalidación ${index}:`, result.reason);
+      }
+    });
 
     return res.status(200).json(updatedAd);
   } catch (err) {
