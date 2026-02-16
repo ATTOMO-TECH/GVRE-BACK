@@ -7,10 +7,11 @@ const {
   zoneCreate,
   zoneDelete,
   zonesGetTaxonomy,
+  getAllZones,
 } = require("../controllers/zone.controller");
 
 const router = express.Router();
-
+router.get("/allZones", getAllZones);
 router.get("/residentials", zonesGetResidentials);
 router.get("/patrimonials", zonesGetPatrimonials);
 router.get("/others", zonesGetOthers);
