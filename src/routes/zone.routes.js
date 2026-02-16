@@ -16,8 +16,6 @@ router.get("/residentials", zonesGetResidentials);
 router.get("/patrimonials", zonesGetPatrimonials);
 router.get("/others", zonesGetOthers);
 
-router.get("/taxonomia", zonesGetTaxonomy);
-
 router.post("/create", zoneCreate);
 
 router.delete("/delete/:id", zoneDelete);

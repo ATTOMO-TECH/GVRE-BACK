@@ -4,13 +4,9 @@ const { deleteImage } = require("../middlewares/file.middleware");
 const mongoose = require("mongoose");
 const Contact = require("../models/contact.model");
 const Consultant = require("../models/consultant.model");
-const {
-  orderAdsAscendentBySalePrice,
-  orderAdsDescendentBySalePrice,
-  orderAdsAscendentByRentPrice,
-  orderAdsDescendentByRentPrice,
-  normalizeAdHistory,
-} = require("./utils");
+const { normalizeAdHistory } = require("../utils/utils");
+const { revalidateWeb } = require("../utils/revalidateWeb");
+const WebHome = require("../models/webHome.model");
 
 const repairAds = async (req, res, next) => {
   try {
@@ -734,8 +730,6 @@ const adCreate = async (req, res, next) => {
       consultant: req.body.consultant,
       adBuildingType: req.body.adBuildingType,
       zone: req.body.zone,
-      distrito: req.body.distrito,
-      barrio: req.body.barrio,
       department: req.body.department,
       webSubtitle: req.body.webSubtitle,
       buildSurface: req.body.buildSurface,
@@ -788,6 +782,34 @@ const adCreate = async (req, res, next) => {
     }
 
     const adCreated = await newAd.save();
+
+    // =====================================================================
+    // 🔌 INTEGRACIÓN ISR: REVALIDACIÓN AUTOMÁTICA
+    // =====================================================================
+
+    // CORRECCIÓN: Definimos qué estados son visibles en la web
+    const validStatuses = ["Activo", "En preparación"];
+
+    // Evaluamos si el anuncio debe verse:
+    // 1. Tiene el check de showOnWeb en true
+    // 2. Y su estado es "Activo" O "En preparación"
+    const isVisible =
+      adCreated.showOnWeb && validStatuses.includes(adCreated.adStatus);
+
+    if (isVisible) {
+      await Promise.all([
+        // A. Home: Porque cambian los contadores (Madrid: 20 -> 21)
+        revalidateWeb("home-data"),
+
+        // B. Listado: Para que aparezca la nueva Card en búsquedas
+        revalidateWeb("ads-list"),
+
+        // C. Destacados: Solo si está marcado
+        adCreated.featuredOnMain
+          ? revalidateWeb("featured-ads")
+          : Promise.resolve(),
+      ]);
+    }
 
     return res.status(200).json(adCreated);
   } catch (err) {
@@ -1011,14 +1033,19 @@ const adOthersImagesDelete = async (req, res, next) => {
 const adUpdate = async (req, res, next) => {
   try {
     const { id } = req.body;
-    const fieldsToUpdate = {};
 
-    // Load current ad to compare and to populate names for history entries
+    // 1. Cargar estado ACTUAL (antes del cambio) para comparar
     const currentAd = await Ad.findById(id)
       .populate("owner", "fullName")
       .populate("consultant", "fullName")
       .lean();
 
+    if (!currentAd) {
+      return res.status(404).json({ message: "Anuncio no encontrado" });
+    }
+
+    // 2. Mapeo EXHAUSTIVO de campos
+    const fieldsToUpdate = {};
     fieldsToUpdate.title = req.body.title;
     fieldsToUpdate.showOnWeb = req.body.showOnWeb;
     fieldsToUpdate.adStatus = req.body.adStatus;
@@ -1043,8 +1070,6 @@ const adUpdate = async (req, res, next) => {
     fieldsToUpdate.monthlyRent = req.body.monthlyRent;
     fieldsToUpdate.expenses = req.body.expenses;
     fieldsToUpdate.expensesIncluded = req.body.expensesIncluded;
-    fieldsToUpdate.distrito = req.body.distrito;
-    fieldsToUpdate.barrio = req.body.barrio;
 
     fieldsToUpdate.adDirection = {
       address: {
@@ -1058,7 +1083,6 @@ const adUpdate = async (req, res, next) => {
     };
 
     fieldsToUpdate.surfacesBox = req.body.surfacesBox;
-
     fieldsToUpdate.sale = {
       saleValue: req.body.saleValue,
       saleShowOnWeb: req.body.saleShowOnWeb,
@@ -1067,17 +1091,14 @@ const adUpdate = async (req, res, next) => {
       rentValue: req.body.rentValue,
       rentShowOnWeb: req.body.rentShowOnWeb,
     };
-
     fieldsToUpdate.communityExpenses = {
       expensesValue: req.body.expensesValue,
       expensesShowOnWeb: req.body.expensesShowOnWeb,
     };
-
     fieldsToUpdate.ibi = {
       ibiValue: req.body.ibiValue,
       ibiShowOnWeb: req.body.ibiShowOnWeb,
     };
-
     fieldsToUpdate.trashFee = {
       trashFeeValue: req.body.trashFeeValue,
       trashFeeShowOnWeb: req.body.trashFeeShowOnWeb,
@@ -1136,17 +1157,15 @@ const adUpdate = async (req, res, next) => {
       distribution: req.body.distribution,
     };
 
-    // Build history entries by comparing currentAd and incoming values
+    // 3. Lógica del Historial
     const historyEntries = [];
-
-    // Resolve consultant info (prefer provided consultant, fallback to currentAd.consultant)
     let consultantInfo = null;
     if (req.body.userId) {
       try {
         const c = await Consultant.findById(req.body.userId, "fullName").lean();
         if (c) consultantInfo = { _id: c._id, fullName: c.fullName };
       } catch (e) {
-        // ignore
+        /* ignore */
       }
     }
     if (!consultantInfo && currentAd && currentAd.consultant) {
@@ -1159,7 +1178,6 @@ const adUpdate = async (req, res, next) => {
           : { _id: currentAd.consultant };
     }
 
-    // Price changes: sale
     if (req.body.saleValue !== undefined) {
       const oldSale =
         currentAd && currentAd.sale ? currentAd.sale.saleValue : null;
@@ -1181,7 +1199,6 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
-    // Price changes: rent
     if (req.body.rentValue !== undefined) {
       const oldRent =
         currentAd && currentAd.rent ? currentAd.rent.rentValue : null;
@@ -1203,7 +1220,6 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
-    // Owner change
     if (req.body.owner !== undefined) {
       const oldOwnerId =
         currentAd && currentAd.owner
@@ -1213,7 +1229,6 @@ const adUpdate = async (req, res, next) => {
           : null;
       const newOwnerId = req.body.owner ? String(req.body.owner) : null;
       if (oldOwnerId !== newOwnerId) {
-        // resolve owner names when possible
         let oldOwnerName = null;
         let newOwnerName = null;
         try {
@@ -1228,7 +1243,6 @@ const adUpdate = async (req, res, next) => {
             if (n) newOwnerName = n.fullName;
           }
         } catch (e) {}
-
         historyEntries.push({
           type: "OWNER_CHANGE",
           field: "owner",
@@ -1241,7 +1255,6 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
-    // Ad type change
     if (req.body.adType !== undefined) {
       const oldType = currentAd && currentAd.adType ? currentAd.adType : null;
       const newType = req.body.adType;
@@ -1260,7 +1273,6 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
-    // GV operation close change
     if (req.body.gvOperationClose !== undefined) {
       const oldGV = currentAd ? currentAd.gvOperationClose : null;
       const newGV = req.body.gvOperationClose;
@@ -1277,21 +1289,21 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
+    // 4. Actualización masiva
     if (req.body.updateSameRef && req.body.adReference) {
       await Ad.updateMany(
         {
           adReference: req.body.adReference,
-          _id: { $ne: req.body.id }, // para no volver a actualizar el mismo anuncio
+          _id: { $ne: id },
         },
         {
           $set: { surfacesBox: req.body.surfacesBox },
         },
       );
     }
-    // Build update operation: $set for fields, and $push for history if entries exist
-    const updateOps = { $set: fieldsToUpdate };
 
-    // If the current ad has no changesHistory, always add a synthetic CREATION entry (without consultant)
+    // 5. Update Ops e Historial Sintético
+    const updateOps = { $set: fieldsToUpdate };
     const needCreation =
       !currentAd ||
       !Array.isArray(currentAd.changesHistory) ||
@@ -1308,13 +1320,10 @@ const adUpdate = async (req, res, next) => {
         consultant: null,
         note: "Creación sintética del campo",
       };
-
-      // Ensure the creation entry is first in the pushed entries
       historyEntries.unshift(creationEntry);
     }
 
     if (historyEntries.length > 0) {
-      // If we added a creation entry we want to insert at position 0 to keep it first
       if (needCreation) {
         updateOps.$push = {
           changesHistory: { $each: historyEntries, $position: 0 },
@@ -1324,14 +1333,95 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
+    // 6. Update principal
     await Ad.findByIdAndUpdate(id, updateOps);
 
-    // Return updated ad with populated consultant/owner and normalized history
-    const updatedAd = await Ad.findById(id)
+    // 7. Regeneración de Slug y Populate
+    const updatedAdDoc = await Ad.findById(id)
       .populate("consultant", "fullName")
-      .populate("owner", "fullName")
-      .lean();
-    if (updatedAd) updatedAd.changesHistory = normalizeAdHistory(updatedAd);
+      .populate("owner", "fullName");
+    const titleChanged = currentAd.title !== req.body.title;
+    if (!updatedAdDoc.slug || titleChanged) {
+      if (titleChanged) updatedAdDoc.slug = null;
+      updatedAdDoc.markModified("title");
+      await updatedAdDoc.save();
+    }
+
+    // =====================================================================
+    // 🚀 SINCRONIZACIÓN CON WEBHOME (Mismo nivel que el Slug)
+    // =====================================================================
+    try {
+      const labels = [];
+      if (updatedAdDoc.sale?.saleShowOnWeb && updatedAdDoc.sale?.saleValue)
+        labels.push("Venta");
+      if (updatedAdDoc.rent?.rentShowOnWeb && updatedAdDoc.rent?.rentValue)
+        labels.push("Alquiler");
+
+      await WebHome.updateMany(
+        { "videoSection.videos.adId": id },
+        {
+          $set: {
+            "videoSection.videos.$.title": updatedAdDoc.title,
+            "videoSection.videos.$.slug": updatedAdDoc.slug,
+            "videoSection.videos.$.adReference": updatedAdDoc.adReference,
+            "videoSection.videos.$.price": {
+              sale:
+                updatedAdDoc.sale?.saleShowOnWeb && updatedAdDoc.sale.saleValue
+                  ? updatedAdDoc.sale.saleValue
+                  : null,
+              rent:
+                updatedAdDoc.rent?.rentShowOnWeb && updatedAdDoc.rent.rentValue
+                  ? updatedAdDoc.rent.rentValue
+                  : null,
+              label: labels.join(" / "),
+            },
+          },
+        },
+      );
+    } catch (syncError) {
+      console.error("Error Sync Home:", syncError);
+    }
+
+    // 8. Normalización y Revalidación
+    const updatedAd = updatedAdDoc.toObject();
+    if (typeof normalizeAdHistory === "function") {
+      updatedAd.changesHistory = normalizeAdHistory(updatedAd);
+    }
+
+    const validStatuses = ["Activo", "En preparación"];
+    const isVisibleNow =
+      updatedAd.showOnWeb && validStatuses.includes(updatedAd.adStatus);
+    const revalidationPromises = [];
+
+    if (
+      isVisibleNow ||
+      currentAd.showOnWeb !== req.body.showOnWeb ||
+      currentAd.adStatus !== req.body.adStatus
+    ) {
+      revalidationPromises.push(
+        revalidateWeb("home-data"),
+        revalidateWeb("ads-list"),
+      );
+    }
+    if (
+      updatedAd.featuredOnMain ||
+      currentAd.featuredOnMain !== req.body.featuredOnMain
+    ) {
+      revalidationPromises.push(revalidateWeb("featured-ads"));
+    }
+    if (updatedAd.slug) {
+      revalidationPromises.push(revalidateWeb(`ad-${updatedAd.slug}`));
+      if (currentAd.slug && currentAd.slug !== updatedAd.slug)
+        revalidationPromises.push(revalidateWeb(`ad-${currentAd.slug}`));
+    }
+    const results = await Promise.allSettled(revalidationPromises);
+
+    results.forEach((result, index) => {
+      if (result.status === "rejected") {
+        console.error(`❌ Falló revalidación ${index}:`, result.reason);
+      }
+    });
+
     return res.status(200).json(updatedAd);
   } catch (err) {
     return next(err);
@@ -1376,11 +1466,41 @@ const adDelete = async (req, res, next) => {
     const { id } = req.params;
     let response = "";
 
-    const deleted = await Ad.findByIdAndDelete(id);
-    if (deleted) response = "Anuncio borrado de la base de datos";
-    else
-      response =
-        "No se ha podido encontrar este anuncio. ¿Estás seguro de que existe?";
+    // 1. Buscamos y Borramos
+    // adToDelete contendrá los datos del anuncio borrado (snapshot).
+    const adToDelete = await Ad.findByIdAndDelete(id);
+
+    if (!adToDelete) {
+      return res
+        .status(404)
+        .json(
+          "No se ha podido encontrar este anuncio. ¿Estás seguro de que existe?",
+        );
+    }
+
+    response = "Anuncio borrado de la base de datos";
+
+    // =====================================================================
+    // 🔌 INTEGRACIÓN ISR (BORRADO)
+    // =====================================================================
+
+    const validStatuses = ["Activo", "En preparación"];
+
+    // Verificamos si el anuncio QUE ACABAMOS DE BORRAR era visible
+    const wasVisible =
+      adToDelete.showOnWeb && validStatuses.includes(adToDelete.adStatus);
+
+    if (wasVisible) {
+      // Siempre limpiamos Home y Listado
+      await revalidateWeb("home-data");
+      await revalidateWeb("ads-list");
+
+      // Si era destacado, limpiamos esa sección
+      if (adToDelete.featuredOnMain) {
+        await revalidateWeb("featured-ads");
+      }
+    }
+    // =====================================================================
 
     return res.status(200).json(response);
   } catch (error) {

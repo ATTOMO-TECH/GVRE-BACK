@@ -15,6 +15,7 @@ const webHomeSchema = new Schema(
           adId: { type: mongoose.Types.ObjectId, ref: "ads" },
           videoUrl: { type: String },
           title: { type: String },
+          slug: { type: String },
           adReference: { type: String },
           price: {
             sale: { type: Number },
