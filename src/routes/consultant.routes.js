@@ -7,18 +7,20 @@ const {
   consultantDelete,
   consultantUpdate,
   deleteConsultantImage,
+  consultantGetNameAndIds,
 } = require("../controllers/consultant.controller");
 const { registerPost } = require("../controllers/auth.controller");
 
 const router = express.Router();
 
 router.get("/", consultantGetAll);
+router.get("/names-and-ids", consultantGetNameAndIds);
 router.get("/:id", consultantGetOne);
 
 router.post(
   "/create",
   upload.fields([{ name: "avatar" }, { name: "companyUnitLogo" }]),
-  registerPost
+  registerPost,
 );
 router.put(
   "/edit",
@@ -35,7 +37,7 @@ router.put(
     { name: "low_zone8_backgroundImage" },
     { name: "low_zone9_backgroundImage" },
   ]),
-  consultantUpdate
+  consultantUpdate,
 );
 
 router.put("/delete-image/:type/:id", deleteConsultantImage);

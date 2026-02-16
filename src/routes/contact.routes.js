@@ -12,17 +12,19 @@ const {
   contactReceiveEmail,
   contactDelete,
   contactGetAllByEmailNotificationsTrue,
+  contactGetIdsByFilters,
 } = require("../controllers/contact.controller");
 
 const router = express.Router();
 
 router.get("/", contactGetAll);
+router.get("/filteredContactIds", contactGetIdsByFilters);
 router.get("/owners", contactGetOwners);
 router.get("/marketingCampaigns", contactGetAllByEmailNotificationsTrue);
 router.get("/fullName/:fullName", contactFindByFullName);
 router.get(
   "/mobileNumber/:contactMobileNumber",
-  contactFindByContactMobileNumber
+  contactFindByContactMobileNumber,
 );
 router.get("/email/:email", contactFindByEmail);
 router.get("/:id", contactGetOne);
