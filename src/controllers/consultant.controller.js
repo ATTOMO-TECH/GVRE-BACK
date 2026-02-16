@@ -12,6 +12,15 @@ const consultantGetAll = async (req, res, next) => {
   }
 };
 
+const consultantGetNameAndIds = async (req, res, next) => {
+  try {
+    const consultants = await Consultant.find().select("fullName _id");
+    return res.status(200).json(consultants);
+  } catch (err) {
+    return next(err);
+  }
+};
+
 const consultantGetOne = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -328,4 +337,5 @@ module.exports = {
   consultantCreate,
   consultantDelete,
   getConsultantTokenById,
+  consultantGetNameAndIds,
 };

@@ -1,5 +1,14 @@
 const Zone = require("../models/zone.model");
 
+const getAllZones = async (req, res, next) => {
+  try {
+    const zones = await Zone.find().sort({ name: 1 });
+    return res.status(200).json({ zones });
+  } catch (err) {
+    return next(err);
+  }
+};
+
 const zonesGetResidentials = async (req, res, next) => {
   try {
     const zones = await Zone.find({
@@ -10,6 +19,7 @@ const zonesGetResidentials = async (req, res, next) => {
     return next(err);
   }
 };
+
 const zonesGetPatrimonials = async (req, res, next) => {
   try {
     const zones = await Zone.find({ zone: "Patrimonial" });
@@ -80,4 +90,6 @@ module.exports = {
   zoneGetOne,
   zoneCreate,
   zoneDelete,
+  zonesGetTaxonomy,
+  getAllZones,
 };
