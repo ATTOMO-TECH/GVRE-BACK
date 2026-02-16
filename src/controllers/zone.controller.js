@@ -90,6 +90,5 @@ module.exports = {
   zoneGetOne,
   zoneCreate,
   zoneDelete,
-  zonesGetTaxonomy,
   getAllZones,
 };

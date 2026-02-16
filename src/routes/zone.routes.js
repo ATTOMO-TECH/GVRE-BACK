@@ -6,7 +6,6 @@ const {
   zonesGetOthers,
   zoneCreate,
   zoneDelete,
-  zonesGetTaxonomy,
   getAllZones,
 } = require("../controllers/zone.controller");
 
