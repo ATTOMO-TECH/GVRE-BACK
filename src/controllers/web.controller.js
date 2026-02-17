@@ -1018,9 +1018,19 @@ const getMapData = async (req, res, next) => {
 
 const getAdCardData = async (req, res, next) => {
   try {
+    // ---------------------------------------------------------
+    // 1. PAGINACIÓN Y PARÁMETROS
+    // ---------------------------------------------------------
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 9;
+    const skip = (page - 1) * limit;
+
     const { department, searchZone, operation } = req.query;
 
-    // 1. Configuración del Filtro Base
+    // ---------------------------------------------------------
+    // 2. CONFIGURACIÓN DEL FILTRO (QUERY)
+    // ---------------------------------------------------------
+
     const filter = {
       showOnWeb: true,
       department: department,
@@ -1028,11 +1038,10 @@ const getAdCardData = async (req, res, next) => {
       gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
     };
 
-    // 2. Filtro de Operación (Venta / Alquiler)
-    // Se valida que no solo coincida el tipo, sino que exista el precio correspondiente
+    // Filtro de Operación (Venta / Alquiler)
     if (operation) {
       if (operation === "sale") {
-        filter.adType = { $in: ["Venta"] }; // adType es un Array en tu esquema
+        filter.adType = { $in: ["Venta"] };
         filter["sale.saleValue"] = { $exists: true, $ne: null };
       } else if (operation === "rent") {
         filter.adType = { $in: ["Alquiler"] };
@@ -1040,87 +1049,124 @@ const getAdCardData = async (req, res, next) => {
       }
     }
 
+    // Filtro de Zona (Búsqueda por ciudad)
     if (searchZone) {
-      // Quitamos el "&& searchZone !== 'Madrid'"
-      const escapeRegExp = (string) => {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      };
-
+      const escapeRegExp = (string) =>
+        string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const safeZone = escapeRegExp(searchZone);
-      const regex = new RegExp(safeZone, "i");
-
-      // Ahora si searchZone es "Madrid", filtrará explícitamente por city: "Madrid"
-      filter["adDirection.city"] = regex;
+      filter["adDirection.city"] = new RegExp(safeZone, "i");
     }
 
-    // 4. Selección de campos (Projection) para optimizar la query
-    // Solo traemos lo que usa la tarjeta, ahorrando ancho de banda
+    // ---------------------------------------------------------
+    // 3. DEFINICIÓN DE CAMPOS (AQUÍ ESTABA EL ERROR)
+    // ---------------------------------------------------------
+    // Definimos qué columnas queremos traer de la base de datos
     const fields = [
       "_id",
       "slug",
       "title",
+      "adReference",
       "adType",
       "sale",
       "rent",
       "adDirection",
       "images.main",
+      "images.others",
       "adBuildingType",
       "buildSurface",
       "plotSurface",
       "quality.bedrooms",
       "quality.bathrooms",
+      "quality.parking",
       "quality.reformed",
       "quality.others.terrace",
       "quality.others.swimmingPool",
+      "createdAt", // Importante para ordenar
     ].join(" ");
 
-    // Usamos .lean() para obtener objetos JS puros (mucho más rápido que documentos Mongoose)
-    const ads = await Ad.find(filter).select(fields).lean();
+    // ---------------------------------------------------------
+    // 4. EJECUCIÓN PARALELA (TOTAL + DATOS)
+    // ---------------------------------------------------------
+    const [totalDocs, ads] = await Promise.all([
+      Ad.countDocuments(filter),
+      Ad.find(filter)
+        .select(fields)
+        .lean()
+        .sort({ createdAt: -1 }) // RECOMENDADO: Ordenar por más recientes primero
+        .skip(skip)
+        .limit(limit),
+    ]);
 
-    // 5. Formateo de datos para el Frontend (Adapter)
+    // ---------------------------------------------------------
+    // 5. ADAPTADOR (MAPPING) PARA EL FRONTEND
+    // ---------------------------------------------------------
     const formattedAds = ads.map((ad) => {
-      // A. Ubicación: Solo Ciudad
+      // A. Ubicación
       const rawCity = ad.adDirection?.city || "Ubicación no disponible";
-      // Capitalizamos: "marbella" -> "Marbella"
       const locationLabel = rawCity.charAt(0).toUpperCase() + rawCity.slice(1);
 
       // B. Precios
-      const sPrice =
-        ad.sale?.saleShowOnWeb && ad.sale?.saleValue ? ad.sale.saleValue : null;
+      const sPrice = ad.sale?.saleShowOnWeb ? ad.sale.saleValue : null;
+      const rPrice = ad.rent?.rentShowOnWeb ? ad.rent.rentValue : null;
 
-      const rPrice =
-        ad.rent?.rentShowOnWeb && ad.rent?.rentValue ? ad.rent.rentValue : null;
+      // C. Imágenes (Lógica de optimización)
+      const allImages = [ad.images?.main, ...(ad.images?.others || [])].filter(
+        Boolean,
+      );
 
-      // C. Tags
+      // Enviamos hasta 3 imágenes para el slider
+      const displayImages = allImages.slice(0, 3);
+
+      // D. Tags
       const tags = [];
-      if (ad.adBuildingType && ad.adBuildingType.length > 0) {
-        tags.push(ad.adBuildingType[0]);
-      }
+      if (ad.adBuildingType?.[0]) tags.push(ad.adBuildingType[0]);
       if (ad.quality?.reformed) tags.push("Reformado");
       if (ad.quality?.others?.terrace) tags.push("Terraza");
       if (ad.quality?.others?.swimmingPool) tags.push("Piscina");
 
-      const area = ad.buildSurface || ad.plotSurface || 0;
-
+      // E. Retorno del objeto limpio
       return {
         id: ad._id.toString(),
         slug: ad.slug,
         title: ad.title,
+        ref: ad.adReference,
+
         salePrice: sPrice,
         rentPrice: rPrice,
-        location: locationLabel, // Ahora siempre será la Ciudad
-        image: ad.images?.main || null,
+        operation: ad.adType ? ad.adType.join(" / ") : "",
+
+        location: locationLabel,
+
+        // Compatibilidad:
+        image: displayImages[0] || null,
+        images: displayImages,
+
+        // Datos específicos:
+        plotArea: ad.plotSurface || 0,
+        garage: ad.quality?.parking || 0,
+        hasPool: !!ad.quality?.others?.swimmingPool,
+
         specs: {
           beds: ad.quality?.bedrooms || 0,
           bathrooms: ad.quality?.bathrooms || 0,
-          area: area,
+          area: ad.buildSurface || ad.plotSurface || 0,
         },
         tags: tags.slice(0, 3),
-        operation: ad.adType ? ad.adType.join(" / ") : "",
       };
     });
 
-    res.status(200).json(formattedAds);
+    // ---------------------------------------------------------
+    // 6. RESPUESTA FINAL CON METADATA
+    // ---------------------------------------------------------
+    res.status(200).json({
+      data: formattedAds,
+      pagination: {
+        total: totalDocs,
+        page,
+        limit,
+        totalPages: Math.ceil(totalDocs / limit),
+      },
+    });
   } catch (error) {
     console.error("Error en getAdCardData:", error);
     next(error);
