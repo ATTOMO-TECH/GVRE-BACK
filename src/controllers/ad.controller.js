@@ -706,6 +706,21 @@ const adCreate = async (req, res, next) => {
         exclusiveOfficeBuilding: req.body.exclusiveOfficeBuilding,
         classicBuilding: req.body.classicBuilding,
         coworking: req.body.coworking,
+        individualHeating: req.body.individualHeating,
+        concierge: req.body.concierge,
+        mixedBuilding: req.body.mixedBuilding,
+        accessiblePMR: req.body.accessiblePMR,
+        agricultural: req.body.agricultural,
+        hunting: req.body.hunting,
+        forestry: req.body.forestry,
+        livestock: req.body.livestock,
+        rusticOther: req.body.rusticOther,
+        warehouses: req.body.warehouses,
+        secondaryHousing: req.body.secondaryHousing,
+        equestrianFacilities: req.body.equestrianFacilities,
+        electricSupply: req.body.electricSupply,
+        pond: req.body.pond,
+        reservoir: req.body.reservoir,
       },
     };
 
@@ -721,6 +736,7 @@ const adCreate = async (req, res, next) => {
       internalComments: req.body.internalComments,
       adStatus: req.body.adStatus,
       showOnWeb: req.body.showOnWeb,
+      offMarket: req.body.offMarket,
       featuredOnMain: req.body.featuredOnMain,
       featuredDrawings: req.body.featuredDrawings,
       adDirection: adDirection,
@@ -728,6 +744,7 @@ const adCreate = async (req, res, next) => {
       gvOperationClose: req.body.gvOperationClose,
       owner: req.body.owner,
       consultant: req.body.consultant,
+      realStatePortals: req.body.realStatePortals,
       adBuildingType: req.body.adBuildingType,
       zone: req.body.zone,
       department: req.body.department,
@@ -1048,6 +1065,7 @@ const adUpdate = async (req, res, next) => {
     const fieldsToUpdate = {};
     fieldsToUpdate.title = req.body.title;
     fieldsToUpdate.showOnWeb = req.body.showOnWeb;
+    fieldsToUpdate.offMarket = req.body.offMarket;
     fieldsToUpdate.adStatus = req.body.adStatus;
     fieldsToUpdate.adReference = req.body.adReference;
     fieldsToUpdate.internalComments = req.body.internalComments;
@@ -1057,6 +1075,7 @@ const adUpdate = async (req, res, next) => {
     fieldsToUpdate.gvOperationClose = req.body.gvOperationClose;
     fieldsToUpdate.owner = req.body.owner;
     fieldsToUpdate.consultant = req.body.consultant;
+    fieldsToUpdate.realStatePortals = req.body.realStatePortals;
     fieldsToUpdate.adBuildingType = req.body.adBuildingType;
     fieldsToUpdate.zone = req.body.zone;
     fieldsToUpdate.department = req.body.department;
@@ -1148,6 +1167,21 @@ const adUpdate = async (req, res, next) => {
         exclusiveOfficeBuilding: req.body.exclusiveOfficeBuilding,
         classicBuilding: req.body.classicBuilding,
         coworking: req.body.coworking,
+        individualHeating: req.body.individualHeating,
+        concierge: req.body.concierge,
+        mixedBuilding: req.body.mixedBuilding,
+        accessiblePMR: req.body.accessiblePMR,
+        agricultural: req.body.agricultural,
+        hunting: req.body.hunting,
+        forestry: req.body.forestry,
+        livestock: req.body.livestock,
+        rusticOther: req.body.rusticOther,
+        warehouses: req.body.warehouses,
+        secondaryHousing: req.body.secondaryHousing,
+        equestrianFacilities: req.body.equestrianFacilities,
+        electricSupply: req.body.electricSupply,
+        pond: req.body.pond,
+        reservoir: req.body.reservoir,
       },
     };
 
