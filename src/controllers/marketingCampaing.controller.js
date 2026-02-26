@@ -151,13 +151,10 @@ const marketingCampaignUpdate = async (req, res, next) => {
 const marketingCampaignSendEmail = async (req, res, next) => {
   try {
     const { sendMail } = req;
-    console.log("SEND MAIL", sendMail);
-    // console.log("envio de email:", sendMail);
     if (sendMail === "ok") {
       const { campaign, contacts } = req.body;
       let editCampaign = {};
       let editContact = {};
-      // 1. Buscar en la campaña y escribir los contactos
       const marketingCampaign = await MarketingCampaign.findById(campaign._id);
       if (marketingCampaign !== null) {
         const updateMarketingCampaign = marketingCampaign;
@@ -167,7 +164,6 @@ const marketingCampaignSendEmail = async (req, res, next) => {
           filterContact = contacts.map((contact) => contact._id);
         } else {
           const contactsId = contacts.map((c) => c._id);
-          //   console.log("contactID", contactsId);
           const listString = marketingCampaign.contactList.map((objId) =>
             objId.toString(),
           );
@@ -175,11 +171,9 @@ const marketingCampaignSendEmail = async (req, res, next) => {
             (value) => !listString.includes(value),
           );
         }
-        // console.log("contactos filtrados", filterContact);
         const newContactList =
           updateMarketingCampaign.contactList.concat(filterContact);
         updateMarketingCampaign.contactList = newContactList;
-        // console.log("actualizado2:", updateMarketingCampaign);
         const campaignUpdated = await MarketingCampaign.findByIdAndUpdate(
           campaign._id,
           updateMarketingCampaign,
@@ -187,7 +181,6 @@ const marketingCampaignSendEmail = async (req, res, next) => {
         );
         editCampaign = campaignUpdated;
 
-        // 2. Buscar en cada contacto e inscribir la campaña
         contacts.map(async (contact) => {
           const contactDB = await Contact.findById(contact._id);
           if (contactDB !== null) {
@@ -204,12 +197,9 @@ const marketingCampaignSendEmail = async (req, res, next) => {
             filterCampaigns = [campaign._id].filter(
               (value) => !contactsCampaignsString.includes(value),
             );
-            // console.log("filterCampaigns:", filterCampaigns);
-            // console.log("current campaigns:", updateContact.marketingCampaings);
             const newCampaignList =
               updateContact.marketingCampaings.concat(filterCampaigns);
             updateContact.marketingCampaings = newCampaignList;
-            // console.log("actualizado2:", updateMarketingCampaign);
             const contactUpdated = await Contact.findByIdAndUpdate(
               contact._id,
               updateContact,

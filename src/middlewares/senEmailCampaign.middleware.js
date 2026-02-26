@@ -71,16 +71,34 @@ const sendEmailCampaignToContacts = async (req, res, next) => {
       const contact = contacts[index];
       const unsubscribeLink = `${process.env.BACKEND_URL}/mails/unsubscribe/${contact._id}`;
 
-      // 💥 LA MAGIA OCURRE AQUÍ: REEMPLAZAMOS ETIQUETAS DINÁMICAS 💥
-      // Reemplazamos tags que el usuario haya escrito en el Drag&Drop
-      let personalizedHtml = htmlBody
-        .replace(/{{nombreContacto}}/g, contact.fullName || "")
-        .replace(/{{linkBaja}}/g, unsubscribeLink)
-        .replace(/{{nombreConsultor}}/g, consultant.fullName || "")
-        .replace(
-          /{{telefonoConsultor}}/g,
-          consultant.consultantMobileNumber || "",
+      let personalizedHtml = htmlBody;
+
+      const unsubscribeFooter = `
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
+          <tr>
+            <td align="center" style="padding: 30px 20px; font-family: Arial, sans-serif; font-size: 11px; color: #999999; line-height: 1.5;">
+              Has recibido este correo porque estás suscrito a las comunicaciones de GV Real Estate.<br>
+              Si no deseas seguir recibiendo esta información, puedes <a href="${unsubscribeLink}" style="color: #666666; text-decoration: underline;">darte de baja de nuestra lista de forma segura aquí</a>.
+            </td>
+          </tr>
+        </table>
+      `;
+
+      // Inyectamos el footer con el unsubscribe link en el HTML de la campaña
+      if (personalizedHtml.includes("</body>")) {
+        console.log(
+          "El HTML tiene </body>, insertando footer antes de cerrar body.",
         );
+        personalizedHtml = personalizedHtml.replace(
+          "</body>",
+          `${unsubscribeFooter}\n</body>`,
+        );
+      } else {
+        console.log(
+          "El HTML no tiene </body>, añadiendo footer al final del contenido.",
+        );
+        personalizedHtml += unsubscribeFooter;
+      }
 
       const mailOptions = {
         from: `<${consultantEmail}>`,
