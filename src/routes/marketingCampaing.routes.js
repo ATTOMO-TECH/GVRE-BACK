@@ -22,17 +22,13 @@ const router = express.Router();
 router.get("/", marketingCampaignsGetAll);
 router.get("/:id", () => {});
 
-router.post("/create", upload.single("campaingLogo"), marketingCampaignCreate);
-router.put(
-  "/edit/:idCampaign",
-  upload.single("campaingLogo"),
-  marketingCampaignUpdate
-);
+router.post("/create", marketingCampaignCreate);
+router.put("/edit/:idCampaign", marketingCampaignUpdate);
 router.post(
   "/sendEmail",
   getConsultantTokenById,
   sendEmailCampaignToContacts,
-  marketingCampaignSendEmail
+  marketingCampaignSendEmail,
 );
 
 router.delete("/delete/:idCampaign", marketingCampaignDelete);
