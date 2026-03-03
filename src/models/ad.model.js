@@ -20,7 +20,7 @@ const adSchema = new Schema(
       permanent: true,
     },
     showOnWeb: { type: Boolean, default: true },
-    offMarket: { type: Boolean },
+    showOnWebOffMarket: { type: Boolean },
     featuredOnMain: { type: Boolean },
     featuredDrawings: { type: Boolean },
     sendedTo: [
@@ -56,6 +56,7 @@ const adSchema = new Schema(
       enum: [
         "Casa",
         "Piso",
+        "Bajo",
         "Parcela",
         "Ático",
         "Oficina",
@@ -89,6 +90,8 @@ const adSchema = new Schema(
     webSubtitle: { type: String },
     buildSurface: { type: Number },
     plotSurface: { type: Number },
+    m2StorageSpace: { type: Number },
+    m2Terrace: { type: Number },
     floor: { type: String },
     disponibility: { type: String },
     profitability: { type: Boolean, default: false },
@@ -106,6 +109,8 @@ const adSchema = new Schema(
     sale: {
       saleValue: { type: Number },
       saleShowOnWeb: { type: Boolean },
+      saleRepercussionM2: { type: String },
+      saleRepercussionM2ShowOnWeb: { type: Boolean },
     },
     rent: {
       rentValue: { type: Number },
@@ -138,6 +143,7 @@ const adSchema = new Schema(
       jobPositions: { type: Number },
       subway: { type: String },
       bus: { type: String },
+      storageRoom: { type: String },
       others: {
         lift: { type: Boolean },
         dumbwaiter: { type: Boolean },
@@ -161,6 +167,9 @@ const adSchema = new Schema(
         terrace: { type: Boolean },
         storage: { type: Boolean },
         swimmingPool: { type: Boolean },
+        indoorPoolCheck: { type: Boolean },
+        outdoorPoolCheck: { type: Boolean },
+        outdoorPoolClimatized: { type: Boolean },
         garage: { type: Boolean },
         falseCeiling: { type: Boolean },
         raisedFloor: { type: Boolean },
@@ -186,6 +195,43 @@ const adSchema = new Schema(
         electricSupply: { type: Boolean },
         pond: { type: Boolean },
         reservoir: { type: Boolean },
+
+        // NUEVOS CAMPOS GENRALES
+        recess: { type: Boolean },
+        fenced: { type: Boolean },
+        porch: { type: Boolean },
+        fireplace: { type: Boolean },
+        gym: { type: Boolean },
+
+        modernStyle: { type: Boolean },
+        classicStyle: { type: Boolean },
+        andaluzStyle: { type: Boolean },
+        seaViews: { type: Boolean },
+        panoramicView: { type: Boolean },
+
+        golfCourseView: { type: Boolean },
+        mountainView: { type: Boolean },
+        privateGarden: { type: Boolean },
+        solarium: { type: Boolean },
+        outdoorKitchen: { type: Boolean },
+
+        carPort: { type: Boolean },
+        lounge: { type: Boolean },
+        firePlace: { type: Boolean },
+        showKitchen: { type: Boolean },
+        dirtyKitchen: { type: Boolean },
+
+        spa: { type: Boolean },
+        movieTheater: { type: Boolean },
+        wineCellar: { type: Boolean },
+        laundry: { type: Boolean },
+        brandedDesign: { type: Boolean },
+
+        conciergeService: { type: Boolean },
+        gatedCommunity: { type: Boolean },
+        panicRoom: { type: Boolean },
+        newConstruction: { type: Boolean },
+        goodConservation: { type: Boolean },
       },
     },
     description: {

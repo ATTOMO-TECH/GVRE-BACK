@@ -12,7 +12,7 @@ const getAllZones = async (req, res, next) => {
 const zonesGetResidentials = async (req, res, next) => {
   try {
     const zones = await Zone.find({
-      zone: { $nin: ["Patrimonial", "Others"] },
+      zone: { $nin: ["Patrimonial", "Others", "Costa"] },
     });
     return res.status(200).json(zones);
   } catch (err) {
@@ -39,6 +39,38 @@ const zonesGetOthers = async (req, res, next) => {
   }
 };
 
+const zonesGetCosta = async (req, res, next) => {
+  try {
+    const zones = await Zone.find({ zone: "Costa" });
+    /* console.log(zones) */
+    return res.status(200).json(zones);
+  } catch (err) {
+    return next(err);
+  }
+};
+
+const zonesGetCostaSubzone = async (req, res, next) => {
+  try {
+    const subzone = req.body.subzone;
+    const zones = await Zone.find({ zone: "Costa", subzone: subzone });
+    /* console.log(zones) */
+    return res.status(200).json(zones);
+  } catch (err) {
+    return next(err);
+  }
+};
+
+const zonesGetRusticAndSingunlar = async (req, res, next) => {
+  try {
+    const zones = await Zone.find({
+      zone: "Campos Rústicos & Activos Singulares",
+    });
+    return res.status(200).json(zones);
+  } catch (err) {
+    return next(err);
+  }
+};
+
 const zoneGetOne = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -51,17 +83,22 @@ const zoneGetOne = async (req, res, next) => {
 
 const zoneCreate = async (req, res, next) => {
   try {
+    if (Array.isArray(req.body)) {
+      const zonesCreated = await Zone.insertMany(req.body);
+      return res.status(200).json(zonesCreated);
+    }
+
     const newZone = new Zone({
       zone: req.body.zone,
+      subzone: req.body.subzone || null,
       name: req.body.name,
       id: req.body.id,
     });
 
     const zoneCreated = await newZone.save();
-
     return res.status(200).json(zoneCreated);
   } catch (err) {
-    console.log(err);
+    console.log("Error creando zona:", err);
     return next(err);
   }
 };
@@ -87,6 +124,9 @@ module.exports = {
   zonesGetResidentials,
   zonesGetPatrimonials,
   zonesGetOthers,
+  zonesGetCosta,
+  zonesGetRusticAndSingunlar,
+  zonesGetCostaSubzone,
   zoneGetOne,
   zoneCreate,
   zoneDelete,
