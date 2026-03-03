@@ -641,6 +641,8 @@ const adCreate = async (req, res, next) => {
     const sale = {
       saleValue: req.body.saleValue,
       saleShowOnWeb: req.body.saleShowOnWeb,
+      saleRepercussionM2: req.body.saleRepercussionM2,
+      saleRepercussionM2ShowOnWeb: req.body.saleRepercussionM2ShowOnWeb,
     };
 
     const rent = {
@@ -673,6 +675,7 @@ const adCreate = async (req, res, next) => {
       jobPositions: req.body.jobPositions,
       subway: req.body.subway,
       bus: req.body.bus,
+      storageRoom: req.body.storageRoom,
       others: {
         lift: req.body.lift,
         dumbwaiter: req.body.dumbwaiter,
@@ -693,6 +696,11 @@ const adCreate = async (req, res, next) => {
         terrace: req.body.terrace,
         storage: req.body.storage,
         swimmingPool: req.body.swimmingPool,
+        indoorPoolCheck: req.body.indoorPoolCheck,
+        outdoorPoolCheck: req.body.outdoorPoolCheck,
+        outdoorPoolClimatized: req.body.outdoorPoolCheck
+          ? req.body.outdoorPoolClimatized
+          : false,
         garage: req.body.garage,
         falseCeiling: req.body.falseCeiling,
         raisedFloor: req.body.raisedFloor,
@@ -721,6 +729,42 @@ const adCreate = async (req, res, next) => {
         electricSupply: req.body.electricSupply,
         pond: req.body.pond,
         reservoir: req.body.reservoir,
+
+        recess: req.body.recess,
+        fenced: req.body.fenced,
+        porch: req.body.porch,
+        fireplace: req.body.fireplace,
+        gym: req.body.gym,
+
+        modernStyle: req.body.modernStyle,
+        classicStyle: req.body.classicStyle,
+        andaluzStyle: req.body.andaluzStyle,
+        seaViews: req.body.seaViews,
+        panoramicView: req.body.panoramicView,
+
+        golfCourseView: req.body.golfCourseView,
+        mountainView: req.body.mountainView,
+        privateGarden: req.body.privateGarden,
+        solarium: req.body.solarium,
+        outdoorKitchen: req.body.outdoorKitchen,
+
+        carPort: req.body.carPort,
+        lounge: req.body.lounge,
+        firePlace: req.body.firePlace,
+        showKitchen: req.body.showKitchen,
+        dirtyKitchen: req.body.dirtyKitchen,
+
+        spa: req.body.spa,
+        movieTheater: req.body.movieTheater,
+        wineCellar: req.body.wineCellar,
+        laundry: req.body.laundry,
+        brandedDesign: req.body.brandedDesign,
+
+        conciergeService: req.body.conciergeService,
+        gatedCommunity: req.body.gatedCommunity,
+        panicRoom: req.body.panicRoom,
+        newConstruction: req.body.newConstruction,
+        goodConservation: req.body.goodConservation,
       },
     };
 
@@ -736,7 +780,7 @@ const adCreate = async (req, res, next) => {
       internalComments: req.body.internalComments,
       adStatus: req.body.adStatus,
       showOnWeb: req.body.showOnWeb,
-      offMarket: req.body.offMarket,
+      showOnWebOffMarket: req.body.showOnWebOffMarket,
       featuredOnMain: req.body.featuredOnMain,
       featuredDrawings: req.body.featuredDrawings,
       adDirection: adDirection,
@@ -750,7 +794,8 @@ const adCreate = async (req, res, next) => {
       department: req.body.department,
       webSubtitle: req.body.webSubtitle,
       buildSurface: req.body.buildSurface,
-      plotSurface: req.body.plotSurface,
+      m2StorageSpace: req.body.m2StorageSpace,
+      m2Terrace: req.body.m2Terrace,
       floor: req.body.floor,
       disponibility: req.body.disponibility,
       surfacesBox: req.body.surfacesBox,
@@ -1065,7 +1110,7 @@ const adUpdate = async (req, res, next) => {
     const fieldsToUpdate = {};
     fieldsToUpdate.title = req.body.title;
     fieldsToUpdate.showOnWeb = req.body.showOnWeb;
-    fieldsToUpdate.offMarket = req.body.offMarket;
+    fieldsToUpdate.showOnWebOffMarket = req.body.showOnWebOffMarket;
     fieldsToUpdate.adStatus = req.body.adStatus;
     fieldsToUpdate.adReference = req.body.adReference;
     fieldsToUpdate.internalComments = req.body.internalComments;
@@ -1084,6 +1129,8 @@ const adUpdate = async (req, res, next) => {
     fieldsToUpdate.profitabilityValue = req.body.profitabilityValue;
     fieldsToUpdate.buildSurface = req.body.buildSurface;
     fieldsToUpdate.plotSurface = req.body.plotSurface;
+    fieldsToUpdate.m2StorageSpace = req.body.m2StorageSpace;
+    fieldsToUpdate.m2Terrace = req.body.m2Terrace;
     fieldsToUpdate.floor = req.body.floor;
     fieldsToUpdate.disponibility = req.body.disponibility;
     fieldsToUpdate.monthlyRent = req.body.monthlyRent;
@@ -1105,6 +1152,8 @@ const adUpdate = async (req, res, next) => {
     fieldsToUpdate.sale = {
       saleValue: req.body.saleValue,
       saleShowOnWeb: req.body.saleShowOnWeb,
+      saleRepercussionM2: req.body.saleRepercussionM2,
+      saleRepercussionM2ShowOnWeb: req.body.saleRepercussionM2ShowOnWeb,
     };
     fieldsToUpdate.rent = {
       rentValue: req.body.rentValue,
@@ -1134,6 +1183,7 @@ const adUpdate = async (req, res, next) => {
       jobPositions: req.body.jobPositions,
       subway: req.body.subway,
       bus: req.body.bus,
+      storageRoom: req.body.storageRoom,
       others: {
         lift: req.body.lift,
         dumbwaiter: req.body.dumbwaiter,
@@ -1154,6 +1204,11 @@ const adUpdate = async (req, res, next) => {
         terrace: req.body.terrace,
         storage: req.body.storage,
         swimmingPool: req.body.swimmingPool,
+        indoorPoolCheck: req.body.indoorPoolCheck,
+        outdoorPoolCheck: req.body.outdoorPoolCheck,
+        outdoorPoolClimatized: req.body.outdoorPoolCheck
+          ? req.body.outdoorPoolClimatized
+          : false,
         garage: req.body.garage,
         falseCeiling: req.body.falseCeiling,
         raisedFloor: req.body.raisedFloor,
@@ -1182,6 +1237,42 @@ const adUpdate = async (req, res, next) => {
         electricSupply: req.body.electricSupply,
         pond: req.body.pond,
         reservoir: req.body.reservoir,
+
+        recess: req.body.recess,
+        fenced: req.body.fenced,
+        porch: req.body.porch,
+        fireplace: req.body.fireplace,
+        gym: req.body.gym,
+
+        modernStyle: req.body.modernStyle,
+        classicStyle: req.body.classicStyle,
+        andaluzStyle: req.body.andaluzStyle,
+        seaViews: req.body.seaViews,
+        panoramicView: req.body.panoramicView,
+
+        golfCourseView: req.body.golfCourseView,
+        mountainView: req.body.mountainView,
+        privateGarden: req.body.privateGarden,
+        solarium: req.body.solarium,
+        outdoorKitchen: req.body.outdoorKitchen,
+
+        carPort: req.body.carPort,
+        lounge: req.body.lounge,
+        firePlace: req.body.firePlace,
+        showKitchen: req.body.showKitchen,
+        dirtyKitchen: req.body.dirtyKitchen,
+
+        spa: req.body.spa,
+        movieTheater: req.body.movieTheater,
+        wineCellar: req.body.wineCellar,
+        laundry: req.body.laundry,
+        brandedDesign: req.body.brandedDesign,
+
+        conciergeService: req.body.conciergeService,
+        gatedCommunity: req.body.gatedCommunity,
+        panicRoom: req.body.panicRoom,
+        newConstruction: req.body.newConstruction,
+        goodConservation: req.body.goodConservation,
       },
     };
 
