@@ -21,12 +21,12 @@ const {
   webAssetManagementServicesUpload,
   webCommercializationServicesUpload,
   getMapData,
-  getAdCardData,
   updateCategoriesSection,
   getHighlightAds,
   webVideoSectionUpdate,
   getAdsByReference,
   getAdDetails,
+  getFilteredAds,
 } = require("../controllers/web.controller");
 
 const router = express.Router();
@@ -157,9 +157,8 @@ router.put("/home/categories-section/edit/:id", upload.single("image"));
 
 // ------------------------------------------------------------------
 
-// ADS DATA FOR MAPS
-router.get("/map-stats", getMapData);
-router.get("/ad-card-data", getAdCardData);
+//FILTERED ADS
+router.get("/filtered-ads", getFilteredAds);
 
 // ------------------------------------------------------------------
 
