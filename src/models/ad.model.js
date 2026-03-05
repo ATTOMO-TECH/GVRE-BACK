@@ -74,8 +74,6 @@ const adSchema = new Schema(
       required: true,
     },
     zone: [{ type: mongoose.Types.ObjectId, ref: "zones" }],
-    distrito: { type: String, index: true },
-    barrio: { type: String, index: true },
     department: {
       type: String,
       enum: [
