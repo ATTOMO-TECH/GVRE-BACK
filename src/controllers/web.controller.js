@@ -1271,25 +1271,37 @@ const getAdDetails = async (req, res, next) => {
       return res.status(400).json({ message: "Falta el slug del inmueble" });
     }
 
-    // 1. Búsqueda con filtros de visibilidad y estado de operación
+    // 1. Búsqueda con filtros y .lean() para máximo rendimiento
     const ad = await Ad.findOne({
       slug: slug,
       showOnWeb: true,
       adStatus: { $in: ["Activo", "En preparación"] },
       gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
-    }).populate("zone");
+    })
+      .populate("zone")
+      .populate(
+        "consultant",
+        "avatar fullName consultantEmail consultantMobileNumber",
+      )
+      .lean(); // <--- Convierte el Mongoose Document a objeto puro JS
 
     if (!ad) {
       return res.status(404).json({ message: "Inmueble no encontrado" });
     }
 
     // 2. Extraer información de la zona poblada
-    // Usamos la primera zona del array como referencia principal para la ubicación
     const mainZone = ad.zone && ad.zone.length > 0 ? ad.zone[0] : null;
 
     // 3. Lógica de Precios Dual (Venta / Alquiler)
-    const salePrice = ad.sale?.saleShowOnWeb ? ad.sale.saleValue : null;
-    const rentPrice = ad.rent?.rentShowOnWeb ? ad.rent.rentValue : null;
+    const salePrice =
+      ad.sale?.saleShowOnWeb && ad.adType?.includes("Venta")
+        ? ad.sale.saleValue
+        : null;
+
+    const rentPrice =
+      ad.rent?.rentShowOnWeb && ad.adType?.includes("Alquiler")
+        ? ad.rent.rentValue
+        : null;
 
     let priceLabel = "";
     let period = "";
@@ -1306,30 +1318,59 @@ const getAdDetails = async (req, res, next) => {
       priceLabel = "Consultar";
     }
 
-    // 4. Unificación de Galería de Imágenes
+    // 4. Extracción de repercusión M2
+    const saleRepercussionM2ShowOnWeb =
+      ad.sale?.saleRepercussionM2ShowOnWeb || false;
+    const rawRepercussion = ad.sale?.saleRepercussionM2;
+    const m2Terrace = ad.m2Terrace;
+    const m2StorageSpace = ad.m2StorageSpace;
+
+    const saleRepercussionM2 =
+      saleRepercussionM2ShowOnWeb && rawRepercussion
+        ? Number(rawRepercussion)
+        : null;
+
+    // 4b. Unificación de Galería de Imágenes
     let gallery = [];
     if (ad.images?.main) gallery.push(ad.images.main);
     if (ad.images?.others && Array.isArray(ad.images.others)) {
       gallery = [...gallery, ...ad.images.others];
     }
 
-    // 5. Mapeo de Características (Sin 'garden')
-    const featuresList = {
-      pool:
-        ad.quality?.others?.swimmingPool ||
-        ad.quality?.indoorPool > 0 ||
-        ad.quality?.outdoorPool > 0,
-      terrace: ad.quality?.others?.terrace || false,
-      garage: ad.quality?.garage > 0 || ad.quality?.others?.garage,
-      airConditioning: ad.quality?.others?.airConditioning || false,
-      heating:
-        ad.quality?.others?.centralHeating ||
-        ad.quality?.others?.subfloorHeating,
-      lift: ad.quality?.others?.lift || false,
-      storage: ad.quality?.others?.storage || false,
-    };
+    // 5. Mapeo Dinámico de Características
+    const othersRaw = ad.quality?.others || {};
 
-    // 5. Construcción del objeto final (PropertyDetail)
+    // 5.1 Extraemos de others SOLO las claves cuyo valor sea exactamente true
+    const featuresList = Object.entries(othersRaw).reduce(
+      (acc, [key, value]) => {
+        if (value === true) {
+          acc[key] = true;
+        }
+        return acc;
+      },
+      {},
+    );
+
+    // 5.2 Evaluamos las manuales y las añadimos SOLO si son verdaderas
+    const hasPool =
+      ad.quality?.others?.swimmingPool === true ||
+      (ad.quality?.indoorPool || 0) > 0 ||
+      (ad.quality?.outdoorPool || 0) > 0;
+
+    if (hasPool) featuresList.pool = true;
+
+    const hasGarage =
+      (ad.quality?.parking || 0) > 0 || ad.quality?.others?.garage === true;
+
+    if (hasGarage) featuresList.garage = true;
+
+    const hasHeating =
+      ad.quality?.others?.centralHeating === true ||
+      ad.quality?.others?.subfloorHeating === true;
+
+    if (hasHeating) featuresList.heating = true;
+
+    // 6. Construcción del objeto final (PropertyDetail)
     const propertyDetail = {
       id: ad._id,
       slug: ad.slug,
@@ -1341,12 +1382,20 @@ const getAdDetails = async (req, res, next) => {
       operation: ad.adType,
 
       description: ad.description?.web || "Sin descripción disponible.",
+      distribution:
+        ad.description?.distribution || "Sin distribución disponible",
 
-      // Precios independientes para el Front
+      // Precios
       salePrice: salePrice,
       rentPrice: rentPrice,
       priceLabel: priceLabel,
       period: period,
+      saleRepercussionM2: saleRepercussionM2,
+      saleRepercussionM2ShowOnWeb: saleRepercussionM2ShowOnWeb,
+
+      // Superficies Extra
+      m2Terrace: m2Terrace,
+      m2StorageSpace: m2StorageSpace,
 
       location: {
         address: {
@@ -1358,6 +1407,7 @@ const getAdDetails = async (req, res, next) => {
         city: ad.adDirection?.city,
         country: ad.adDirection?.country,
       },
+
       specs: {
         beds: ad.quality?.bedrooms || 0,
         baths: ad.quality?.bathrooms || 0,
@@ -1365,16 +1415,24 @@ const getAdDetails = async (req, res, next) => {
         plot: ad.plotSurface || 0,
         year: ad.buildingYear,
         floor: ad.floor || "",
+        numberOfPools:
+          (ad.quality?.indoorPool || 0) + (ad.quality?.outdoorPool || 0),
+        parkingSpots: ad.quality?.parking || 0,
       },
 
-      features: featuresList,
+      // Consultor (ya filtrado por el populate)
+      consultant: ad.consultant || null,
+
+      features: featuresList, // <--- Aquí inyectamos el objeto dinámico limpio
       images: gallery,
       mainImage: ad.images?.main || "",
+      blueprints: ad.images?.blueprint || "",
+      video: ad.images?.media || "",
       surfacesBox: ad.surfacesBox || [],
       tags: [],
     };
 
-    // 6. Tags dinámicos basados en el tipo y calidades
+    // 7. Tags dinámicos basados en el tipo y calidades
     if (ad.adBuildingType && ad.adBuildingType.length > 0)
       propertyDetail.tags.push(ad.adBuildingType[0]);
     if (ad.quality?.reformed) propertyDetail.tags.push("Reformado");
