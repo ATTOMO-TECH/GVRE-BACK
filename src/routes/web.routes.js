@@ -20,13 +20,13 @@ const {
   webInvestmentServicesUpload,
   webAssetManagementServicesUpload,
   webCommercializationServicesUpload,
-  getMapData,
   updateCategoriesSection,
   getHighlightAds,
   webVideoSectionUpdate,
   getAdsByReference,
   getAdDetails,
   getFilteredAds,
+  getActiveInventoryZones,
 } = require("../controllers/web.controller");
 
 const router = express.Router();
@@ -157,8 +157,11 @@ router.put("/home/categories-section/edit/:id", upload.single("image"));
 
 // ------------------------------------------------------------------
 
+//ACITVE ZONES
+router.post("/active-inventory-zones", getActiveInventoryZones);
+
 //FILTERED ADS
-router.get("/filtered-ads", getFilteredAds);
+router.post("/filtered-ads", getFilteredAds);
 
 // ------------------------------------------------------------------
 

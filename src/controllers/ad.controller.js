@@ -812,6 +812,7 @@ const adCreate = async (req, res, next) => {
       description,
       images,
     });
+
     // Add initial CREATION entry to changesHistory (persisted)
     try {
       let consultantInfo = null;
@@ -839,7 +840,6 @@ const adCreate = async (req, res, next) => {
 
       newAd.changesHistory = [creationEntry];
     } catch (e) {
-      // If anything goes wrong while preparing the history, continue without blocking creation
       console.error("Failed to prepare creation history entry:", e);
     }
 
@@ -849,28 +849,41 @@ const adCreate = async (req, res, next) => {
     // 🔌 INTEGRACIÓN ISR: REVALIDACIÓN AUTOMÁTICA
     // =====================================================================
 
-    // CORRECCIÓN: Definimos qué estados son visibles en la web
+    // Definimos qué estados son visibles en la web
     const validStatuses = ["Activo", "En preparación"];
 
     // Evaluamos si el anuncio debe verse:
-    // 1. Tiene el check de showOnWeb en true
-    // 2. Y su estado es "Activo" O "En preparación"
     const isVisible =
       adCreated.showOnWeb && validStatuses.includes(adCreated.adStatus);
 
     if (isVisible) {
-      await Promise.all([
-        // A. Home: Porque cambian los contadores (Madrid: 20 -> 21)
+      const revalidationPromises = [
+        // A. Home: Porque cambian los contadores
         revalidateWeb("home-data"),
 
-        // B. Listado: Para que aparezca la nueva Card en búsquedas
+        // B. Listado: Para que aparezca la nueva Card
         revalidateWeb("ads-list"),
 
-        // C. Destacados: Solo si está marcado
-        adCreated.featuredOnMain
-          ? revalidateWeb("featured-ads")
-          : Promise.resolve(),
-      ]);
+        // C. MAPA: Para que la zona se active si era el primer activo
+        revalidateWeb("inventory-zones"),
+      ];
+
+      // D. Destacados: Solo si está marcado
+      if (adCreated.featuredOnMain) {
+        revalidationPromises.push(revalidateWeb("featured-ads"));
+      }
+
+      // Ejecutamos todas las revalidaciones de forma segura
+      const results = await Promise.allSettled(revalidationPromises);
+
+      results.forEach((result, index) => {
+        if (result.status === "rejected") {
+          console.error(
+            `❌ Falló revalidación en creación [${index}]:`,
+            result.reason,
+          );
+        }
+      });
     }
 
     return res.status(200).json(adCreated);
@@ -1237,37 +1250,31 @@ const adUpdate = async (req, res, next) => {
         electricSupply: req.body.electricSupply,
         pond: req.body.pond,
         reservoir: req.body.reservoir,
-
         recess: req.body.recess,
         fenced: req.body.fenced,
         porch: req.body.porch,
         fireplace: req.body.fireplace,
         gym: req.body.gym,
-
         modernStyle: req.body.modernStyle,
         classicStyle: req.body.classicStyle,
         andaluzStyle: req.body.andaluzStyle,
         seaViews: req.body.seaViews,
         panoramicView: req.body.panoramicView,
-
         golfCourseView: req.body.golfCourseView,
         mountainView: req.body.mountainView,
         privateGarden: req.body.privateGarden,
         solarium: req.body.solarium,
         outdoorKitchen: req.body.outdoorKitchen,
-
         carPort: req.body.carPort,
         lounge: req.body.lounge,
         firePlace: req.body.firePlace,
         showKitchen: req.body.showKitchen,
         dirtyKitchen: req.body.dirtyKitchen,
-
         spa: req.body.spa,
         movieTheater: req.body.movieTheater,
         wineCellar: req.body.wineCellar,
         laundry: req.body.laundry,
         brandedDesign: req.body.brandedDesign,
-
         conciergeService: req.body.conciergeService,
         gatedCommunity: req.body.gatedCommunity,
         panicRoom: req.body.panicRoom,
@@ -1473,7 +1480,7 @@ const adUpdate = async (req, res, next) => {
     }
 
     // =====================================================================
-    // 🚀 SINCRONIZACIÓN CON WEBHOME (Mismo nivel que el Slug)
+    // 🚀 SINCRONIZACIÓN CON WEBHOME
     // =====================================================================
     try {
       const labels = [];
@@ -1518,6 +1525,30 @@ const adUpdate = async (req, res, next) => {
       updatedAd.showOnWeb && validStatuses.includes(updatedAd.adStatus);
     const revalidationPromises = [];
 
+    // =====================================================================
+    // 🗺️ LÓGICA DE REVALIDACIÓN DEL MAPA (inventory-zones)
+    // =====================================================================
+    const zoneChanged =
+      JSON.stringify(currentAd.zone) !== JSON.stringify(req.body.zone);
+    const statusChanged = currentAd.adStatus !== req.body.adStatus;
+    const visibilityChanged = currentAd.showOnWeb !== req.body.showOnWeb;
+    const operationCloseChanged =
+      currentAd.gvOperationClose !== req.body.gvOperationClose;
+    const departmentChanged = currentAd.department !== req.body.department;
+
+    if (
+      zoneChanged ||
+      statusChanged ||
+      visibilityChanged ||
+      operationCloseChanged ||
+      departmentChanged
+    ) {
+      revalidationPromises.push(revalidateWeb("inventory-zones"));
+    }
+
+    // =====================================================================
+    // 📋 REVALIDACIONES DE LISTADO Y WEB
+    // =====================================================================
     if (
       isVisibleNow ||
       currentAd.showOnWeb !== req.body.showOnWeb ||
