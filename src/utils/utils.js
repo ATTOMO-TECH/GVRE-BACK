@@ -146,6 +146,17 @@ const getTaggedEmail = (email, tag) => {
   return `${username}+${cleanTag}@${domain}`;
 };
 
+const makeDiacriticRegex = (text) => {
+  return text
+    .normalize("NFD")
+    .replace(/a/gi, "[aáàäâ]")
+    .replace(/e/gi, "[eéèëê]")
+    .replace(/i/gi, "[iíìïî]")
+    .replace(/o/gi, "[oóòöô]")
+    .replace(/u/gi, "[uúùüû]")
+    .replace(/n/gi, "[nñ]");
+};
+
 module.exports = {
   getDate,
   getPasswordByEmail,
@@ -155,4 +166,5 @@ module.exports = {
   orderAdsDescendentByRentPrice,
   normalizeAdHistory,
   getTaggedEmail,
+  makeDiacriticRegex,
 };
