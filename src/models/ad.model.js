@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 
+const slug = require("mongoose-slug-updater");
+
 const Schema = mongoose.Schema;
 
 const adSchema = new Schema(
@@ -11,7 +13,15 @@ const adSchema = new Schema(
       default: "En preparación",
     },
     title: { type: String, required: true },
+    slug: {
+      type: String,
+      slug: "title",
+      unique: true,
+      permanent: true,
+      slugPaddingSize: 0,
+    },
     showOnWeb: { type: Boolean, default: true },
+    showOnWebOffMarket: { type: Boolean },
     featuredOnMain: { type: Boolean },
     featuredDrawings: { type: Boolean },
     sendedTo: [
@@ -41,11 +51,13 @@ const adSchema = new Schema(
     },
     owner: { type: mongoose.Types.ObjectId, ref: "contacts" },
     consultant: { type: mongoose.Types.ObjectId, ref: "consultants" },
+    realStatePortals: { type: [String], enum: ["Idealista", "Otros portales"] },
     adBuildingType: {
       type: [String],
       enum: [
         "Casa",
         "Piso",
+        "Bajo",
         "Parcela",
         "Ático",
         "Oficina",
@@ -54,20 +66,22 @@ const adSchema = new Schema(
         "Campo Rústico",
         "Activos singulares",
         "Costa",
+        "Nave",
+        "Suelo",
+        "Finca",
+        "Casa de Campo",
+        "Activo Singular",
       ],
       required: true,
     },
     zone: [{ type: mongoose.Types.ObjectId, ref: "zones" }],
-    distrito: { type: String, index: true },
-    barrio: { type: String, index: true },
     department: {
       type: String,
       enum: [
         "Patrimonio",
         "Residencial",
         "Otros",
-        "Campo Rústico",
-        "Activos singulares",
+        "Campos Rústicos & Activos Singulares",
         "Costa",
       ],
       required: true,
@@ -75,6 +89,8 @@ const adSchema = new Schema(
     webSubtitle: { type: String },
     buildSurface: { type: Number },
     plotSurface: { type: Number },
+    m2StorageSpace: { type: Number },
+    m2Terrace: { type: Number },
     floor: { type: String },
     disponibility: { type: String },
     profitability: { type: Boolean, default: false },
@@ -92,6 +108,8 @@ const adSchema = new Schema(
     sale: {
       saleValue: { type: Number },
       saleShowOnWeb: { type: Boolean },
+      saleRepercussionM2: { type: String },
+      saleRepercussionM2ShowOnWeb: { type: Boolean },
     },
     rent: {
       rentValue: { type: Number },
@@ -124,12 +142,16 @@ const adSchema = new Schema(
       jobPositions: { type: Number },
       subway: { type: String },
       bus: { type: String },
+      storageRoom: { type: String },
       others: {
         lift: { type: Boolean },
         dumbwaiter: { type: Boolean },
         liftTruck: { type: Boolean },
         airConditioning: { type: Boolean },
         centralHeating: { type: Boolean },
+        individualHeating: { type: Boolean },
+        concierge: { type: Boolean },
+        mixedBuilding: { type: Boolean },
         subfloorHeating: { type: Boolean },
         indoorAlarm: { type: Boolean },
         outdoorAlarm: { type: Boolean },
@@ -144,6 +166,9 @@ const adSchema = new Schema(
         terrace: { type: Boolean },
         storage: { type: Boolean },
         swimmingPool: { type: Boolean },
+        indoorPoolCheck: { type: Boolean },
+        outdoorPoolCheck: { type: Boolean },
+        outdoorPoolClimatized: { type: Boolean },
         garage: { type: Boolean },
         falseCeiling: { type: Boolean },
         raisedFloor: { type: Boolean },
@@ -157,6 +182,55 @@ const adSchema = new Schema(
         exclusiveOfficeBuilding: { type: Boolean },
         classicBuilding: { type: Boolean },
         coworking: { type: Boolean },
+        accessiblePMR: { type: Boolean },
+        agricultural: { type: Boolean },
+        hunting: { type: Boolean },
+        forestry: { type: Boolean },
+        livestock: { type: Boolean },
+        rusticOther: { type: Boolean },
+        warehouses: { type: Boolean },
+        secondaryHousing: { type: Boolean },
+        equestrianFacilities: { type: Boolean },
+        electricSupply: { type: Boolean },
+        pond: { type: Boolean },
+        reservoir: { type: Boolean },
+
+        // NUEVOS CAMPOS GENRALES
+        recess: { type: Boolean },
+        fenced: { type: Boolean },
+        porch: { type: Boolean },
+        fireplace: { type: Boolean },
+        gym: { type: Boolean },
+
+        modernStyle: { type: Boolean },
+        classicStyle: { type: Boolean },
+        andaluzStyle: { type: Boolean },
+        seaViews: { type: Boolean },
+        panoramicView: { type: Boolean },
+
+        golfCourseView: { type: Boolean },
+        mountainView: { type: Boolean },
+        privateGarden: { type: Boolean },
+        solarium: { type: Boolean },
+        outdoorKitchen: { type: Boolean },
+
+        carPort: { type: Boolean },
+        lounge: { type: Boolean },
+        firePlace: { type: Boolean },
+        showKitchen: { type: Boolean },
+        dirtyKitchen: { type: Boolean },
+
+        spa: { type: Boolean },
+        movieTheater: { type: Boolean },
+        wineCellar: { type: Boolean },
+        laundry: { type: Boolean },
+        brandedDesign: { type: Boolean },
+
+        conciergeService: { type: Boolean },
+        gatedCommunity: { type: Boolean },
+        panicRoom: { type: Boolean },
+        newConstruction: { type: Boolean },
+        goodConservation: { type: Boolean },
       },
     },
     description: {
@@ -198,8 +272,10 @@ const adSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
+
+adSchema.plugin(slug);
 
 const Ad = mongoose.model("ads", adSchema);
 

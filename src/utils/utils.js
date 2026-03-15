@@ -97,20 +97,6 @@ function getPasswordByEmail(email) {
   }
 }
 
-module.exports = {
-  getDate,
-  getPasswordByEmail,
-  orderAdsAscendentBySalePrice,
-  orderAdsDescendentBySalePrice,
-  orderAdsAscendentByRentPrice,
-  orderAdsDescendentByRentPrice,
-};
-
-/**
- * Ensure a normalized changesHistory array for an ad object.
- * If CREATION entry is missing, it will be synthesized from createdAt.
- * Returns a new array sorted by date ascending.
- */
 function normalizeAdHistory(ad) {
   const createdAt = ad && ad.createdAt ? new Date(ad.createdAt) : new Date();
   const rawHistory = Array.isArray(ad && ad.changesHistory)
@@ -152,4 +138,33 @@ function normalizeAdHistory(ad) {
   return normalized;
 }
 
-module.exports.normalizeAdHistory = normalizeAdHistory;
+const getTaggedEmail = (email, tag) => {
+  if (!email || !tag) return email;
+  const [username, domain] = email.split("@");
+  // Limpiamos el tag de espacios por si acaso
+  const cleanTag = tag.replace(/\s+/g, "").toLowerCase();
+  return `${username}+${cleanTag}@${domain}`;
+};
+
+const makeDiacriticRegex = (text) => {
+  return text
+    .normalize("NFD")
+    .replace(/a/gi, "[aáàäâ]")
+    .replace(/e/gi, "[eéèëê]")
+    .replace(/i/gi, "[iíìïî]")
+    .replace(/o/gi, "[oóòöô]")
+    .replace(/u/gi, "[uúùüû]")
+    .replace(/n/gi, "[nñ]");
+};
+
+module.exports = {
+  getDate,
+  getPasswordByEmail,
+  orderAdsAscendentBySalePrice,
+  orderAdsDescendentBySalePrice,
+  orderAdsAscendentByRentPrice,
+  orderAdsDescendentByRentPrice,
+  normalizeAdHistory,
+  getTaggedEmail,
+  makeDiacriticRegex,
+};

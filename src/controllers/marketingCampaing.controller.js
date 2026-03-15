@@ -90,56 +90,60 @@ const marketingCampaignGetAllByContact = async (req, res, next) => {
 
 const marketingCampaignCreate = async (req, res, next) => {
   try {
-    const { title, description, consultant } = req.body;
+    const { title, htmlBody, design, consultant } = req.body;
 
-    if (req.file) {
+    // Verificamos que venga el diseño del editor en lugar del archivo
+    if (htmlBody) {
       const newMarketingCampaign = new MarketingCampaign({
-        title,
-        image: req.file.location,
-        description,
+        title, // Usará el título autogenerado por fecha
+        htmlBody,
+        design,
         contactList: [],
         consultant,
+        // image: ... <- Ya no guardamos imagen de portada aquí
+        // description: ... <- Ya no hay descripción manual
       });
 
       const marketingCampaignCreated = await newMarketingCampaign.save();
 
       return res.status(200).json(marketingCampaignCreated);
     } else {
-      return res.status(400).json({ status: 400, message: "Missing file" });
+      return res
+        .status(400)
+        .json({ status: 400, message: "El diseño de la campaña está vacío" });
     }
   } catch (err) {
+    console.error("Error al guardar plantilla:", err);
     return next(err);
   }
 };
 
 const marketingCampaignUpdate = async (req, res, next) => {
   try {
-    const { title, description, consultant } = req.body;
+    const { title, htmlBody, design } = req.body;
     const { idCampaign } = req.params;
-    const marketingCampaing = await MarketingCampaign.findById(idCampaign);
-    const fieldsToUpdate = marketingCampaing;
-    if (marketingCampaing !== null) {
-      if (req.file) {
-        deleteImage(fieldsToUpdate?.image);
-        fieldsToUpdate.image = req.file.location;
-      }
-      fieldsToUpdate.title = title;
-      fieldsToUpdate.description = description;
-      fieldsToUpdate.consultant = consultant;
 
-      const contactUpdated = await MarketingCampaign.findByIdAndUpdate(
-        idCampaign,
-        fieldsToUpdate,
-        { new: true }
-      );
+    const fieldsToUpdate = {
+      title,
+      htmlBody,
+      design,
+    };
 
-      return res.status(200).json(contactUpdated);
+    const campaignUpdated = await MarketingCampaign.findByIdAndUpdate(
+      idCampaign,
+      fieldsToUpdate,
+      { new: true },
+    );
+
+    if (campaignUpdated) {
+      return res.status(200).json(campaignUpdated);
     } else {
       return res
         .status(404)
         .json({ status: 404, message: "Campaign not found" });
     }
   } catch (err) {
+    console.error("Error al actualizar la campaña:", err);
     return next(err);
   }
 };
@@ -147,12 +151,10 @@ const marketingCampaignUpdate = async (req, res, next) => {
 const marketingCampaignSendEmail = async (req, res, next) => {
   try {
     const { sendMail } = req;
-    // console.log("envio de email:", sendMail);
     if (sendMail === "ok") {
       const { campaign, contacts } = req.body;
       let editCampaign = {};
       let editContact = {};
-      // 1. Buscar en la campaña y escribir los contactos
       const marketingCampaign = await MarketingCampaign.findById(campaign._id);
       if (marketingCampaign !== null) {
         const updateMarketingCampaign = marketingCampaign;
@@ -162,27 +164,23 @@ const marketingCampaignSendEmail = async (req, res, next) => {
           filterContact = contacts.map((contact) => contact._id);
         } else {
           const contactsId = contacts.map((c) => c._id);
-          //   console.log("contactID", contactsId);
           const listString = marketingCampaign.contactList.map((objId) =>
-            objId.toString()
+            objId.toString(),
           );
           filterContact = contactsId.filter(
-            (value) => !listString.includes(value)
+            (value) => !listString.includes(value),
           );
         }
-        // console.log("contactos filtrados", filterContact);
         const newContactList =
           updateMarketingCampaign.contactList.concat(filterContact);
         updateMarketingCampaign.contactList = newContactList;
-        // console.log("actualizado2:", updateMarketingCampaign);
         const campaignUpdated = await MarketingCampaign.findByIdAndUpdate(
           campaign._id,
           updateMarketingCampaign,
-          { new: true }
+          { new: true },
         );
         editCampaign = campaignUpdated;
 
-        // 2. Buscar en cada contacto e inscribir la campaña
         contacts.map(async (contact) => {
           const contactDB = await Contact.findById(contact._id);
           if (contactDB !== null) {
@@ -197,18 +195,15 @@ const marketingCampaignSendEmail = async (req, res, next) => {
             const contactsCampaignsString =
               updateContact.marketingCampaings.map((objId) => objId.toString());
             filterCampaigns = [campaign._id].filter(
-              (value) => !contactsCampaignsString.includes(value)
+              (value) => !contactsCampaignsString.includes(value),
             );
-            // console.log("filterCampaigns:", filterCampaigns);
-            // console.log("current campaigns:", updateContact.marketingCampaings);
             const newCampaignList =
               updateContact.marketingCampaings.concat(filterCampaigns);
             updateContact.marketingCampaings = newCampaignList;
-            // console.log("actualizado2:", updateMarketingCampaign);
             const contactUpdated = await Contact.findByIdAndUpdate(
               contact._id,
               updateContact,
-              { new: true }
+              { new: true },
             );
             editContact = contactUpdated;
           }
@@ -242,7 +237,7 @@ const contactReceiveEmail = async (req, res, next) => {
     const contactUpdated = await MarketingCampaign.findByIdAndUpdate(
       req.body.contact._id,
       newReceivedEmails,
-      { new: true }
+      { new: true },
     );
 
     return res.status(200);
@@ -253,23 +248,30 @@ const contactReceiveEmail = async (req, res, next) => {
 
 const marketingCampaignDelete = async (req, res, next) => {
   try {
-    const { idCampaign, imageCampaign } = req.params;
+    // 1. imageCampaign no viene por params, solo idCampaign. Lo limpiamos.
+    const { idCampaign } = req.params;
     const { toDelete } = req.body;
 
-    deleteImage(toDelete);
+    // 2. 💥 PROTECCIÓN VITAL: Solo intentamos borrar en AWS si realmente hay una imagen
+    if (toDelete) {
+      deleteImage(toDelete);
+    }
 
     const deleted = await MarketingCampaign.findByIdAndDelete(idCampaign);
-    if (deleted)
+
+    if (deleted) {
       return res
         .status(200)
         .json({ status: 200, message: "Campaña borrada de la base de datos." });
-    else
+    } else {
       return res.status(404).json({
         status: 404,
         message:
           "No se ha podido encontrar esta campaña. ¿Estás seguro de que existe?",
       });
+    }
   } catch (error) {
+    console.error("Error al borrar la campaña:", error); // Siempre es bueno hacer log del error
     next(error);
   }
 };

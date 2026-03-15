@@ -2,88 +2,111 @@ const { deleteImage } = require("../middlewares/file.middleware");
 const Ad = require("../models/ad.model");
 const WebHome = require("../models/webHome.model");
 const Consultant = require("../models/consultant.model");
+const Zone = require("../models/zone.model");
+const { revalidateWeb } = require("../utils/revalidateWeb");
+const { default: mongoose } = require("mongoose");
+const { makeDiacriticRegex } = require("../utils/utils");
 
 const webHomeGet = async (req, res, next) => {
   try {
-    // 1. Obtenemos la configuración visual
-    const webDocs = await WebHome.find();
+    // 1. Populamos para tener los datos frescos del anuncio (incluyendo checks de precio)
+    const webDocs = await WebHome.find().populate({
+      path: "videoSection.videos.adId",
+      // Traemos todo lo necesario para validar visibilidad y precios
+      select: "adStatus showOnWeb gvOperationClose adType sale rent",
+    });
 
-    if (!webDocs || webDocs.length === 0) {
-      return res.status(200).json([]);
+    if (!webDocs || webDocs.length === 0) return res.status(200).json([]);
+
+    const webHomeDoc = webDocs[0];
+    const initialCount = webHomeDoc.videoSection.videos.length;
+
+    // 2. Limpieza y Validación Estricta de cada Video
+    const validVideos = webHomeDoc.videoSection.videos.filter((video) => {
+      const ad = video.adId;
+      if (!ad) return false;
+
+      // Validación de visibilidad general
+      const isVisible = ad.showOnWeb === true;
+      const isActive = ["Activo", "En preparación"].includes(ad.adStatus);
+      const isNotClosed = !ad.gvOperationClose || ad.gvOperationClose === "";
+
+      if (!isVisible || !isActive || !isNotClosed) return false;
+
+      // --- TRIPLE VALIDACIÓN DE PRECIOS EN TIEMPO REAL ---
+      const isSaleValid =
+        ad.adType.includes("Venta") &&
+        ad.sale?.saleValue &&
+        ad.sale?.saleShowOnWeb === true;
+
+      const isRentValid =
+        ad.adType.includes("Alquiler") &&
+        ad.rent?.rentValue &&
+        ad.rent?.rentShowOnWeb === true;
+
+      // Actualizamos el objeto de precio del video con los datos frescos del anuncio poblado
+      let labels = [];
+      video.price.sale = isSaleValid ? ad.sale.saleValue : null;
+      video.price.rent = isRentValid ? ad.rent.rentValue : null;
+
+      if (video.price.sale) labels.push("Venta");
+      if (video.price.rent) labels.push("Alquiler");
+      video.price.label = labels.join(" / ");
+
+      // Si después de validar no hay ningún precio disponible,
+      // podrías decidir si ocultar el video o dejarlo sin precio.
+      // Aquí asumimos que si el anuncio es visible, el video se queda.
+      return true;
+    });
+
+    // Si la lista cambió por seguridad, persistimos los cambios
+    if (validVideos.length !== initialCount) {
+      webHomeDoc.videoSection.videos = validVideos;
+      await webHomeDoc.save();
     }
 
-    // Convertimos a objeto JS para poder modificarlo libremente
-    let webData = webDocs[0].toObject();
+    const webData = webHomeDoc.toObject();
 
-    // 2. Filtro Base
+    // 3. Conteos dinámicos (Se mantiene tu lógica actual)
     const activeFilter = {
-      adStatus: "Activo",
+      adStatus: { $in: ["Activo", "En preparación"] },
       showOnWeb: true,
+      gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
     };
 
-    // 3. Obtenemos nombres de ciudades
-    // Usamos el operador ?. por seguridad, aunque tengan defaults
-    const city1 = webData.categoriesSection?.location1?.title || "Madrid";
-    const city2 = webData.categoriesSection?.location2?.title || "Marbella";
-    const city3 = webData.categoriesSection?.location3?.title || "Sotogrande";
-    const city4 =
-      webData.categoriesSection?.location4?.title || "Puerto de Santa María";
+    const cities = [
+      webData.categoriesSection?.location1?.title || "Madrid",
+      webData.categoriesSection?.location2?.title || "Marbella",
+      webData.categoriesSection?.location3?.title || "Sotogrande",
+      webData.categoriesSection?.location4?.title || "Puerto de Santa María",
+    ];
 
-    // 4. Conteos en paralelo
-    const [
-      countResidential,
-      countPatrimonial,
-      countOthers,
-      countLocation1,
-      countLocation2,
-      countLocation3,
-      countLocation4,
-    ] = await Promise.all([
-      // A. Departamentos
+    const counts = await Promise.all([
       Ad.countDocuments({ ...activeFilter, department: "Residencial" }),
       Ad.countDocuments({ ...activeFilter, department: "Patrimonio" }),
       Ad.countDocuments({ ...activeFilter, department: "Otros" }),
-
-      // B. Ciudades (Ubicaciones)
-      Ad.countDocuments({
-        ...activeFilter,
-        "adDirection.city": { $regex: new RegExp(`^${city1}$`, "i") },
-      }),
-      Ad.countDocuments({
-        ...activeFilter,
-        "adDirection.city": { $regex: new RegExp(`^${city2}$`, "i") },
-      }),
-      Ad.countDocuments({
-        ...activeFilter,
-        "adDirection.city": { $regex: new RegExp(`^${city3}$`, "i") },
-      }),
-      Ad.countDocuments({
-        ...activeFilter,
-        "adDirection.city": { $regex: new RegExp(`^${city4}$`, "i") },
-      }),
+      ...cities.map((city) =>
+        Ad.countDocuments({
+          ...activeFilter,
+          "adDirection.city": { $regex: new RegExp(`^${city}$`, "i") },
+        }),
+      ),
     ]);
 
-    // 5. INYECCIÓN DIRECTA EN CADA OBJETO
-    // Verificamos que el objeto exista antes de asignarle el count para evitar errores
-    if (webData.categoriesSection) {
-      if (webData.categoriesSection.residential)
-        webData.categoriesSection.residential.count = countResidential;
-      if (webData.categoriesSection.patrimonial)
-        webData.categoriesSection.patrimonial.count = countPatrimonial;
-      if (webData.categoriesSection.others)
-        webData.categoriesSection.others.count = countOthers;
-
-      if (webData.categoriesSection.location1)
-        webData.categoriesSection.location1.count = countLocation1;
-      if (webData.categoriesSection.location2)
-        webData.categoriesSection.location2.count = countLocation2;
-      if (webData.categoriesSection.location3)
-        webData.categoriesSection.location3.count = countLocation3;
-      if (webData.categoriesSection.location4)
-        webData.categoriesSection.location4.count = countLocation4;
-    }
-
-    // Nota: Ya no creamos webData.categoriesSection.counts
+    const sections = [
+      "residential",
+      "patrimonial",
+      "others",
+      "location1",
+      "location2",
+      "location3",
+      "location4",
+    ];
+    sections.forEach((section, index) => {
+      if (webData.categoriesSection[section]) {
+        webData.categoriesSection[section].count = counts[index];
+      }
+    });
 
     return res.status(200).json([webData]);
   } catch (err) {
@@ -191,84 +214,79 @@ const webHomeEdit = async (req, res, next) => {
 const webVideoSectionUpdate = async (req, res, next) => {
   try {
     const { id } = req.params;
-
-    // 1. Buscamos el documento WebHome
     const webHome = await WebHome.findById(id);
 
     if (!webHome) {
       return res.status(404).json({ message: "WebHome no encontrado" });
     }
 
-    const webHomeToUpdate = webHome;
+    // Actualización de textos básicos
+    if (req.body.title) webHome.videoSection.title = req.body.title;
+    if (req.body.subtitle) webHome.videoSection.subtitle = req.body.subtitle;
 
-    // 2. Actualizamos Título y Subtítulo de la sección (si vienen)
-    if (req.body.title) webHomeToUpdate.videoSection.title = req.body.title;
-    if (req.body.subtitle)
-      webHomeToUpdate.videoSection.subtitle = req.body.subtitle;
+    // Gestión de Colección de Videos
+    if (req.body.selectedAdIds && Array.isArray(req.body.selectedAdIds)) {
+      if (req.body.selectedAdIds.length > 0) {
+        const foundAds = await Ad.find({
+          _id: { $in: req.body.selectedAdIds },
+          showOnWeb: true,
+          adStatus: { $in: ["Activo", "En preparación"] },
+        }).select("title adReference adType sale rent images slug");
 
-    // 3. Gestión de Anuncios Seleccionados (Lógica Principal)
-    // Esperamos un array de IDs de anuncios en el body, ej: req.body.selectedAdIds
-    if (
-      req.body.selectedAdIds &&
-      Array.isArray(req.body.selectedAdIds) &&
-      req.body.selectedAdIds.length > 0
-    ) {
-      // A) Buscamos los anuncios en la base de datos
-      const foundAds = await Ad.find({
-        _id: { $in: req.body.selectedAdIds },
-      }).select("title adReference adType sale rent images");
+        const newVideoCollection = req.body.selectedAdIds
+          .map((adId) => {
+            const ad = foundAds.find((a) => a._id.toString() === adId);
+            if (!ad) return null;
 
-      // B) Mapeamos los anuncios encontrados al formato que necesita el WebHome
-      // Nota: Hacemos un map sobre los IDs recibidos para mantener el ORDEN que el usuario eligió en el front
-      const newVideoCollection = req.body.selectedAdIds
-        .map((adId) => {
-          const ad = foundAds.find((a) => a._id.toString() === adId);
+            // --- LÓGICA DE NEGOCIO ESTRICTA ---
+            let priceObj = { sale: null, rent: null, label: "" };
+            let labels = [];
 
-          if (!ad) return null; // Si por alguna razón el ID no existe, lo saltamos
+            // 1. Validación de Venta: adType + valor + check visibilidad
+            const isSaleValid =
+              ad.adType.includes("Venta") &&
+              ad.sale?.saleValue &&
+              ad.sale?.saleShowOnWeb === true;
 
-          // Lógica de Precios (Venta, Alquiler o Ambos)
-          let priceObj = { sale: null, rent: null, label: "" };
-          let labels = [];
+            if (isSaleValid) {
+              priceObj.sale = ad.sale.saleValue;
+              labels.push("Venta");
+            }
 
-          // Verificar si es venta y tiene precio
-          if (ad.adType.includes("Venta") && ad.sale && ad.sale.saleValue) {
-            priceObj.sale = ad.sale.saleValue;
-            labels.push("Venta");
-          }
+            // 2. Validación de Alquiler: adType + valor + check visibilidad
+            const isRentValid =
+              ad.adType.includes("Alquiler") &&
+              ad.rent?.rentValue &&
+              ad.rent?.rentShowOnWeb === true;
 
-          // Verificar si es alquiler y tiene precio
-          if (ad.adType.includes("Alquiler") && ad.rent && ad.rent.rentValue) {
-            priceObj.rent = ad.rent.rentValue;
-            labels.push("Alquiler");
-          }
+            if (isRentValid) {
+              priceObj.rent = ad.rent.rentValue;
+              labels.push("Alquiler");
+            }
 
-          priceObj.label = labels.join(" / "); // Ej: "Venta / Alquiler" o solo "Venta"
+            priceObj.label = labels.join(" / ");
 
-          // Retornamos el objeto estructurado para WebHome
-          return {
-            adId: ad._id,
-            videoUrl: ad.images?.media || "", // El video del anuncio
-            title: ad.title,
-            adReference: ad.adReference,
-            price: priceObj,
-          };
-        })
-        .filter((item) => item !== null); // Eliminamos nulos si hubo IDs inválidos
+            return {
+              adId: ad._id,
+              videoUrl: ad.images?.media || "",
+              title: ad.title,
+              slug: ad.slug,
+              adReference: ad.adReference,
+              price: priceObj,
+            };
+          })
+          .filter(Boolean);
 
-      // C) Asignamos el nuevo array de objetos
-      webHomeToUpdate.videoSection.videos = newVideoCollection;
-    } else if (req.body.selectedAdIds && req.body.selectedAdIds.length === 0) {
-      // Si nos envían un array vacío explícitamente, limpiamos la sección
-      webHomeToUpdate.videoSection.videos = [];
+        webHome.videoSection.videos = newVideoCollection;
+      } else {
+        webHome.videoSection.videos = [];
+      }
     }
 
-    // NOTA: He eliminado la lógica de 'deleteImage'.
-    // Al ser videos vinculados a Anuncios, NO debemos borrarlos de la nube
-    // solo porque se quiten de la Home. Pertenecen al inventario.
+    const updatedWebHome = await webHome.save();
 
-    // 4. Guardamos en Base de Datos
-    const updatedWebHome = await webHomeToUpdate.save();
-    // Usamos .save() suele disparar validaciones del schema mejor que findByIdAndUpdate
+    // Revalidación para Next.js
+    await revalidateWeb("home-data");
 
     return res.status(200).json(updatedWebHome);
   } catch (err) {
@@ -895,7 +913,21 @@ const getAdsByReference = async (req, res, next) => {
     if (!ref) return res.json([]);
 
     const ads = await Ad.find({
+      // 1. Coincidencia por referencia
       adReference: { $regex: ref, $options: "i" },
+
+      // 2. FILTRO DE ESTADO: Solo activos o en preparación
+      adStatus: { $in: ["Activo", "En preparación"] },
+
+      // 3. FILTRO DE VISUALIZACIÓN EN WEB: Que estén marcados para visualizar en la web.
+      showOnWeb: { $in: true },
+
+      // 4. FILTRO DE OPERACIÓN: Que no estén vendidos o alquilados
+      gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
+
+      // 5. TIENE QUE TENER VIDEO
+      // Verificamos que 'images.media' exista, no sea nulo y no sea una cadena vacía
+      "images.media": { $exists: true, $nin: ["", null] },
     })
       .select("adReference title _id")
       .limit(10);
@@ -973,131 +1005,551 @@ const updateCategoriesSection = async (req, res, next) => {
   }
 };
 
-const getMapData = async (req, res, next) => {
+const getFilteredAds = async (req, res, next) => {
   try {
-    const { department } = req.query;
+    // 1. DESESTRUCTURACIÓN COMPLETA DE PARÁMETROS
+    const {
+      page = 1,
+      limit = 9,
+      department,
+      zone,
+      operation, // Ahora puede ser: "sale", "rent" o undefined
+      propertyType,
+      maxPrice,
+      maxSurface,
+      pool,
+      garage,
+      terrace, // Residenciales
+      profitability,
+      coworking,
+      smokeOutlet,
+      implanted, // Patrimoniales
+      separateEntrance,
+      exclusiveOffice,
+      classicBuilding,
+      mixedBuilding,
+      reformed,
+      toReform,
+    } = req.body;
 
-    const targetDepartment = department || "Residencial";
+    const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    const distritosQuery = Ad.aggregate([
-      {
-        $match: {
-          adStatus: "Activo",
-          department: targetDepartment,
-          showOnWeb: true,
-          distrito: { $exists: true, $ne: null },
-        },
-      },
-      { $group: { _id: "$distrito", count: { $sum: 1 } } },
-    ]);
+    // 2. LÓGICA DE RE-ASIGNACIÓN DE DEPARTAMENTO
+    let targetDepartment =
+      department === "Patrimonial" ? "Patrimonio" : department;
 
-    const barriosQuery = Ad.aggregate([
-      {
-        $match: {
-          adStatus: "Activo",
-          department: targetDepartment,
-          showOnWeb: true,
-          barrio: { $exists: true, $ne: null },
-        },
-      },
-      { $group: { _id: "$barrio", count: { $sum: 1 } } },
-    ]);
-
-    const [distritosStats, barriosStats] = await Promise.all([
-      distritosQuery,
-      barriosQuery,
-    ]);
-
-    const distritosMap = distritosStats.reduce((acc, curr) => {
-      acc[curr._id] = curr.count;
-      return acc;
-    }, {});
-
-    const barriosMap = barriosStats.reduce((acc, curr) => {
-      acc[curr._id] = curr.count;
-      return acc;
-    }, {});
-
-    res.status(200).json({
-      distritos: distritosMap,
-      barrios: barriosMap,
-    });
-  } catch (error) {
-    console.error("Error en getMapData:", error);
-    next(error);
-  }
-};
-
-const getAdCardData = async (req, res, next) => {
-  try {
-    // 1. Recibimos el nuevo parámetro 'operation'
-    const { department, adStatus, searchZone, operation } = req.query;
-
-    // 2. Filtro de SEGURIDAD (Siempre showOnWeb: true)
-    const filter = {
-      showOnWeb: true,
-    };
-
-    // 3. Filtros opcionales básicos
-    if (department) filter.department = department;
-    if (adStatus) filter.adStatus = adStatus;
-
-    // 4. LÓGICA VENTA / ALQUILER
-    // Asumimos que en tu BD 'adType' es un string tipo "Venta de piso" o "Alquiler..."
-    if (operation) {
-      if (operation === "sale") {
-        filter.adType = { $regex: "Venta", $options: "i" };
-      } else if (operation === "rent") {
-        filter.adType = { $regex: "Alquiler", $options: "i" };
+    if (targetDepartment === "Residencial" && zone) {
+      const costaZones = ["marbella", "sotogrande", "puerto santa maria"];
+      if (costaZones.some((z) => zone.toLowerCase().includes(z))) {
+        targetDepartment = "Costa";
       }
     }
 
-    // 5. Filtro de Zona (Barrio o Distrito)
-    if (searchZone && searchZone !== "Madrid") {
-      filter.$or = [
-        { distrito: { $regex: searchZone, $options: "i" } },
-        { barrio: { $regex: searchZone, $options: "i" } },
-      ];
+    // 3. FILTRO BASE
+    const filter = {
+      showOnWeb: true,
+      department: targetDepartment,
+      adStatus: { $in: ["Activo", "En preparación"] },
+      gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
+    };
+
+    // 4. LÓGICA DE FILTRADO OMNÍVORA (Mejora inyectada)
+    if (operation && operation !== "") {
+      const isSale =
+        operation.toLowerCase() === "sale" ||
+        operation.toLowerCase() === "venta";
+
+      filter.adType = { $in: [isSale ? "Venta" : "Alquiler"] };
+      const priceField = isSale ? "sale.saleValue" : "rent.rentValue";
+
+      if (maxPrice) {
+        filter[priceField] = { $lte: Number(maxPrice), $ne: null };
+      }
+    } else {
+      // CASO "VER TODOS":
+      // Solo aplicamos el $or si el maxPrice enviado es MENOR que un valor absurdo (ej. 9 millones)
+      // para evitar filtrar innecesariamente cuando el usuario quiere ver TODO.
+      if (maxPrice && Number(maxPrice) < 9000000) {
+        filter.$or = [
+          { "sale.saleValue": { $lte: Number(maxPrice), $gt: 0 } },
+          { "rent.rentValue": { $lte: Number(maxPrice), $gt: 0 } },
+        ];
+      }
+      // Si el maxPrice es el valor máximo del slider, NO ponemos filter.$or
+      // Así MongoDB simplemente ignora el precio y devuelve todo.
     }
 
-    // Campos a seleccionar (optimización)
-    const fieldsToSelect = [
+    // 5. FILTROS DINÁMICOS DE SUPERFICIE Y TIPO
+    if (propertyType && propertyType !== "Todos") {
+      filter.adBuildingType = { $in: propertyType.split(",") };
+    }
+    if (maxSurface) {
+      filter.buildSurface = { $lte: Number(maxSurface) };
+    }
+
+    // 6. MAPEADO DE ATRIBUTOS (Restaurado al 100%)
+    if (pool === "true") filter["quality.others.swimmingPool"] = true;
+    if (garage === "true") filter["quality.parking"] = { $gt: 0 };
+    if (terrace === "true") filter["quality.others.terrace"] = true;
+    if (profitability === "true") filter.profitability = true;
+    if (coworking === "true") filter["quality.others.coworking"] = true;
+    if (smokeOutlet === "true") filter["quality.others.smokeOutlet"] = true;
+    if (implanted === "true") filter["quality.others.implanted"] = true;
+    if (separateEntrance === "true")
+      filter["quality.others.separateEntrance"] = true;
+    if (exclusiveOffice === "true")
+      filter["quality.others.exclusiveOfficeBuilding"] = true;
+    if (classicBuilding === "true")
+      filter["quality.others.classicBuilding"] = true;
+    if (mixedBuilding === "true") filter["quality.others.mixedBuilding"] = true;
+    if (reformed === "true") filter["quality.reformed"] = true;
+    if (toReform === "true") filter["quality.toReform"] = true;
+
+    // 7. LÓGICA DE ZONAS (Restaurada con Regex y ObjectIds)
+    if (
+      zone &&
+      zone.toLowerCase() !== "madrid" &&
+      zone.toLowerCase() !== "espana"
+    ) {
+      // 1. Convertimos el string "almagro,recoletos" en un array ['almagro', 'recoletos']
+      const slugsArray = zone.split(",").map((s) => s.trim().toLowerCase());
+
+      const zoneSearchDept =
+        targetDepartment === "Patrimonio" ? "Patrimonial" : targetDepartment;
+
+      // 2. Creamos una condición regex para CADA zona del array
+      const zoneConditions = slugsArray.map((slug) => {
+        const nameToSearch = slug.replace(/-/g, " ");
+        const flexiblePattern = makeDiacriticRegex(nameToSearch);
+        return { name: { $regex: new RegExp(`^${flexiblePattern}$`, "i") } };
+      });
+
+      // 3. Buscamos todas las zonas que coincidan con CUALQUIERA de los nombres ($or)
+      const matchingZones = await Zone.find({
+        zone: zoneSearchDept,
+        $or: zoneConditions, // Importante: Busca todas las zonas del array
+      })
+        .select("_id")
+        .lean();
+
+      if (matchingZones.length > 0) {
+        // 4. Inyectamos los IDs en un filtro $in para los anuncios
+        filter.zone = {
+          $in: matchingZones.map((z) => new mongoose.Types.ObjectId(z._id)),
+        };
+      } else {
+        // Si no hay ninguna zona que coincida, forzamos 0 resultados
+        filter.zone = new mongoose.Types.ObjectId();
+      }
+    }
+
+    // 8. EJECUCIÓN DE QUERIES
+    const fields = [
       "_id",
+      "slug",
       "title",
+      "zone",
+      "adReference",
       "adType",
       "sale",
       "rent",
-      "monthlyRent",
-      "barrio",
-      "distrito",
+      "adDirection",
       "images.main",
+      "images.others",
       "adBuildingType",
       "buildSurface",
       "plotSurface",
-      "quality.bedrooms",
-      "quality.bathrooms",
-      "quality.parking",
-      "quality.reformed",
-      "quality.swimmingPool",
-      "quality.others.terrace",
-      "quality.others.swimmingPool",
-    ];
+      "quality",
+      "profitability",
+      "createdAt",
+    ].join(" ");
 
-    const ads = await Ad.find(filter).select(fieldsToSelect.join(" ")).lean();
+    const statsQuery = Ad.aggregate([
+      {
+        $match: {
+          showOnWeb: true,
+          department: targetDepartment,
+          adStatus: { $in: ["Activo", "En preparación"] },
+          gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          maxPriceSale: { $max: "$sale.saleValue" },
+          maxPriceRent: { $max: "$rent.rentValue" },
+          maxSurface: { $max: "$buildSurface" },
+        },
+      },
+    ]);
 
-    res.status(200).json(ads);
+    const [totalDocs, ads, statsResult] = await Promise.all([
+      Ad.countDocuments(filter),
+      Ad.find(filter)
+        .select(fields)
+        .populate("zone", "name")
+        .lean()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      statsQuery,
+    ]);
+
+    const stats = statsResult[0] || {
+      maxPriceSale: 10000000,
+      maxPriceRent: 15000,
+      maxSurface: 2000,
+    };
+
+    // 9. FORMATEO DE RESULTADOS (Restaurado al 100%)
+    const formattedAds = ads.map((ad) => {
+      const allImages = [ad.images?.main, ...(ad.images?.others || [])].filter(
+        Boolean,
+      );
+      const isSaleOp = ad.adType && ad.adType.includes("Venta");
+      const isRentOp = ad.adType && ad.adType.includes("Alquiler");
+
+      const sPrice =
+        isSaleOp && ad.sale?.saleValue && ad.sale?.saleShowOnWeb === true
+          ? ad.sale.saleValue
+          : null;
+      const rPrice =
+        isRentOp && ad.rent?.rentValue && ad.rent?.rentShowOnWeb === true
+          ? ad.rent.rentValue
+          : null;
+
+      const activeTags = [];
+      if (sPrice) activeTags.push("Venta");
+      if (rPrice) activeTags.push("Alquiler");
+
+      return {
+        id: ad._id.toString(),
+        slug: ad.slug,
+        title: ad.title,
+        ref: ad.adReference,
+        salePrice: sPrice,
+        rentPrice: rPrice,
+        operation:
+          activeTags.length > 0
+            ? activeTags.join(" / ")
+            : ad.adType.join(" / "),
+        location:
+          (ad.adDirection?.city || "Madrid").charAt(0).toUpperCase() +
+          (ad.adDirection?.city || "Madrid").slice(1),
+        image: allImages[0] || null,
+        specs: {
+          beds: ad.quality?.bedrooms || 0,
+          bathrooms: ad.quality?.bathrooms || 0,
+          area: ad.buildSurface || ad.plotSurface || 0,
+        },
+        zoneName: ad.zone[0]?.name,
+        tags: [
+          ad.adBuildingType?.[0],
+          ad.quality?.reformed && "Reformado",
+          ad.profitability && "Rentabilidad",
+          ad.quality?.others?.exclusiveOfficeBuilding && "Oficinas",
+          ...activeTags,
+        ]
+          .filter(Boolean)
+          .slice(0, 4),
+      };
+    });
+
+    res.status(200).json({
+      data: formattedAds,
+      pagination: {
+        total: totalDocs,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(totalDocs / limit),
+      },
+      absoluteValues: {
+        maxPriceSale: stats.maxPriceSale || 10000000,
+        maxPriceRent: stats.maxPriceRent || 15000,
+        maxSurface: stats.maxSurface || 2000,
+      },
+    });
   } catch (error) {
-    console.error("Error obteniendo activos:", error);
+    console.error("Error en getFilteredAds:", error);
     next(error);
   }
 };
 
 const getHighlightAds = async (req, res, next) => {
   try {
-    const ads = await Ad.find({ featuredOnMain: true });
-    res.status(200).json(ads);
+    const ads = await Ad.find({ featuredOnMain: true })
+      .select(
+        // Añadimos 'department' a la selección
+        "title zone slug adType sale rent adDirection images quality buildSurface plotSurface department",
+      )
+      .populate("zone", "name");
+
+    const formattedAds = ads.map((ad) => {
+      // 1. MAPEADO DE CATEGORÍA (Según tus reglas de negocio)
+      const categoryMap = {
+        Residencial: "residencial",
+        Costa: "residencial",
+        Patrimonio: "patrimonio",
+        "Campos Rústicos & Activos Singulares": "otros-activos-y-zonas",
+      };
+
+      // Si por alguna razón viene "Otros", caerá en residencial por defecto o puedes manejarlo
+      const category = categoryMap[ad.department] || "residencial";
+
+      // 2. EVALUACIÓN DE ADTYPE
+      const isSaleOperation = ad.adType.includes("Venta");
+      const isRentOperation = ad.adType.includes("Alquiler");
+
+      // 3. VALIDACIÓN ESTRICTA DE PRECIOS
+      const sPrice =
+        isSaleOperation && ad.sale?.saleValue && ad.sale?.saleShowOnWeb === true
+          ? ad.sale.saleValue
+          : null;
+
+      const rPrice =
+        isRentOperation && ad.rent?.rentValue && ad.rent?.rentShowOnWeb === true
+          ? ad.rent.rentValue
+          : null;
+
+      // 4. PREPARACIÓN DE TAGS DINÁMICOS
+      const activeTags = [];
+      if (sPrice) activeTags.push("Venta");
+      if (rPrice) activeTags.push("Alquiler");
+
+      return {
+        id: ad._id.toString(),
+        slug: ad.slug,
+        title: ad.title,
+        zoneName: ad.zone[0]?.name || "",
+        category,
+        salePrice: sPrice,
+        rentPrice: rPrice,
+        operation:
+          activeTags.length > 0
+            ? activeTags.join(" / ")
+            : ad.adType.join(" / "),
+        location: ad.adDirection?.city || "Madrid",
+        image: ad.images?.main || "",
+        specs: {
+          beds: ad.quality?.bedrooms || 0,
+          area: ad.buildSurface || ad.plotSurface || 0,
+          bathrooms: ad.quality?.bathrooms || 0,
+        },
+        tags: activeTags.length > 0 ? activeTags : ad.adType,
+      };
+    });
+
+    res.status(200).json(formattedAds);
   } catch (error) {
-    console.error("Error obteniendo activos destacados:", error);
+    console.error("Error en getHighlightAds:", error);
+    next(error);
+  }
+};
+
+const getAdDetails = async (req, res, next) => {
+  try {
+    const slug = req.params.slug;
+
+    if (!slug) {
+      return res.status(400).json({ message: "Falta el slug del inmueble" });
+    }
+
+    // 1. Búsqueda con filtros y .lean() para máximo rendimiento
+    const ad = await Ad.findOne({
+      slug: slug,
+      showOnWeb: true,
+      adStatus: { $in: ["Activo", "En preparación"] },
+      gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
+    })
+      .populate("zone")
+      .populate(
+        "consultant",
+        "avatar fullName consultantEmail consultantMobileNumber",
+      )
+      .lean();
+
+    if (!ad) {
+      return res.status(404).json({ message: "Inmueble no encontrado" });
+    }
+
+    // 2. Extraer información de la zona poblada
+    const mainZone = ad.zone && ad.zone.length > 0 ? ad.zone[0] : null;
+
+    // 3. Lógica de Precios Dual (Venta / Alquiler)
+    const salePrice =
+      ad.sale?.saleShowOnWeb && ad.adType?.includes("Venta")
+        ? ad.sale.saleValue
+        : null;
+
+    const rentPrice =
+      ad.rent?.rentShowOnWeb && ad.adType?.includes("Alquiler")
+        ? ad.rent.rentValue
+        : null;
+
+    let priceLabel = "";
+    let period = "";
+
+    if (salePrice && rentPrice) {
+      priceLabel = "Venta y Alquiler";
+      period = "mes";
+    } else if (salePrice) {
+      priceLabel = "Venta";
+    } else if (rentPrice) {
+      priceLabel = "Alquiler";
+      period = "mes";
+    } else {
+      priceLabel = "Consultar";
+    }
+
+    // 4. Extracción de repercusión M2
+    const saleRepercussionM2ShowOnWeb =
+      ad.sale?.saleRepercussionM2ShowOnWeb || false;
+    const rawRepercussion = ad.sale?.saleRepercussionM2;
+    const m2Terrace = ad.m2Terrace;
+    const m2StorageSpace = ad.m2StorageSpace;
+
+    const saleRepercussionM2 =
+      saleRepercussionM2ShowOnWeb && rawRepercussion
+        ? Number(rawRepercussion)
+        : null;
+
+    // 4b. Unificación de Galería de Imágenes
+    let gallery = [];
+    if (ad.images?.main) gallery.push(ad.images.main);
+    if (ad.images?.others && Array.isArray(ad.images.others)) {
+      gallery = [...gallery, ...ad.images.others];
+    }
+
+    // 5. Mapeo Dinámico de Características
+    const othersRaw = ad.quality?.others || {};
+
+    // 5.1 Extraemos de others SOLO las claves cuyo valor sea exactamente true
+    const featuresList = Object.entries(othersRaw).reduce(
+      (acc, [key, value]) => {
+        if (value === true) {
+          acc[key] = true;
+        }
+        return acc;
+      },
+      {},
+    );
+
+    // 5.2 Evaluamos las manuales y las añadimos SOLO si son verdaderas
+    const hasPool =
+      ad.quality?.others?.swimmingPool === true ||
+      (ad.quality?.indoorPool || 0) > 0 ||
+      (ad.quality?.outdoorPool || 0) > 0;
+
+    if (hasPool) featuresList.pool = true;
+
+    const hasGarage =
+      (ad.quality?.parking || 0) > 0 || ad.quality?.others?.garage === true;
+
+    if (hasGarage) featuresList.garage = true;
+
+    const hasHeating =
+      ad.quality?.others?.centralHeating === true ||
+      ad.quality?.others?.subfloorHeating === true;
+
+    if (hasHeating) featuresList.heating = true;
+
+    // 6. Construcción del objeto final (PropertyDetail)
+    const propertyDetail = {
+      id: ad._id,
+      slug: ad.slug,
+      title: ad.title,
+      reference: ad.adReference,
+      category: ad.department,
+      subzone: mainZone ? mainZone.subzone : null,
+      zoneName: mainZone ? mainZone.name : null,
+      operation: ad.adType,
+
+      description: ad.description?.web || "Sin descripción disponible.",
+      distribution:
+        ad.description?.distribution || "Sin distribución disponible",
+
+      // Precios
+      salePrice: salePrice,
+      rentPrice: rentPrice,
+      priceLabel: priceLabel,
+      period: period,
+      saleRepercussionM2: saleRepercussionM2,
+      saleRepercussionM2ShowOnWeb: saleRepercussionM2ShowOnWeb,
+
+      // Superficies Extra
+      m2Terrace: m2Terrace,
+      m2StorageSpace: m2StorageSpace,
+
+      location: {
+        address: {
+          street: ad.adDirection?.address?.street,
+          directionNumber: ad.adDirection?.address?.directionNumber,
+          directionFloor: ad.adDirection?.address?.directionFloor,
+        },
+        postalCode: ad.adDirection?.postalCode,
+        city: ad.adDirection?.city,
+        country: ad.adDirection?.country,
+      },
+
+      specs: {
+        beds: ad.quality?.bedrooms || 0,
+        baths: ad.quality?.bathrooms || 0,
+        area: ad.buildSurface || 0,
+        plot: ad.plotSurface || 0,
+        year: ad.buildingYear,
+        floor: ad.floor || "",
+        numberOfPools:
+          (ad.quality?.indoorPool || 0) + (ad.quality?.outdoorPool || 0),
+        parkingSpots: ad.quality?.parking || 0,
+      },
+
+      // Consultor (ya filtrado por el populate)
+      consultant: ad.consultant || null,
+
+      features: featuresList, // <--- Aquí inyectamos el objeto dinámico limpio
+      images: gallery,
+      mainImage: ad.images?.main || "",
+      blueprints: ad.images?.blueprint || "",
+      video: ad.images?.media || "",
+      surfacesBox: ad.surfacesBox || [],
+      tags: [],
+    };
+
+    // 7. Tags dinámicos basados en el tipo y calidades
+    if (ad.adBuildingType && ad.adBuildingType.length > 0)
+      propertyDetail.tags.push(ad.adBuildingType[0]);
+    if (ad.quality?.reformed) propertyDetail.tags.push("Reformado");
+    if (ad.quality?.toReform) propertyDetail.tags.push("A reformar");
+
+    return res.status(200).json(propertyDetail);
+  } catch (error) {
+    console.error("Error obteniendo detalle del anuncio:", error);
+    return next(error);
+  }
+};
+
+const getActiveInventoryZones = async (req, res) => {
+  try {
+    const { department } = req.body;
+    // Buscamos anuncios activos y populamos la zona para obtener su nombre
+    const ads = await Ad.find({
+      department,
+      adStatus: { $in: ["Activo", "En preparación"] },
+      showOnWeb: true,
+      gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
+    }).populate("zone", "name");
+
+    // Extraemos nombres únicos
+    const activeNames = [
+      ...new Set(ads.flatMap((ad) => ad.zone.map((z) => z.name))),
+    ];
+
+    res.status(200).json({
+      success: true,
+      data: activeNames,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -1124,7 +1576,8 @@ module.exports = {
   webVideoSectionUpdate,
   getAdsByReference,
   updateCategoriesSection,
-  getMapData,
-  getAdCardData,
+  getFilteredAds,
   getHighlightAds,
+  getAdDetails,
+  getActiveInventoryZones,
 };

@@ -1,6 +1,4 @@
 const Zone = require("../models/zone.model");
-const fs = require("fs");
-const path = require("path");
 
 const getAllZones = async (req, res, next) => {
   try {
@@ -14,7 +12,7 @@ const getAllZones = async (req, res, next) => {
 const zonesGetResidentials = async (req, res, next) => {
   try {
     const zones = await Zone.find({
-      zone: { $nin: ["Patrimonial", "Others"] },
+      zone: { $nin: ["Patrimonial", "Others", "Costa"] },
     });
     return res.status(200).json(zones);
   } catch (err) {
@@ -41,6 +39,38 @@ const zonesGetOthers = async (req, res, next) => {
   }
 };
 
+const zonesGetCosta = async (req, res, next) => {
+  try {
+    const zones = await Zone.find({ zone: "Costa" });
+    /* console.log(zones) */
+    return res.status(200).json(zones);
+  } catch (err) {
+    return next(err);
+  }
+};
+
+const zonesGetCostaSubzone = async (req, res, next) => {
+  try {
+    const subzone = req.body.subzone;
+    const zones = await Zone.find({ zone: "Costa", subzone: subzone });
+    /* console.log(zones) */
+    return res.status(200).json(zones);
+  } catch (err) {
+    return next(err);
+  }
+};
+
+const zonesGetRusticAndSingunlar = async (req, res, next) => {
+  try {
+    const zones = await Zone.find({
+      zone: "Campos Rústicos & Activos Singulares",
+    });
+    return res.status(200).json(zones);
+  } catch (err) {
+    return next(err);
+  }
+};
+
 const zoneGetOne = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -53,17 +83,22 @@ const zoneGetOne = async (req, res, next) => {
 
 const zoneCreate = async (req, res, next) => {
   try {
+    if (Array.isArray(req.body)) {
+      const zonesCreated = await Zone.insertMany(req.body);
+      return res.status(200).json(zonesCreated);
+    }
+
     const newZone = new Zone({
       zone: req.body.zone,
+      subzone: req.body.subzone || null,
       name: req.body.name,
       id: req.body.id,
     });
 
     const zoneCreated = await newZone.save();
-
     return res.status(200).json(zoneCreated);
   } catch (err) {
-    console.log(err);
+    console.log("Error creando zona:", err);
     return next(err);
   }
 };
@@ -85,60 +120,15 @@ const zoneDelete = async (req, res, next) => {
   }
 };
 
-const barriosPath = path.join(__dirname, "../data/madrid-barrios.json");
-let taxonomiaCache = null;
-
-try {
-  const rawData = fs.readFileSync(barriosPath);
-  const geojson = JSON.parse(rawData);
-
-  taxonomiaCache = {};
-
-  geojson.features.forEach((feature) => {
-    const distrito = feature.properties.district;
-    const barrio = feature.properties.name;
-
-    // Si el distrito no existe en el objeto, lo inicializamos
-    if (!taxonomiaCache[distrito]) {
-      taxonomiaCache[distrito] = [];
-    }
-
-    // Añadimos el barrio si no está ya (por seguridad)
-    if (!taxonomiaCache[distrito].includes(barrio)) {
-      taxonomiaCache[distrito].push(barrio);
-    }
-  });
-
-  // Ordenamos alfabéticamente barrios y distritos para que se vea bonito en el CRM
-  const orderedTaxonomy = {};
-  Object.keys(taxonomiaCache)
-    .sort()
-    .forEach((key) => {
-      orderedTaxonomy[key] = taxonomiaCache[key].sort();
-    });
-  taxonomiaCache = orderedTaxonomy;
-} catch (error) {
-  console.error("❌ Error cargando madrid-barrios.json:", error.message);
-}
-
-const zonesGetTaxonomy = (req, res) => {
-  if (!taxonomiaCache) {
-    return res.status(500).json({
-      message:
-        "Error: Los datos de barrios no están disponibles en el servidor.",
-    });
-  }
-  // Devolvemos el objeto limpio al frontend
-  res.status(200).json(taxonomiaCache);
-};
-
 module.exports = {
   zonesGetResidentials,
   zonesGetPatrimonials,
   zonesGetOthers,
+  zonesGetCosta,
+  zonesGetRusticAndSingunlar,
+  zonesGetCostaSubzone,
   zoneGetOne,
   zoneCreate,
   zoneDelete,
-  zonesGetTaxonomy,
   getAllZones,
 };

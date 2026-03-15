@@ -4,13 +4,9 @@ const { deleteImage } = require("../middlewares/file.middleware");
 const mongoose = require("mongoose");
 const Contact = require("../models/contact.model");
 const Consultant = require("../models/consultant.model");
-const {
-  orderAdsAscendentBySalePrice,
-  orderAdsDescendentBySalePrice,
-  orderAdsAscendentByRentPrice,
-  orderAdsDescendentByRentPrice,
-  normalizeAdHistory,
-} = require("./utils");
+const { normalizeAdHistory } = require("../utils/utils");
+const { revalidateWeb } = require("../utils/revalidateWeb");
+const WebHome = require("../models/webHome.model");
 
 const repairAds = async (req, res, next) => {
   try {
@@ -41,19 +37,39 @@ const getAdsPaginated = async (req, res, next) => {
   try {
     const search = req.params.query;
     const params = {};
+
+    // 1. Parseo inteligente de parámetros
     new URLSearchParams(search).forEach((value, key) => {
-      params[key] = value;
+      // Limpiamos espacios en blanco de las llaves y valores
+      params[key.trim()] = value.trim();
     });
+
+    // 2. REPARACIÓN DEL DEPARTAMENTO (Caso especial Ampersand)
+    // Si detectamos que el departamento se cortó en "Campos Rústicos", lo reconstruimos.
+    let departmentName = params.department;
+    if (
+      departmentName === "Campos Rústicos" ||
+      params["Activos Singulares"] !== undefined
+    ) {
+      departmentName = "Campos Rústicos & Activos Singulares";
+    }
 
     let zoneParam = [];
     if (!!params.zone) {
-      zoneParam = params.zone.split(",");
-      zoneParam = zoneParam.map((_id) => mongoose.Types.ObjectId(_id));
+      zoneParam = params.zone
+        .split(",")
+        .map((_id) => mongoose.Types.ObjectId(_id));
     }
+
     let page = !!params.page ? parseInt(params.page) : 1;
-    let featuredOnMain = !!params.featuredOnMain ? params.featuredOnMain : true;
-    let department = !!params.department ? params.department : true;
-    let adReference = !!params.adReference ? params.adReference : true;
+
+    // 3. CORRECCIÓN DE DEFAULTS (Evitamos usar 'true' booleano en búsquedas de texto)
+    let department = departmentName || "Residencial";
+    let adReference =
+      params.adReference && params.adReference !== "true"
+        ? params.adReference
+        : null;
+
     let adType = !!params.adType
       ? params.adType.split(",")
       : ["Alquiler", "Venta"];
@@ -71,13 +87,16 @@ const getAdsPaginated = async (req, res, next) => {
           "Activos singulares",
           "Costa",
         ];
-    let hasSwimmingPool = params.swimmingPool === "true" ? true : false;
-    let hasGarage = params.garage === "true" ? true : false;
-    let hasTerrace = params.terrace === "true" ? true : false;
-    let hasexclusiveOffice =
-      params.exclusiveOfficeBuilding === "true" ? true : false;
-    let hasClassicBuilding = params.classicBuilding === "true" ? true : false;
-    let hasCoworking = params.coworking === "true" ? true : false;
+
+    // Calidades
+    let hasSwimmingPool = params.swimmingPool === "true";
+    let hasGarage = params.garage === "true";
+    let hasTerrace = params.terrace === "true";
+    let hasexclusiveOffice = params.exclusiveOfficeBuilding === "true";
+    let hasClassicBuilding = params.classicBuilding === "true";
+    let hasCoworking = params.coworking === "true";
+
+    // 4. Mantenemos tus consultas originales de topes (Min/Max)
     let minSalePrice = !!params.minSalePrice
       ? parseInt(params.minSalePrice)
       : await Ad.find({}, { "sale.saleValue": 1, _id: 0 })
@@ -108,32 +127,37 @@ const getAdsPaginated = async (req, res, next) => {
       : await Ad.find({}, { buildSurface: 1, _id: 0 })
           .sort({ buildSurface: -1 })
           .limit(1);
-    let orderByDate =
-      !!params.orderByDate && params.orderByDate === "true" ? true : false;
 
-    // --- Nuevas variables para los filtros de estado de reforma y salida de humos ---
-    // ¡Es crucial que estos nombres (params.reformed, params.toReform, params.smokeOutlet)
-    // coincidan con los nombres exactos que tu frontend envía en la URL!
-    let isReformed = params.reformed === "true" ? true : false;
-    let isToReform = params.toReform === "true" ? true : false;
-    let hasSmokeOutlet = params.smokeOutlet === "true" ? true : false;
+    let orderByDate = params.orderByDate === "true";
 
-    // Reemplazar la construcción de `query` encadenando `.and()` por un objeto de condiciones.
-    // Esto permite combinar AND y OR de forma flexible sin reescribir todo.
-    // Se inicializa con las condiciones que siempre deben aplicarse (department, showOnWeb).
+    // --- CONSTRUCCIÓN DE LA QUERY FINAL ---
+    // Importante: department debe ser el string exacto
     let andConditions = [{ department: department, showOnWeb: true }];
 
-    // --- Mover los filtros existentes a andConditions ---
-    // Aquí solo se empujan condiciones si el parámetro existe en `params`
-    if (!!params.featuredOnMain)
-      andConditions.push({ featuredOnMain: featuredOnMain });
-    if (!!params.zone) {
-      andConditions.push({ zone: { $in: zoneParam } });
+    // Lógica específica para Costa
+    if (department === "Costa") {
+      const defaultCostaSubzones = [
+        "Marbella",
+        "Sotogrande",
+        "Puerto de Santa María",
+      ];
+      if (!!params.subzone) {
+        andConditions.push({ subzone: { $in: params.subzone.split(",") } });
+      } else {
+        andConditions.push({ subzone: { $in: defaultCostaSubzones } });
+      }
     }
+
+    // Filtros dinámicos
+    if (params.featuredOnMain === "true")
+      andConditions.push({ featuredOnMain: true });
+    if (!!params.zone) andConditions.push({ zone: { $in: zoneParam } });
     if (!!params.adType) andConditions.push({ adType: { $in: adType } });
-    if (!!params.adReference) andConditions.push({ adReference: adReference }); // Usar adReference directamente
+    if (adReference) andConditions.push({ adReference: adReference }); // Solo si existe valor real
     if (!!params.adBuildingType)
       andConditions.push({ adBuildingType: { $in: adBuildingType } });
+
+    // Calidades
     if (!!params.swimmingPool)
       andConditions.push({ "quality.others.swimmingPool": hasSwimmingPool });
     if (!!params.garage)
@@ -151,13 +175,12 @@ const getAdsPaginated = async (req, res, next) => {
     if (!!params.coworking)
       andConditions.push({ "quality.others.coworking": hasCoworking });
 
-    // Lógica para rangos de precios y superficies (se mantiene como la tenías, ajustada al array)
-    // Se asume que minSalePrice, maxSalePrice, etc. ya son números o arrays de un elemento.
+    // Rangos de Superficie y Precio
     if (!!params.minSurface && !!params.maxSurface) {
       andConditions.push({
         buildSurface: { $gte: minSurface, $lte: maxSurface },
       });
-    } else {
+    } else if (minSurface[0] && maxSurface[0]) {
       andConditions.push({
         buildSurface: {
           $gte: minSurface[0].buildSurface,
@@ -166,16 +189,13 @@ const getAdsPaginated = async (req, res, next) => {
       });
     }
 
-    if (!!params.adType && adType.length === 1) {
+    if (adType.length === 1) {
       if (adType[0] === "Venta") {
         if (!!params.minSalePrice && !!params.maxSalePrice) {
           andConditions.push({
-            "sale.saleValue": {
-              $gte: minSalePrice,
-              $lte: maxSalePrice,
-            },
+            "sale.saleValue": { $gte: minSalePrice, $lte: maxSalePrice },
           });
-        } else {
+        } else if (minSalePrice[0] && maxSalePrice[0]) {
           andConditions.push({
             "sale.saleValue": {
               $gte: minSalePrice[0].sale.saleValue,
@@ -183,16 +203,12 @@ const getAdsPaginated = async (req, res, next) => {
             },
           });
         }
-      }
-      if (adType[0] === "Alquiler") {
+      } else if (adType[0] === "Alquiler") {
         if (!!params.minRentPrice && !!params.maxRentPrice) {
           andConditions.push({
-            "rent.rentValue": {
-              $gte: minRentPrice,
-              $lte: maxRentPrice,
-            },
+            "rent.rentValue": { $gte: minRentPrice, $lte: maxRentPrice },
           });
-        } else {
+        } else if (minRentPrice[0] && maxRentPrice[0]) {
           andConditions.push({
             "rent.rentValue": {
               $gte: minRentPrice[0].rent.rentValue,
@@ -202,57 +218,26 @@ const getAdsPaginated = async (req, res, next) => {
         }
       }
     }
-    // --- Fin de filtros existentes movidos ---
 
-    // --- ¡Nuevas líneas para los filtros de estado de reforma y salida de humos! ---
-    const reformedToReformOrConditions = [];
-
-    // Si 'reformed' es true en los parámetros de la URL
-    if (isReformed) {
-      reformedToReformOrConditions.push({ "quality.reformed": true });
-    }
-    // Si 'toReform' es true en los parámetros de la URL
-    if (isToReform) {
-      reformedToReformOrConditions.push({ "quality.toReform": true });
-    }
-
-    // Si al menos uno de 'reformed' o 'toReform' está activo, añadir la condición $or al array principal
-    if (reformedToReformOrConditions.length > 0) {
-      andConditions.push({ $or: reformedToReformOrConditions });
-    }
-    // Filtro para 'smokeOutlet' (es un AND, por lo que se añade directamente si es true)
-    if (hasSmokeOutlet) {
+    // Reforma
+    const reformConditions = [];
+    if (params.reformed === "true")
+      reformConditions.push({ "quality.reformed": true });
+    if (params.toReform === "true")
+      reformConditions.push({ "quality.toReform": true });
+    if (reformConditions.length > 0)
+      andConditions.push({ $or: reformConditions });
+    if (params.smokeOutlet === "true")
       andConditions.push({ "quality.others.smokeOutlet": true });
-    }
-    // --- Fin de nuevas líneas añadidas ---
 
-    // Ahora, en lugar de `const query = Ad.find();` y `query.where().and()`,
-    // usamos el array `andConditions` para construir la query final.
-    // Si `andConditions` tiene solo un elemento (e.g., `{ department: ..., showOnWeb: ... }`),
-    // lo usamos directamente. Si tiene más, los combinamos con `$and`.
-    const finalMongoQuery =
-      andConditions.length > 0 ? { $and: andConditions } : {};
+    const finalMongoQuery = { $and: andConditions };
 
-    // --- Paginación y Ordenación (se mantiene tu lógica, pero aplicada a finalMongoQuery) ---
     const adsPerPage = 30;
-    let sortOptions = {};
-
-    if (orderByDate) {
-      sortOptions = { createdAt: -1 };
-    } else {
-      // Tu lógica de ordenación existente
-      if (!!params.adType && adType.length === 1) {
-        if (adType[0] === "Alquiler") {
-          sortOptions = { "rent.rentValue": -1 };
-        } else {
-          // Asumo que si length es 1 y no es Alquiler, es Venta
-          sortOptions = { "sale.saleValue": -1 };
-        }
-      } else {
-        // Si no hay tipo específico o ambos
-        sortOptions = { "sale.saleValue": -1, "rent.rentValue": -1 };
-      }
-    }
+    let sortOptions = orderByDate
+      ? { createdAt: -1 }
+      : adType.length === 1 && adType[0] === "Alquiler"
+        ? { "rent.rentValue": -1 }
+        : { "sale.saleValue": -1 };
 
     const totalAds = await Ad.countDocuments(finalMongoQuery);
     const ads = await Ad.find(finalMongoQuery)
@@ -261,18 +246,13 @@ const getAdsPaginated = async (req, res, next) => {
       .skip((page - 1) * adsPerPage)
       .exec();
 
-    let totalPages = Math.ceil(totalAds / adsPerPage);
-    if (totalAds === 0) totalPages = 1;
-
-    const messageToSend = {
+    return res.status(200).json({
       totalAds,
-      totalPages,
+      totalPages: totalAds === 0 ? 1 : Math.ceil(totalAds / adsPerPage),
       ads,
-    };
-
-    return res.status(200).json(messageToSend);
+    });
   } catch (err) {
-    console.error("Error en getAdsPaginated:", err); // Añadir para depuración
+    console.error("Error en getAdsPaginated:", err);
     return next(err);
   }
 };
@@ -645,6 +625,8 @@ const adCreate = async (req, res, next) => {
     const sale = {
       saleValue: req.body.saleValue,
       saleShowOnWeb: req.body.saleShowOnWeb,
+      saleRepercussionM2: req.body.saleRepercussionM2,
+      saleRepercussionM2ShowOnWeb: req.body.saleRepercussionM2ShowOnWeb,
     };
 
     const rent = {
@@ -677,6 +659,7 @@ const adCreate = async (req, res, next) => {
       jobPositions: req.body.jobPositions,
       subway: req.body.subway,
       bus: req.body.bus,
+      storageRoom: req.body.storageRoom,
       others: {
         lift: req.body.lift,
         dumbwaiter: req.body.dumbwaiter,
@@ -697,6 +680,11 @@ const adCreate = async (req, res, next) => {
         terrace: req.body.terrace,
         storage: req.body.storage,
         swimmingPool: req.body.swimmingPool,
+        indoorPoolCheck: req.body.indoorPoolCheck,
+        outdoorPoolCheck: req.body.outdoorPoolCheck,
+        outdoorPoolClimatized: req.body.outdoorPoolCheck
+          ? req.body.outdoorPoolClimatized
+          : false,
         garage: req.body.garage,
         falseCeiling: req.body.falseCeiling,
         raisedFloor: req.body.raisedFloor,
@@ -710,6 +698,57 @@ const adCreate = async (req, res, next) => {
         exclusiveOfficeBuilding: req.body.exclusiveOfficeBuilding,
         classicBuilding: req.body.classicBuilding,
         coworking: req.body.coworking,
+        individualHeating: req.body.individualHeating,
+        concierge: req.body.concierge,
+        mixedBuilding: req.body.mixedBuilding,
+        accessiblePMR: req.body.accessiblePMR,
+        agricultural: req.body.agricultural,
+        hunting: req.body.hunting,
+        forestry: req.body.forestry,
+        livestock: req.body.livestock,
+        rusticOther: req.body.rusticOther,
+        warehouses: req.body.warehouses,
+        secondaryHousing: req.body.secondaryHousing,
+        equestrianFacilities: req.body.equestrianFacilities,
+        electricSupply: req.body.electricSupply,
+        pond: req.body.pond,
+        reservoir: req.body.reservoir,
+
+        recess: req.body.recess,
+        fenced: req.body.fenced,
+        porch: req.body.porch,
+        fireplace: req.body.fireplace,
+        gym: req.body.gym,
+
+        modernStyle: req.body.modernStyle,
+        classicStyle: req.body.classicStyle,
+        andaluzStyle: req.body.andaluzStyle,
+        seaViews: req.body.seaViews,
+        panoramicView: req.body.panoramicView,
+
+        golfCourseView: req.body.golfCourseView,
+        mountainView: req.body.mountainView,
+        privateGarden: req.body.privateGarden,
+        solarium: req.body.solarium,
+        outdoorKitchen: req.body.outdoorKitchen,
+
+        carPort: req.body.carPort,
+        lounge: req.body.lounge,
+        firePlace: req.body.firePlace,
+        showKitchen: req.body.showKitchen,
+        dirtyKitchen: req.body.dirtyKitchen,
+
+        spa: req.body.spa,
+        movieTheater: req.body.movieTheater,
+        wineCellar: req.body.wineCellar,
+        laundry: req.body.laundry,
+        brandedDesign: req.body.brandedDesign,
+
+        conciergeService: req.body.conciergeService,
+        gatedCommunity: req.body.gatedCommunity,
+        panicRoom: req.body.panicRoom,
+        newConstruction: req.body.newConstruction,
+        goodConservation: req.body.goodConservation,
       },
     };
 
@@ -725,6 +764,7 @@ const adCreate = async (req, res, next) => {
       internalComments: req.body.internalComments,
       adStatus: req.body.adStatus,
       showOnWeb: req.body.showOnWeb,
+      showOnWebOffMarket: req.body.showOnWebOffMarket,
       featuredOnMain: req.body.featuredOnMain,
       featuredDrawings: req.body.featuredDrawings,
       adDirection: adDirection,
@@ -732,14 +772,14 @@ const adCreate = async (req, res, next) => {
       gvOperationClose: req.body.gvOperationClose,
       owner: req.body.owner,
       consultant: req.body.consultant,
+      realStatePortals: req.body.realStatePortals,
       adBuildingType: req.body.adBuildingType,
       zone: req.body.zone,
-      distrito: req.body.distrito,
-      barrio: req.body.barrio,
       department: req.body.department,
       webSubtitle: req.body.webSubtitle,
       buildSurface: req.body.buildSurface,
-      plotSurface: req.body.plotSurface,
+      m2StorageSpace: req.body.m2StorageSpace,
+      m2Terrace: req.body.m2Terrace,
       floor: req.body.floor,
       disponibility: req.body.disponibility,
       surfacesBox: req.body.surfacesBox,
@@ -756,6 +796,7 @@ const adCreate = async (req, res, next) => {
       description,
       images,
     });
+
     // Add initial CREATION entry to changesHistory (persisted)
     try {
       let consultantInfo = null;
@@ -783,11 +824,51 @@ const adCreate = async (req, res, next) => {
 
       newAd.changesHistory = [creationEntry];
     } catch (e) {
-      // If anything goes wrong while preparing the history, continue without blocking creation
       console.error("Failed to prepare creation history entry:", e);
     }
 
     const adCreated = await newAd.save();
+
+    // =====================================================================
+    // 🔌 INTEGRACIÓN ISR: REVALIDACIÓN AUTOMÁTICA
+    // =====================================================================
+
+    // Definimos qué estados son visibles en la web
+    const validStatuses = ["Activo", "En preparación"];
+
+    // Evaluamos si el anuncio debe verse:
+    const isVisible =
+      adCreated.showOnWeb && validStatuses.includes(adCreated.adStatus);
+
+    if (isVisible) {
+      const revalidationPromises = [
+        // A. Home: Porque cambian los contadores
+        revalidateWeb("home-data"),
+
+        // B. Listado: Para que aparezca la nueva Card
+        revalidateWeb("ads-list"),
+
+        // C. MAPA: Para que la zona se active si era el primer activo
+        revalidateWeb("inventory-zones"),
+      ];
+
+      // D. Destacados: Solo si está marcado
+      if (adCreated.featuredOnMain) {
+        revalidationPromises.push(revalidateWeb("featured-ads"));
+      }
+
+      // Ejecutamos todas las revalidaciones de forma segura
+      const results = await Promise.allSettled(revalidationPromises);
+
+      results.forEach((result, index) => {
+        if (result.status === "rejected") {
+          console.error(
+            `❌ Falló revalidación en creación [${index}]:`,
+            result.reason,
+          );
+        }
+      });
+    }
 
     return res.status(200).json(adCreated);
   } catch (err) {
@@ -1011,16 +1092,22 @@ const adOthersImagesDelete = async (req, res, next) => {
 const adUpdate = async (req, res, next) => {
   try {
     const { id } = req.body;
-    const fieldsToUpdate = {};
 
-    // Load current ad to compare and to populate names for history entries
+    // 1. Cargar estado ACTUAL (antes del cambio) para comparar
     const currentAd = await Ad.findById(id)
       .populate("owner", "fullName")
       .populate("consultant", "fullName")
       .lean();
 
+    if (!currentAd) {
+      return res.status(404).json({ message: "Anuncio no encontrado" });
+    }
+
+    // 2. Mapeo EXHAUSTIVO de campos
+    const fieldsToUpdate = {};
     fieldsToUpdate.title = req.body.title;
     fieldsToUpdate.showOnWeb = req.body.showOnWeb;
+    fieldsToUpdate.showOnWebOffMarket = req.body.showOnWebOffMarket;
     fieldsToUpdate.adStatus = req.body.adStatus;
     fieldsToUpdate.adReference = req.body.adReference;
     fieldsToUpdate.internalComments = req.body.internalComments;
@@ -1030,6 +1117,7 @@ const adUpdate = async (req, res, next) => {
     fieldsToUpdate.gvOperationClose = req.body.gvOperationClose;
     fieldsToUpdate.owner = req.body.owner;
     fieldsToUpdate.consultant = req.body.consultant;
+    fieldsToUpdate.realStatePortals = req.body.realStatePortals;
     fieldsToUpdate.adBuildingType = req.body.adBuildingType;
     fieldsToUpdate.zone = req.body.zone;
     fieldsToUpdate.department = req.body.department;
@@ -1038,13 +1126,13 @@ const adUpdate = async (req, res, next) => {
     fieldsToUpdate.profitabilityValue = req.body.profitabilityValue;
     fieldsToUpdate.buildSurface = req.body.buildSurface;
     fieldsToUpdate.plotSurface = req.body.plotSurface;
+    fieldsToUpdate.m2StorageSpace = req.body.m2StorageSpace;
+    fieldsToUpdate.m2Terrace = req.body.m2Terrace;
     fieldsToUpdate.floor = req.body.floor;
     fieldsToUpdate.disponibility = req.body.disponibility;
     fieldsToUpdate.monthlyRent = req.body.monthlyRent;
     fieldsToUpdate.expenses = req.body.expenses;
     fieldsToUpdate.expensesIncluded = req.body.expensesIncluded;
-    fieldsToUpdate.distrito = req.body.distrito;
-    fieldsToUpdate.barrio = req.body.barrio;
 
     fieldsToUpdate.adDirection = {
       address: {
@@ -1058,26 +1146,24 @@ const adUpdate = async (req, res, next) => {
     };
 
     fieldsToUpdate.surfacesBox = req.body.surfacesBox;
-
     fieldsToUpdate.sale = {
       saleValue: req.body.saleValue,
       saleShowOnWeb: req.body.saleShowOnWeb,
+      saleRepercussionM2: req.body.saleRepercussionM2,
+      saleRepercussionM2ShowOnWeb: req.body.saleRepercussionM2ShowOnWeb,
     };
     fieldsToUpdate.rent = {
       rentValue: req.body.rentValue,
       rentShowOnWeb: req.body.rentShowOnWeb,
     };
-
     fieldsToUpdate.communityExpenses = {
       expensesValue: req.body.expensesValue,
       expensesShowOnWeb: req.body.expensesShowOnWeb,
     };
-
     fieldsToUpdate.ibi = {
       ibiValue: req.body.ibiValue,
       ibiShowOnWeb: req.body.ibiShowOnWeb,
     };
-
     fieldsToUpdate.trashFee = {
       trashFeeValue: req.body.trashFeeValue,
       trashFeeShowOnWeb: req.body.trashFeeShowOnWeb,
@@ -1094,6 +1180,7 @@ const adUpdate = async (req, res, next) => {
       jobPositions: req.body.jobPositions,
       subway: req.body.subway,
       bus: req.body.bus,
+      storageRoom: req.body.storageRoom,
       others: {
         lift: req.body.lift,
         dumbwaiter: req.body.dumbwaiter,
@@ -1114,6 +1201,11 @@ const adUpdate = async (req, res, next) => {
         terrace: req.body.terrace,
         storage: req.body.storage,
         swimmingPool: req.body.swimmingPool,
+        indoorPoolCheck: req.body.indoorPoolCheck,
+        outdoorPoolCheck: req.body.outdoorPoolCheck,
+        outdoorPoolClimatized: req.body.outdoorPoolCheck
+          ? req.body.outdoorPoolClimatized
+          : false,
         garage: req.body.garage,
         falseCeiling: req.body.falseCeiling,
         raisedFloor: req.body.raisedFloor,
@@ -1127,6 +1219,51 @@ const adUpdate = async (req, res, next) => {
         exclusiveOfficeBuilding: req.body.exclusiveOfficeBuilding,
         classicBuilding: req.body.classicBuilding,
         coworking: req.body.coworking,
+        individualHeating: req.body.individualHeating,
+        concierge: req.body.concierge,
+        mixedBuilding: req.body.mixedBuilding,
+        accessiblePMR: req.body.accessiblePMR,
+        agricultural: req.body.agricultural,
+        hunting: req.body.hunting,
+        forestry: req.body.forestry,
+        livestock: req.body.livestock,
+        rusticOther: req.body.rusticOther,
+        warehouses: req.body.warehouses,
+        secondaryHousing: req.body.secondaryHousing,
+        equestrianFacilities: req.body.equestrianFacilities,
+        electricSupply: req.body.electricSupply,
+        pond: req.body.pond,
+        reservoir: req.body.reservoir,
+        recess: req.body.recess,
+        fenced: req.body.fenced,
+        porch: req.body.porch,
+        fireplace: req.body.fireplace,
+        gym: req.body.gym,
+        modernStyle: req.body.modernStyle,
+        classicStyle: req.body.classicStyle,
+        andaluzStyle: req.body.andaluzStyle,
+        seaViews: req.body.seaViews,
+        panoramicView: req.body.panoramicView,
+        golfCourseView: req.body.golfCourseView,
+        mountainView: req.body.mountainView,
+        privateGarden: req.body.privateGarden,
+        solarium: req.body.solarium,
+        outdoorKitchen: req.body.outdoorKitchen,
+        carPort: req.body.carPort,
+        lounge: req.body.lounge,
+        firePlace: req.body.firePlace,
+        showKitchen: req.body.showKitchen,
+        dirtyKitchen: req.body.dirtyKitchen,
+        spa: req.body.spa,
+        movieTheater: req.body.movieTheater,
+        wineCellar: req.body.wineCellar,
+        laundry: req.body.laundry,
+        brandedDesign: req.body.brandedDesign,
+        conciergeService: req.body.conciergeService,
+        gatedCommunity: req.body.gatedCommunity,
+        panicRoom: req.body.panicRoom,
+        newConstruction: req.body.newConstruction,
+        goodConservation: req.body.goodConservation,
       },
     };
 
@@ -1136,17 +1273,15 @@ const adUpdate = async (req, res, next) => {
       distribution: req.body.distribution,
     };
 
-    // Build history entries by comparing currentAd and incoming values
+    // 3. Lógica del Historial
     const historyEntries = [];
-
-    // Resolve consultant info (prefer provided consultant, fallback to currentAd.consultant)
     let consultantInfo = null;
     if (req.body.userId) {
       try {
         const c = await Consultant.findById(req.body.userId, "fullName").lean();
         if (c) consultantInfo = { _id: c._id, fullName: c.fullName };
       } catch (e) {
-        // ignore
+        /* ignore */
       }
     }
     if (!consultantInfo && currentAd && currentAd.consultant) {
@@ -1159,7 +1294,6 @@ const adUpdate = async (req, res, next) => {
           : { _id: currentAd.consultant };
     }
 
-    // Price changes: sale
     if (req.body.saleValue !== undefined) {
       const oldSale =
         currentAd && currentAd.sale ? currentAd.sale.saleValue : null;
@@ -1181,7 +1315,6 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
-    // Price changes: rent
     if (req.body.rentValue !== undefined) {
       const oldRent =
         currentAd && currentAd.rent ? currentAd.rent.rentValue : null;
@@ -1203,7 +1336,6 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
-    // Owner change
     if (req.body.owner !== undefined) {
       const oldOwnerId =
         currentAd && currentAd.owner
@@ -1213,7 +1345,6 @@ const adUpdate = async (req, res, next) => {
           : null;
       const newOwnerId = req.body.owner ? String(req.body.owner) : null;
       if (oldOwnerId !== newOwnerId) {
-        // resolve owner names when possible
         let oldOwnerName = null;
         let newOwnerName = null;
         try {
@@ -1228,7 +1359,6 @@ const adUpdate = async (req, res, next) => {
             if (n) newOwnerName = n.fullName;
           }
         } catch (e) {}
-
         historyEntries.push({
           type: "OWNER_CHANGE",
           field: "owner",
@@ -1241,7 +1371,6 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
-    // Ad type change
     if (req.body.adType !== undefined) {
       const oldType = currentAd && currentAd.adType ? currentAd.adType : null;
       const newType = req.body.adType;
@@ -1260,7 +1389,6 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
-    // GV operation close change
     if (req.body.gvOperationClose !== undefined) {
       const oldGV = currentAd ? currentAd.gvOperationClose : null;
       const newGV = req.body.gvOperationClose;
@@ -1277,21 +1405,21 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
+    // 4. Actualización masiva
     if (req.body.updateSameRef && req.body.adReference) {
       await Ad.updateMany(
         {
           adReference: req.body.adReference,
-          _id: { $ne: req.body.id }, // para no volver a actualizar el mismo anuncio
+          _id: { $ne: id },
         },
         {
           $set: { surfacesBox: req.body.surfacesBox },
         },
       );
     }
-    // Build update operation: $set for fields, and $push for history if entries exist
-    const updateOps = { $set: fieldsToUpdate };
 
-    // If the current ad has no changesHistory, always add a synthetic CREATION entry (without consultant)
+    // 5. Update Ops e Historial Sintético
+    const updateOps = { $set: fieldsToUpdate };
     const needCreation =
       !currentAd ||
       !Array.isArray(currentAd.changesHistory) ||
@@ -1308,13 +1436,10 @@ const adUpdate = async (req, res, next) => {
         consultant: null,
         note: "Creación sintética del campo",
       };
-
-      // Ensure the creation entry is first in the pushed entries
       historyEntries.unshift(creationEntry);
     }
 
     if (historyEntries.length > 0) {
-      // If we added a creation entry we want to insert at position 0 to keep it first
       if (needCreation) {
         updateOps.$push = {
           changesHistory: { $each: historyEntries, $position: 0 },
@@ -1324,14 +1449,119 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
+    // 6. Update principal
     await Ad.findByIdAndUpdate(id, updateOps);
 
-    // Return updated ad with populated consultant/owner and normalized history
-    const updatedAd = await Ad.findById(id)
+    // 7. Regeneración de Slug y Populate
+    const updatedAdDoc = await Ad.findById(id)
       .populate("consultant", "fullName")
-      .populate("owner", "fullName")
-      .lean();
-    if (updatedAd) updatedAd.changesHistory = normalizeAdHistory(updatedAd);
+      .populate("owner", "fullName");
+    const titleChanged = currentAd.title !== req.body.title;
+    if (!updatedAdDoc.slug || titleChanged) {
+      if (titleChanged) updatedAdDoc.slug = null;
+      updatedAdDoc.markModified("title");
+      await updatedAdDoc.save();
+    }
+
+    // =====================================================================
+    // 🚀 SINCRONIZACIÓN CON WEBHOME
+    // =====================================================================
+    try {
+      const labels = [];
+      if (updatedAdDoc.sale?.saleShowOnWeb && updatedAdDoc.sale?.saleValue)
+        labels.push("Venta");
+      if (updatedAdDoc.rent?.rentShowOnWeb && updatedAdDoc.rent?.rentValue)
+        labels.push("Alquiler");
+
+      await WebHome.updateMany(
+        { "videoSection.videos.adId": id },
+        {
+          $set: {
+            "videoSection.videos.$.title": updatedAdDoc.title,
+            "videoSection.videos.$.slug": updatedAdDoc.slug,
+            "videoSection.videos.$.adReference": updatedAdDoc.adReference,
+            "videoSection.videos.$.price": {
+              sale:
+                updatedAdDoc.sale?.saleShowOnWeb && updatedAdDoc.sale.saleValue
+                  ? updatedAdDoc.sale.saleValue
+                  : null,
+              rent:
+                updatedAdDoc.rent?.rentShowOnWeb && updatedAdDoc.rent.rentValue
+                  ? updatedAdDoc.rent.rentValue
+                  : null,
+              label: labels.join(" / "),
+            },
+          },
+        },
+      );
+    } catch (syncError) {
+      console.error("Error Sync Home:", syncError);
+    }
+
+    // 8. Normalización y Revalidación
+    const updatedAd = updatedAdDoc.toObject();
+    if (typeof normalizeAdHistory === "function") {
+      updatedAd.changesHistory = normalizeAdHistory(updatedAd);
+    }
+
+    const validStatuses = ["Activo", "En preparación"];
+    const isVisibleNow =
+      updatedAd.showOnWeb && validStatuses.includes(updatedAd.adStatus);
+    const revalidationPromises = [];
+
+    // =====================================================================
+    // 🗺️ LÓGICA DE REVALIDACIÓN DEL MAPA (inventory-zones)
+    // =====================================================================
+    const zoneChanged =
+      JSON.stringify(currentAd.zone) !== JSON.stringify(req.body.zone);
+    const statusChanged = currentAd.adStatus !== req.body.adStatus;
+    const visibilityChanged = currentAd.showOnWeb !== req.body.showOnWeb;
+    const operationCloseChanged =
+      currentAd.gvOperationClose !== req.body.gvOperationClose;
+    const departmentChanged = currentAd.department !== req.body.department;
+
+    if (
+      zoneChanged ||
+      statusChanged ||
+      visibilityChanged ||
+      operationCloseChanged ||
+      departmentChanged
+    ) {
+      revalidationPromises.push(revalidateWeb("inventory-zones"));
+    }
+
+    // =====================================================================
+    // 📋 REVALIDACIONES DE LISTADO Y WEB
+    // =====================================================================
+    if (
+      isVisibleNow ||
+      currentAd.showOnWeb !== req.body.showOnWeb ||
+      currentAd.adStatus !== req.body.adStatus
+    ) {
+      revalidationPromises.push(
+        revalidateWeb("home-data"),
+        revalidateWeb("ads-list"),
+      );
+    }
+    if (
+      updatedAd.featuredOnMain ||
+      currentAd.featuredOnMain !== req.body.featuredOnMain
+    ) {
+      revalidationPromises.push(revalidateWeb("featured-ads"));
+    }
+    if (updatedAd.slug) {
+      revalidationPromises.push(revalidateWeb(`ad-${updatedAd.slug}`));
+      if (currentAd.slug && currentAd.slug !== updatedAd.slug)
+        revalidationPromises.push(revalidateWeb(`ad-${currentAd.slug}`));
+    }
+    const results = await Promise.allSettled(revalidationPromises);
+
+    results.forEach((result, index) => {
+      if (result.status === "rejected") {
+        console.error(`❌ Falló revalidación ${index}:`, result.reason);
+      }
+    });
+
     return res.status(200).json(updatedAd);
   } catch (err) {
     return next(err);
@@ -1376,11 +1606,41 @@ const adDelete = async (req, res, next) => {
     const { id } = req.params;
     let response = "";
 
-    const deleted = await Ad.findByIdAndDelete(id);
-    if (deleted) response = "Anuncio borrado de la base de datos";
-    else
-      response =
-        "No se ha podido encontrar este anuncio. ¿Estás seguro de que existe?";
+    // 1. Buscamos y Borramos
+    // adToDelete contendrá los datos del anuncio borrado (snapshot).
+    const adToDelete = await Ad.findByIdAndDelete(id);
+
+    if (!adToDelete) {
+      return res
+        .status(404)
+        .json(
+          "No se ha podido encontrar este anuncio. ¿Estás seguro de que existe?",
+        );
+    }
+
+    response = "Anuncio borrado de la base de datos";
+
+    // =====================================================================
+    // 🔌 INTEGRACIÓN ISR (BORRADO)
+    // =====================================================================
+
+    const validStatuses = ["Activo", "En preparación"];
+
+    // Verificamos si el anuncio QUE ACABAMOS DE BORRAR era visible
+    const wasVisible =
+      adToDelete.showOnWeb && validStatuses.includes(adToDelete.adStatus);
+
+    if (wasVisible) {
+      // Siempre limpiamos Home y Listado
+      await revalidateWeb("home-data");
+      await revalidateWeb("ads-list");
+
+      // Si era destacado, limpiamos esa sección
+      if (adToDelete.featuredOnMain) {
+        await revalidateWeb("featured-ads");
+      }
+    }
+    // =====================================================================
 
     return res.status(200).json(response);
   } catch (error) {

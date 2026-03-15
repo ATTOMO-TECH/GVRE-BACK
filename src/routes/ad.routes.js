@@ -71,7 +71,7 @@ router.put("/edit", adUpdate);
 router.put("/edit/sendedto", adUpdateSendedTo);
 router.put(
   "/editmanyconsultant/:currentConsultant",
-  adUpdateManyConsultantByConsultantId
+  adUpdateManyConsultantByConsultantId,
 );
 router.put("/upload/main/:id", upload.single("main"), adMainImageUpload);
 router.put("/delete/main/:id", adMainImagesDelete);
@@ -80,7 +80,7 @@ router.put("/delete/media/:id", adMediaImagesDelete);
 router.put(
   "/upload/blueprint/:id",
   upload.array("blueprint"),
-  adBlueprintImageUpload
+  adBlueprintImageUpload,
 );
 router.put("/delete/blueprint/:id", adBlueprintImagesDelete);
 router.put("/upload/others/:id", upload.array("others"), adOthersImagesUpload);

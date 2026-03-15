@@ -20,12 +20,13 @@ const {
   webInvestmentServicesUpload,
   webAssetManagementServicesUpload,
   webCommercializationServicesUpload,
-  getMapData,
-  getAdCardData,
   updateCategoriesSection,
   getHighlightAds,
   webVideoSectionUpdate,
   getAdsByReference,
+  getAdDetails,
+  getFilteredAds,
+  getActiveInventoryZones,
 } = require("../controllers/web.controller");
 
 const router = express.Router();
@@ -147,25 +148,27 @@ router.put(
 
 // NUEVA WEB:
 
+// ------------------------------------------------------------------
+
 // HOME
-
 router.put("/home/videosection/edit/:id", webVideoSectionUpdate);
-
 router.get("/home/ads/search", getAdsByReference);
+router.put("/home/categories-section/edit/:id", upload.single("image"));
 
-// CATEGORIES SECTION
-router.put(
-  "/home/categories-section/edit/:id",
-  upload.single("image"), // El frontend debe enviar el archivo con el nombre "image"
-  updateCategoriesSection,
-);
+//ACITVE ZONES
+router.post("/active-inventory-zones", getActiveInventoryZones);
 
-// MAP DATA FOR RESIDENTIAL ADS
-router.get("/map-stats", getMapData);
+//FILTERED ADS
+router.post("/filtered-ads", getFilteredAds);
 
-router.get("/ad-card-data", getAdCardData);
+// ------------------------------------------------------------------
 
 // HIGHLIGHT ADS
 router.get("/highlight-ads", getHighlightAds);
+
+// ------------------------------------------------------------------
+
+// AD DETAILS
+router.get("/ad-details/:slug", getAdDetails);
 
 module.exports = router;

@@ -14,6 +14,7 @@ const requestsSchema = new Schema(
       enum: [
         "Casa",
         "Piso",
+        "Bajo",
         "Parcela",
         "Ático",
         "Oficina",
@@ -22,6 +23,11 @@ const requestsSchema = new Schema(
         "Campo Rústico",
         "Activos singulares",
         "Costa",
+        "Nave",
+        "Suelo",
+        "Finca",
+        "Casa de Campo",
+        "Activo Singular",
       ],
     },
     requestZone: [{ type: mongoose.Types.ObjectId, ref: "zones" }],
@@ -56,7 +62,7 @@ const requestsSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 const Request = mongoose.model("requests", requestsSchema);
