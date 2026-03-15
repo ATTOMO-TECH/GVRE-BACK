@@ -1106,32 +1106,40 @@ const getFilteredAds = async (req, res, next) => {
     if (toReform === "true") filter["quality.toReform"] = true;
 
     // 7. LÓGICA DE ZONAS (Restaurada con Regex y ObjectIds)
-    if (zone && zone.toLowerCase() !== "madrid") {
+    if (
+      zone &&
+      zone.toLowerCase() !== "madrid" &&
+      zone.toLowerCase() !== "espana"
+    ) {
+      // 1. Convertimos el string "almagro,recoletos" en un array ['almagro', 'recoletos']
       const slugsArray = zone.split(",").map((s) => s.trim().toLowerCase());
+
       const zoneSearchDept =
         targetDepartment === "Patrimonio" ? "Patrimonial" : targetDepartment;
 
+      // 2. Creamos una condición regex para CADA zona del array
       const zoneConditions = slugsArray.map((slug) => {
         const nameToSearch = slug.replace(/-/g, " ");
         const flexiblePattern = makeDiacriticRegex(nameToSearch);
         return { name: { $regex: new RegExp(`^${flexiblePattern}$`, "i") } };
       });
 
+      // 3. Buscamos todas las zonas que coincidan con CUALQUIERA de los nombres ($or)
       const matchingZones = await Zone.find({
         zone: zoneSearchDept,
-        $or: zoneConditions,
+        $or: zoneConditions, // Importante: Busca todas las zonas del array
       })
         .select("_id")
         .lean();
 
       if (matchingZones.length > 0) {
+        // 4. Inyectamos los IDs en un filtro $in para los anuncios
         filter.zone = {
           $in: matchingZones.map((z) => new mongoose.Types.ObjectId(z._id)),
         };
       } else {
-        // Si el usuario buscó barrios específicos pero no existen,
-        // forzamos el array vacío (comportamiento correcto)
-        filter.zone = { $in: [new mongoose.Types.ObjectId()] };
+        // Si no hay ninguna zona que coincida, forzamos 0 resultados
+        filter.zone = new mongoose.Types.ObjectId();
       }
     }
 
@@ -1269,31 +1277,41 @@ const getFilteredAds = async (req, res, next) => {
 
 const getHighlightAds = async (req, res, next) => {
   try {
-    const ads = await Ad.find({ featuredOnMain: true }).select(
-      "title slug adType sale rent adDirection images quality buildSurface plotSurface",
-    );
+    const ads = await Ad.find({ featuredOnMain: true })
+      .select(
+        // Añadimos 'department' a la selección
+        "title zone slug adType sale rent adDirection images quality buildSurface plotSurface department",
+      )
+      .populate("zone", "name");
 
     const formattedAds = ads.map((ad) => {
-      // 1. EVALUACIÓN DE ADTYPE (La fuente de la verdad)
+      // 1. MAPEADO DE CATEGORÍA (Según tus reglas de negocio)
+      const categoryMap = {
+        Residencial: "residencial",
+        Costa: "residencial",
+        Patrimonio: "patrimonio",
+        "Campos Rústicos & Activos Singulares": "otros-activos-y-zonas",
+      };
+
+      // Si por alguna razón viene "Otros", caerá en residencial por defecto o puedes manejarlo
+      const category = categoryMap[ad.department] || "residencial";
+
+      // 2. EVALUACIÓN DE ADTYPE
       const isSaleOperation = ad.adType.includes("Venta");
       const isRentOperation = ad.adType.includes("Alquiler");
 
-      // 2. VALIDACIÓN ESTRICTA DE VENTA
-      // Puntos a evaluar: adType contiene 'Venta' + existe valor + check marcado
+      // 3. VALIDACIÓN ESTRICTA DE PRECIOS
       const sPrice =
         isSaleOperation && ad.sale?.saleValue && ad.sale?.saleShowOnWeb === true
           ? ad.sale.saleValue
           : null;
 
-      // 3. VALIDACIÓN ESTRICTA DE ALQUILER
-      // Puntos a evaluar: adType contiene 'Alquiler' + existe valor + check marcado
       const rPrice =
         isRentOperation && ad.rent?.rentValue && ad.rent?.rentShowOnWeb === true
           ? ad.rent.rentValue
           : null;
 
       // 4. PREPARACIÓN DE TAGS DINÁMICOS
-      // Solo incluimos en los tags las operaciones que realmente tienen precio validado
       const activeTags = [];
       if (sPrice) activeTags.push("Venta");
       if (rPrice) activeTags.push("Alquiler");
@@ -1302,9 +1320,10 @@ const getHighlightAds = async (req, res, next) => {
         id: ad._id.toString(),
         slug: ad.slug,
         title: ad.title,
+        zoneName: ad.zone[0]?.name || "",
+        category,
         salePrice: sPrice,
         rentPrice: rPrice,
-        // Mostramos en texto solo las operaciones validadas
         operation:
           activeTags.length > 0
             ? activeTags.join(" / ")
@@ -1347,7 +1366,7 @@ const getAdDetails = async (req, res, next) => {
         "consultant",
         "avatar fullName consultantEmail consultantMobileNumber",
       )
-      .lean(); // <--- Convierte el Mongoose Document a objeto puro JS
+      .lean();
 
     if (!ad) {
       return res.status(404).json({ message: "Inmueble no encontrado" });
