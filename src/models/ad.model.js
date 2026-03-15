@@ -18,6 +18,7 @@ const adSchema = new Schema(
       slug: "title",
       unique: true,
       permanent: true,
+      slugPaddingSize: 0,
     },
     showOnWeb: { type: Boolean, default: true },
     showOnWebOffMarket: { type: Boolean },
