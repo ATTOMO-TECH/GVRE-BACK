@@ -37,19 +37,39 @@ const getAdsPaginated = async (req, res, next) => {
   try {
     const search = req.params.query;
     const params = {};
+
+    // 1. Parseo inteligente de parámetros
     new URLSearchParams(search).forEach((value, key) => {
-      params[key] = value;
+      // Limpiamos espacios en blanco de las llaves y valores
+      params[key.trim()] = value.trim();
     });
+
+    // 2. REPARACIÓN DEL DEPARTAMENTO (Caso especial Ampersand)
+    // Si detectamos que el departamento se cortó en "Campos Rústicos", lo reconstruimos.
+    let departmentName = params.department;
+    if (
+      departmentName === "Campos Rústicos" ||
+      params["Activos Singulares"] !== undefined
+    ) {
+      departmentName = "Campos Rústicos & Activos Singulares";
+    }
 
     let zoneParam = [];
     if (!!params.zone) {
-      zoneParam = params.zone.split(",");
-      zoneParam = zoneParam.map((_id) => mongoose.Types.ObjectId(_id));
+      zoneParam = params.zone
+        .split(",")
+        .map((_id) => mongoose.Types.ObjectId(_id));
     }
+
     let page = !!params.page ? parseInt(params.page) : 1;
-    let featuredOnMain = !!params.featuredOnMain ? params.featuredOnMain : true;
-    let department = !!params.department ? params.department : true;
-    let adReference = !!params.adReference ? params.adReference : true;
+
+    // 3. CORRECCIÓN DE DEFAULTS (Evitamos usar 'true' booleano en búsquedas de texto)
+    let department = departmentName || "Residencial";
+    let adReference =
+      params.adReference && params.adReference !== "true"
+        ? params.adReference
+        : null;
+
     let adType = !!params.adType
       ? params.adType.split(",")
       : ["Alquiler", "Venta"];
@@ -67,13 +87,16 @@ const getAdsPaginated = async (req, res, next) => {
           "Activos singulares",
           "Costa",
         ];
-    let hasSwimmingPool = params.swimmingPool === "true" ? true : false;
-    let hasGarage = params.garage === "true" ? true : false;
-    let hasTerrace = params.terrace === "true" ? true : false;
-    let hasexclusiveOffice =
-      params.exclusiveOfficeBuilding === "true" ? true : false;
-    let hasClassicBuilding = params.classicBuilding === "true" ? true : false;
-    let hasCoworking = params.coworking === "true" ? true : false;
+
+    // Calidades
+    let hasSwimmingPool = params.swimmingPool === "true";
+    let hasGarage = params.garage === "true";
+    let hasTerrace = params.terrace === "true";
+    let hasexclusiveOffice = params.exclusiveOfficeBuilding === "true";
+    let hasClassicBuilding = params.classicBuilding === "true";
+    let hasCoworking = params.coworking === "true";
+
+    // 4. Mantenemos tus consultas originales de topes (Min/Max)
     let minSalePrice = !!params.minSalePrice
       ? parseInt(params.minSalePrice)
       : await Ad.find({}, { "sale.saleValue": 1, _id: 0 })
@@ -104,32 +127,37 @@ const getAdsPaginated = async (req, res, next) => {
       : await Ad.find({}, { buildSurface: 1, _id: 0 })
           .sort({ buildSurface: -1 })
           .limit(1);
-    let orderByDate =
-      !!params.orderByDate && params.orderByDate === "true" ? true : false;
 
-    // --- Nuevas variables para los filtros de estado de reforma y salida de humos ---
-    // ¡Es crucial que estos nombres (params.reformed, params.toReform, params.smokeOutlet)
-    // coincidan con los nombres exactos que tu frontend envía en la URL!
-    let isReformed = params.reformed === "true" ? true : false;
-    let isToReform = params.toReform === "true" ? true : false;
-    let hasSmokeOutlet = params.smokeOutlet === "true" ? true : false;
+    let orderByDate = params.orderByDate === "true";
 
-    // Reemplazar la construcción de `query` encadenando `.and()` por un objeto de condiciones.
-    // Esto permite combinar AND y OR de forma flexible sin reescribir todo.
-    // Se inicializa con las condiciones que siempre deben aplicarse (department, showOnWeb).
+    // --- CONSTRUCCIÓN DE LA QUERY FINAL ---
+    // Importante: department debe ser el string exacto
     let andConditions = [{ department: department, showOnWeb: true }];
 
-    // --- Mover los filtros existentes a andConditions ---
-    // Aquí solo se empujan condiciones si el parámetro existe en `params`
-    if (!!params.featuredOnMain)
-      andConditions.push({ featuredOnMain: featuredOnMain });
-    if (!!params.zone) {
-      andConditions.push({ zone: { $in: zoneParam } });
+    // Lógica específica para Costa
+    if (department === "Costa") {
+      const defaultCostaSubzones = [
+        "Marbella",
+        "Sotogrande",
+        "Puerto de Santa María",
+      ];
+      if (!!params.subzone) {
+        andConditions.push({ subzone: { $in: params.subzone.split(",") } });
+      } else {
+        andConditions.push({ subzone: { $in: defaultCostaSubzones } });
+      }
     }
+
+    // Filtros dinámicos
+    if (params.featuredOnMain === "true")
+      andConditions.push({ featuredOnMain: true });
+    if (!!params.zone) andConditions.push({ zone: { $in: zoneParam } });
     if (!!params.adType) andConditions.push({ adType: { $in: adType } });
-    if (!!params.adReference) andConditions.push({ adReference: adReference }); // Usar adReference directamente
+    if (adReference) andConditions.push({ adReference: adReference }); // Solo si existe valor real
     if (!!params.adBuildingType)
       andConditions.push({ adBuildingType: { $in: adBuildingType } });
+
+    // Calidades
     if (!!params.swimmingPool)
       andConditions.push({ "quality.others.swimmingPool": hasSwimmingPool });
     if (!!params.garage)
@@ -147,13 +175,12 @@ const getAdsPaginated = async (req, res, next) => {
     if (!!params.coworking)
       andConditions.push({ "quality.others.coworking": hasCoworking });
 
-    // Lógica para rangos de precios y superficies (se mantiene como la tenías, ajustada al array)
-    // Se asume que minSalePrice, maxSalePrice, etc. ya son números o arrays de un elemento.
+    // Rangos de Superficie y Precio
     if (!!params.minSurface && !!params.maxSurface) {
       andConditions.push({
         buildSurface: { $gte: minSurface, $lte: maxSurface },
       });
-    } else {
+    } else if (minSurface[0] && maxSurface[0]) {
       andConditions.push({
         buildSurface: {
           $gte: minSurface[0].buildSurface,
@@ -162,16 +189,13 @@ const getAdsPaginated = async (req, res, next) => {
       });
     }
 
-    if (!!params.adType && adType.length === 1) {
+    if (adType.length === 1) {
       if (adType[0] === "Venta") {
         if (!!params.minSalePrice && !!params.maxSalePrice) {
           andConditions.push({
-            "sale.saleValue": {
-              $gte: minSalePrice,
-              $lte: maxSalePrice,
-            },
+            "sale.saleValue": { $gte: minSalePrice, $lte: maxSalePrice },
           });
-        } else {
+        } else if (minSalePrice[0] && maxSalePrice[0]) {
           andConditions.push({
             "sale.saleValue": {
               $gte: minSalePrice[0].sale.saleValue,
@@ -179,16 +203,12 @@ const getAdsPaginated = async (req, res, next) => {
             },
           });
         }
-      }
-      if (adType[0] === "Alquiler") {
+      } else if (adType[0] === "Alquiler") {
         if (!!params.minRentPrice && !!params.maxRentPrice) {
           andConditions.push({
-            "rent.rentValue": {
-              $gte: minRentPrice,
-              $lte: maxRentPrice,
-            },
+            "rent.rentValue": { $gte: minRentPrice, $lte: maxRentPrice },
           });
-        } else {
+        } else if (minRentPrice[0] && maxRentPrice[0]) {
           andConditions.push({
             "rent.rentValue": {
               $gte: minRentPrice[0].rent.rentValue,
@@ -198,57 +218,26 @@ const getAdsPaginated = async (req, res, next) => {
         }
       }
     }
-    // --- Fin de filtros existentes movidos ---
 
-    // --- ¡Nuevas líneas para los filtros de estado de reforma y salida de humos! ---
-    const reformedToReformOrConditions = [];
-
-    // Si 'reformed' es true en los parámetros de la URL
-    if (isReformed) {
-      reformedToReformOrConditions.push({ "quality.reformed": true });
-    }
-    // Si 'toReform' es true en los parámetros de la URL
-    if (isToReform) {
-      reformedToReformOrConditions.push({ "quality.toReform": true });
-    }
-
-    // Si al menos uno de 'reformed' o 'toReform' está activo, añadir la condición $or al array principal
-    if (reformedToReformOrConditions.length > 0) {
-      andConditions.push({ $or: reformedToReformOrConditions });
-    }
-    // Filtro para 'smokeOutlet' (es un AND, por lo que se añade directamente si es true)
-    if (hasSmokeOutlet) {
+    // Reforma
+    const reformConditions = [];
+    if (params.reformed === "true")
+      reformConditions.push({ "quality.reformed": true });
+    if (params.toReform === "true")
+      reformConditions.push({ "quality.toReform": true });
+    if (reformConditions.length > 0)
+      andConditions.push({ $or: reformConditions });
+    if (params.smokeOutlet === "true")
       andConditions.push({ "quality.others.smokeOutlet": true });
-    }
-    // --- Fin de nuevas líneas añadidas ---
 
-    // Ahora, en lugar de `const query = Ad.find();` y `query.where().and()`,
-    // usamos el array `andConditions` para construir la query final.
-    // Si `andConditions` tiene solo un elemento (e.g., `{ department: ..., showOnWeb: ... }`),
-    // lo usamos directamente. Si tiene más, los combinamos con `$and`.
-    const finalMongoQuery =
-      andConditions.length > 0 ? { $and: andConditions } : {};
+    const finalMongoQuery = { $and: andConditions };
 
-    // --- Paginación y Ordenación (se mantiene tu lógica, pero aplicada a finalMongoQuery) ---
     const adsPerPage = 30;
-    let sortOptions = {};
-
-    if (orderByDate) {
-      sortOptions = { createdAt: -1 };
-    } else {
-      // Tu lógica de ordenación existente
-      if (!!params.adType && adType.length === 1) {
-        if (adType[0] === "Alquiler") {
-          sortOptions = { "rent.rentValue": -1 };
-        } else {
-          // Asumo que si length es 1 y no es Alquiler, es Venta
-          sortOptions = { "sale.saleValue": -1 };
-        }
-      } else {
-        // Si no hay tipo específico o ambos
-        sortOptions = { "sale.saleValue": -1, "rent.rentValue": -1 };
-      }
-    }
+    let sortOptions = orderByDate
+      ? { createdAt: -1 }
+      : adType.length === 1 && adType[0] === "Alquiler"
+        ? { "rent.rentValue": -1 }
+        : { "sale.saleValue": -1 };
 
     const totalAds = await Ad.countDocuments(finalMongoQuery);
     const ads = await Ad.find(finalMongoQuery)
@@ -257,18 +246,13 @@ const getAdsPaginated = async (req, res, next) => {
       .skip((page - 1) * adsPerPage)
       .exec();
 
-    let totalPages = Math.ceil(totalAds / adsPerPage);
-    if (totalAds === 0) totalPages = 1;
-
-    const messageToSend = {
+    return res.status(200).json({
       totalAds,
-      totalPages,
+      totalPages: totalAds === 0 ? 1 : Math.ceil(totalAds / adsPerPage),
       ads,
-    };
-
-    return res.status(200).json(messageToSend);
+    });
   } catch (err) {
-    console.error("Error en getAdsPaginated:", err); // Añadir para depuración
+    console.error("Error en getAdsPaginated:", err);
     return next(err);
   }
 };
