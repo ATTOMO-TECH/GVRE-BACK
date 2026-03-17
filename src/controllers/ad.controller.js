@@ -272,177 +272,153 @@ const adGetAll = async (req, res, next) => {
 const adGetByFilters = async (req, res, next) => {
   try {
     let limit = 100;
-
     let { department, sortField, sortOrder, page, search } = req.query;
 
-    // ELIMINA JSON.parse() aquí. Express ya te da el objeto/array.
-    let adStatusValue = req.query.adStatus;
-    let gvOperationCloseValue = req.query.gvOperationClose;
-    let adBuildingTypeValue = req.query.adBuildingType;
-    let zoneValue = req.query.zone;
-    let adTypeValue = req.query.adType;
+    // 1. Función de utilidad para extraer valores (nombres o IDs) de los filtros
+    // Esto maneja si el front envía: "Activo", ["Activo"] o [{name: "Activo"}]
+    const normalizeFilter = (val) => {
+      if (!val) return [];
+      const array = Array.isArray(val) ? val : [val];
+      return array.map((item) => {
+        if (typeof item === "object" && item !== null) {
+          return item.name || item._id;
+        }
+        return item;
+      });
+    };
 
-    department = department !== "Todos" ? department : undefined;
-
-    const queryConditions = {};
-
-    function createAccentInsensitiveRegex(str) {
+    // 2. Función para acentos (la mantenemos igual)
+    const createAccentInsensitiveRegex = (str) => {
+      if (!str) return "";
       return str
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "") // Remueve los acentos
+        .replace(/[\u0300-\u036f]/g, "")
         .replace(/a/g, "[aá]")
         .replace(/e/g, "[eé]")
         .replace(/i/g, "[ií]")
         .replace(/o/g, "[oó]")
         .replace(/u/g, "[uúü]")
-        .replace(/c/g, "[cç]") // Si necesitas otros caracteres, añádelos aquí
+        .replace(/c/g, "[cç]")
         .replace(/n/g, "[nñ]");
-    }
+    };
 
+    const queryConditions = {};
+
+    // 3. Lógica de Búsqueda (Search)
     if (search) {
-      // Tu código existente para obtener ownerIds y consultantIds...
-      const ownerIds = await Contact.find(
-        {
-          fullName: {
-            $regex: new RegExp(createAccentInsensitiveRegex(search), "i"),
-          },
-        },
-        "_id",
-      ).then((contacts) => contacts.map((contact) => contact._id));
+      const searchRegex = new RegExp(createAccentInsensitiveRegex(search), "i");
 
-      const consultantIds = await Consultant.find(
-        {
-          fullName: {
-            $regex: new RegExp(createAccentInsensitiveRegex(search), "i"),
-          },
-        },
-        "_id",
-      ).then((consultants) => consultants.map((consultant) => consultant._id));
+      // Buscamos contactos y consultores en paralelo para mejorar rendimiento
+      const [ownerIds, consultantIds] = await Promise.all([
+        Contact.find({ fullName: { $regex: searchRegex } }, "_id"),
+        Consultant.find({ fullName: { $regex: searchRegex } }, "_id"),
+      ]);
 
-      const searchParts = search.split(" ");
-      let numberPart = searchParts.pop(); // Asumimos inicialmente que el último elemento podría ser un número
+      const searchParts = search.trim().split(" ");
+      let numberPart = searchParts.length > 1 ? searchParts.pop() : "";
       let streetPart = searchParts.join(" ");
-      const isNumber = !isNaN(parseInt(numberPart, 10)); // Verificamos si es realmente un número
+      const isNumber = numberPart && !isNaN(parseInt(numberPart, 10));
 
-      // Revertimos la extracción si no era un número
-      if (!isNumber) {
-        streetPart = search; // Usar toda la búsqueda como nombre de la calle si no hay número
-        numberPart = ""; // No hay parte numérica
+      if (!isNumber && numberPart) {
+        streetPart = search;
+        numberPart = "";
       }
 
-      // Preparamos las regex para la calle y el número, insensibles a tildes y mayúsculas
       const streetRegex = new RegExp(
-        createAccentInsensitiveRegex(streetPart),
+        createAccentInsensitiveRegex(streetPart || search),
         "i",
       );
-      const numberRegex = new RegExp(numberPart, "i"); // Usado solo si isNumber es true
+      const numberRegex = new RegExp(numberPart, "i");
 
-      // Construir la condición de búsqueda para la dirección
-      let addressSearchCondition = {};
-      if (streetPart) {
-        if (isNumber) {
-          // Solo crea una condición compuesta si hay tanto una calle como un número
-          addressSearchCondition = {
-            $and: [
-              { "adDirection.address.street": { $regex: streetRegex } },
-              {
-                "adDirection.address.directionNumber": { $regex: numberRegex },
-              },
-            ],
-          };
-        } else {
-          // Si no hay número, solo busca por la calle
-          addressSearchCondition = {
-            "adDirection.address.street": { $regex: streetRegex },
-          };
-        }
-      }
+      let addressSearchCondition = streetPart
+        ? isNumber
+          ? {
+              $and: [
+                { "adDirection.address.street": { $regex: streetRegex } },
+                {
+                  "adDirection.address.directionNumber": {
+                    $regex: numberRegex,
+                  },
+                },
+              ],
+            }
+          : { "adDirection.address.street": { $regex: streetRegex } }
+        : {};
 
-      // Condiciones de búsqueda originales para otros campos
-      const originalSearchConditions = [
-        {
-          adReference: {
-            $regex: new RegExp(createAccentInsensitiveRegex(search), "i"),
-          },
-        },
-        {
-          title: {
-            $regex: new RegExp(createAccentInsensitiveRegex(search), "i"),
-          },
-        },
-        ...(ownerIds.length > 0 ? [{ owner: { $in: ownerIds } }] : []),
-        ...(consultantIds.length > 0
-          ? [{ consultant: { $in: consultantIds } }]
-          : []),
-      ];
-
-      // Combinar todas las condiciones en la consulta principal
       queryConditions.$or = [
-        ...originalSearchConditions,
+        { adReference: { $regex: searchRegex } },
+        { title: { $regex: searchRegex } },
+        ...(ownerIds.length > 0
+          ? [{ owner: { $in: ownerIds.map((c) => c._id) } }]
+          : []),
+        ...(consultantIds.length > 0
+          ? [{ consultant: { $in: consultantIds.map((c) => c._id) } }]
+          : []),
         ...(Object.keys(addressSearchCondition).length > 0
           ? [addressSearchCondition]
           : []),
       ];
     }
 
-    if (adStatusValue && adStatusValue.length > 0)
-      queryConditions.adStatus = {
-        $in: adStatusValue.map((item) => item.name),
-      };
+    // 4. Aplicación de Filtros (Corregido)
+    const statusValues = normalizeFilter(req.query.adStatus);
+    if (statusValues.length > 0)
+      queryConditions.adStatus = { $in: statusValues };
 
-    if (gvOperationCloseValue && gvOperationCloseValue.length > 0)
-      queryConditions.gvOperationClose = {
-        $in: gvOperationCloseValue.map((item) => item.name),
-      };
+    const opCloseValues = normalizeFilter(req.query.gvOperationClose);
+    if (opCloseValues.length > 0)
+      queryConditions.gvOperationClose = { $in: opCloseValues };
 
-    if (adBuildingTypeValue && adBuildingTypeValue.length > 0)
-      queryConditions.adBuildingType = {
-        $in: adBuildingTypeValue.map((item) => item.name),
-      };
+    const buildingValues = normalizeFilter(req.query.adBuildingType);
+    if (buildingValues.length > 0)
+      queryConditions.adBuildingType = { $in: buildingValues };
 
-    if (adTypeValue && adTypeValue.length > 0)
-      queryConditions.adType = {
-        $in: adTypeValue.map((item) => item.name),
-      };
+    const typeValues = normalizeFilter(req.query.adType);
+    if (typeValues.length > 0) queryConditions.adType = { $in: typeValues };
 
-    if (zoneValue && zoneValue.length > 0)
+    const zoneValues = normalizeFilter(req.query.zone);
+    if (zoneValues.length > 0) {
       queryConditions.zone = {
-        $in: zoneValue.map((item) => mongoose.Types.ObjectId(item._id)),
+        $in: zoneValues.map((id) => new mongoose.Types.ObjectId(id)),
       };
+    }
 
-    if (department) queryConditions.department = department;
+    if (department && department !== "Todos") {
+      queryConditions.department = department;
+    }
 
+    // 5. Ordenación y Paginación
     let sort = { updatedAt: -1 };
-
     if (sortField && (sortOrder === "ASC" || sortOrder === "DESC")) {
       sort = { [sortField]: sortOrder === "ASC" ? 1 : -1 };
     }
 
-    page = parseInt(page);
-    limit = parseInt(limit);
+    page = Math.max(1, parseInt(page) || 1);
+    limit = parseInt(limit) || 100;
 
-    const ads = await Ad.find(queryConditions)
-      .populate("zone", "zone name")
-      .populate("owner", "fullName")
-      .populate("consultant", "fullName")
-      .sort(sort)
-      .skip((page - 1) * limit)
-      .limit(limit);
-
-    const totalElements = await Ad.countDocuments(queryConditions);
-    const totalPages = Math.ceil(totalElements / limit);
+    // 6. Ejecución
+    const [ads, totalElements] = await Promise.all([
+      Ad.find(queryConditions)
+        .populate("zone", "zone name")
+        .populate("owner", "fullName")
+        .populate("consultant", "fullName")
+        .sort(sort)
+        .skip((page - 1) * limit)
+        .limit(limit),
+      Ad.countDocuments(queryConditions),
+    ]);
 
     return res.status(200).json({
       ads,
       pageInfo: {
         page,
-        totalPages,
+        totalPages: Math.ceil(totalElements / limit),
         totalElements,
         limit,
       },
     });
   } catch (err) {
-    console.error(err);
+    console.error("Error en adGetByFilters:", err);
     return next(err);
   }
 };
