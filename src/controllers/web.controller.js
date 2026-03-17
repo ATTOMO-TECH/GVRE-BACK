@@ -1010,7 +1010,7 @@ const getFilteredAds = async (req, res, next) => {
     // 1. DESESTRUCTURACIÓN COMPLETA DE PARÁMETROS
     const {
       page = 1,
-      limit = 9,
+      limit = 15,
       department,
       zone,
       operation, // Ahora puede ser: "sale", "rent" o undefined
