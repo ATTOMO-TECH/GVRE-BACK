@@ -1030,6 +1030,7 @@ const getFilteredAds = async (req, res, next) => {
       mixedBuilding,
       reformed,
       toReform,
+      sort, // Añadido para capturar la ordenación
     } = req.body;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -1075,8 +1076,6 @@ const getFilteredAds = async (req, res, next) => {
           { "rent.rentValue": { $lte: Number(maxPrice), $gt: 0 } },
         ];
       }
-      // Si el maxPrice es el valor máximo del slider, NO ponemos filter.$or
-      // Así MongoDB simplemente ignora el precio y devuelve todo.
     }
 
     // 5. FILTROS DINÁMICOS DE SUPERFICIE Y TIPO
@@ -1111,37 +1110,50 @@ const getFilteredAds = async (req, res, next) => {
       zone.toLowerCase() !== "madrid" &&
       zone.toLowerCase() !== "espana"
     ) {
-      // 1. Convertimos el string "almagro,recoletos" en un array ['almagro', 'recoletos']
       const slugsArray = zone.split(",").map((s) => s.trim().toLowerCase());
 
       const zoneSearchDept =
         targetDepartment === "Patrimonio" ? "Patrimonial" : targetDepartment;
 
-      // 2. Creamos una condición regex para CADA zona del array
       const zoneConditions = slugsArray.map((slug) => {
         const nameToSearch = slug.replace(/-/g, " ");
         const flexiblePattern = makeDiacriticRegex(nameToSearch);
         return { name: { $regex: new RegExp(`^${flexiblePattern}$`, "i") } };
       });
 
-      // 3. Buscamos todas las zonas que coincidan con CUALQUIERA de los nombres ($or)
       const matchingZones = await Zone.find({
         zone: zoneSearchDept,
-        $or: zoneConditions, // Importante: Busca todas las zonas del array
+        $or: zoneConditions,
       })
         .select("_id")
         .lean();
 
       if (matchingZones.length > 0) {
-        // 4. Inyectamos los IDs en un filtro $in para los anuncios
         filter.zone = {
           $in: matchingZones.map((z) => new mongoose.Types.ObjectId(z._id)),
         };
       } else {
-        // Si no hay ninguna zona que coincida, forzamos 0 resultados
         filter.zone = new mongoose.Types.ObjectId();
       }
     }
+
+    // --- NUEVA LÓGICA DE ORDENACIÓN (Mapeada a tus SORT_OPTIONS_ADS) ---
+    let sortQuery = { createdAt: -1 }; // Por defecto: Más recientes (creat-asc)
+
+    if (sort === "creat-asc") {
+      sortQuery = { createdAt: -1 }; // Más recientes (-1 es descendente, es decir, del actual hacia atrás)
+    } else if (sort === "creat-des") {
+      sortQuery = { createdAt: 1 }; // Más antiguos (1 es ascendente)
+    } else if (sort === "price-asc") {
+      // Precio A - Z (Menor a Mayor) -> Depende de si busca Alquiler o Venta
+      const isRent = operation === "rent" || operation === "alquiler";
+      sortQuery = isRent ? { "rent.rentValue": 1 } : { "sale.saleValue": 1 };
+    } else if (sort === "price-desc") {
+      // Precio Z - A (Mayor a Menor) -> Depende de si busca Alquiler o Venta
+      const isRent = operation === "rent" || operation === "alquiler";
+      sortQuery = isRent ? { "rent.rentValue": -1 } : { "sale.saleValue": -1 };
+    }
+    // -----------------------------------
 
     // 8. EJECUCIÓN DE QUERIES
     const fields = [
@@ -1189,7 +1201,7 @@ const getFilteredAds = async (req, res, next) => {
         .select(fields)
         .populate("zone", "name")
         .lean()
-        .sort({ createdAt: -1 })
+        .sort(sortQuery) // <--- Inyectamos la ordenación dinámica
         .skip(skip)
         .limit(parseInt(limit)),
       statsQuery,
@@ -1201,7 +1213,7 @@ const getFilteredAds = async (req, res, next) => {
       maxSurface: 2000,
     };
 
-    // 9. FORMATEO DE RESULTADOS (Restaurado al 100%)
+    // 9. FORMATEO DE RESULTADOS
     const formattedAds = ads.map((ad) => {
       const allImages = [ad.images?.main, ...(ad.images?.others || [])].filter(
         Boolean,
