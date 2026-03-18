@@ -27,6 +27,7 @@ const {
   getAdDetails,
   getFilteredAds,
   getActiveInventoryZones,
+  getSimilarAds,
 } = require("../controllers/web.controller");
 
 const router = express.Router();
@@ -170,5 +171,7 @@ router.get("/highlight-ads", getHighlightAds);
 
 // AD DETAILS
 router.get("/ad-details/:slug", getAdDetails);
+
+router.get("/similar/:id", getSimilarAds);
 
 module.exports = router;
