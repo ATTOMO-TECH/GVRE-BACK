@@ -1553,6 +1553,142 @@ const getActiveInventoryZones = async (req, res) => {
   }
 };
 
+const getSimilarAds = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Obtener el anuncio base para comparar
+    const currentAd = await Ad.findById(id).lean();
+
+    if (!currentAd) {
+      return res.status(404).json({ message: "Anuncio no encontrado" });
+    }
+
+    // Calcular rango de precio similar (+/- 20%)
+    const basePrice = currentAd.sale?.saleValue || 0;
+    const minPrice = basePrice * 0.8;
+    const maxPrice = basePrice * 1.2;
+
+    // Asegurarnos de que los arrays existan para evitar errores en la agregación
+    const currentZones = currentAd.zone || [];
+    const currentAdTypes = currentAd.adType || [];
+    const currentBuildingTypes = currentAd.adBuildingType || [];
+
+    // 2. Ejecutar el Aggregation Pipeline
+    const similarAds = await Ad.aggregate([
+      // PASO 1: Match obligatorio y Prioridad 1
+      {
+        $match: {
+          _id: { $ne: new mongoose.Types.ObjectId(id) }, // Excluir el anuncio actual
+          showOnWeb: true,
+          adStatus: { $in: ["En preparación", "Activo"] },
+          department: currentAd.department,
+          adType: { $in: currentAdTypes }, // Intersección: que comparta al menos un adType
+        },
+      },
+      // PASO 2: Sistema de Puntuación (Prioridades 2, 3 y 4)
+      {
+        $addFields: {
+          zoneScore: {
+            $cond: [
+              {
+                $gt: [
+                  {
+                    $size: {
+                      $setIntersection: [
+                        { $ifNull: ["$zone", []] },
+                        currentZones,
+                      ],
+                    },
+                  },
+                  0,
+                ],
+              },
+              3,
+              0,
+            ],
+          },
+          buildingTypeScore: {
+            $cond: [
+              {
+                $gt: [
+                  {
+                    $size: {
+                      $setIntersection: [
+                        { $ifNull: ["$adBuildingType", []] },
+                        currentBuildingTypes,
+                      ],
+                    },
+                  },
+                  0,
+                ],
+              },
+              1,
+              0,
+            ],
+          },
+          priceScore: {
+            $cond: [
+              {
+                $and: [
+                  { $gte: ["$sale.saleValue", minPrice] },
+                  { $lte: ["$sale.saleValue", maxPrice] },
+                ],
+              },
+              1,
+              0,
+            ],
+          },
+        },
+      },
+      // PASO 3: Sumar puntuación total
+      {
+        $addFields: {
+          totalScore: {
+            $add: ["$zoneScore", "$buildingTypeScore", "$priceScore"],
+          },
+        },
+      },
+      // PASO 4: Ordenar por puntuación (de mayor a menor)
+      {
+        $sort: { totalScore: -1 },
+      },
+      // PASO 5: Limitar a 10 resultados
+      {
+        $limit: 10,
+      },
+      // PASO 6: Lookup para "popular" las zonas (JOIN con la colección 'zones')
+      {
+        $lookup: {
+          from: "zones", // Nombre exacto de la colección en la base de datos (generalmente Mongoose lo pluraliza y en minúsculas)
+          localField: "zone", // El array de ObjectIds en tu modelo Ad
+          foreignField: "_id", // El campo por el que cruza en el modelo Zone
+          as: "zone", // El nombre del campo donde queremos guardar el resultado (sobrescribe el array de IDs por el de objetos)
+        },
+      },
+      // PASO 7: Proyección (solo devolver lo que el Frontend necesita)
+      {
+        $project: {
+          _id: 1,
+          slug: 1,
+          department: 1,
+          title: 1,
+          "sale.saleValue": 1,
+          "sale.saleShowOnWeb": 1,
+          "images.main": 1,
+          "adDirection.city": 1,
+          zone: 1, // Array de objetos completos de las zonas
+        },
+      },
+    ]);
+
+    res.status(200).json(similarAds);
+  } catch (error) {
+    console.error("Error fetching similar ads:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
 module.exports = {
   webHomeGet,
   webHomeCreate,
@@ -1580,4 +1716,5 @@ module.exports = {
   getHighlightAds,
   getAdDetails,
   getActiveInventoryZones,
+  getSimilarAds,
 };
