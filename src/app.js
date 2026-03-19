@@ -71,7 +71,9 @@ app.use(
       "https://crm-gvre-development.netlify.app",
       "https://gvre-new-web.netlify.app",
       "https://gvre-old-web.netlify.app",
-      "https://gvre-crm-front.netlify.app"
+      "https://dev-gvre-old-web.netlify.app",
+      "https://gvre-crm-front.netlify.app",
+      "https://dev-gvre-crm-front.netlify.app",
     ],
     credentials: true,
     optionsSuccessStatus: 200,
