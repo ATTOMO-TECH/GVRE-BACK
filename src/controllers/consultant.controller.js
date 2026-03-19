@@ -33,20 +33,19 @@ const consultantGetOne = async (req, res, next) => {
 
 const consultantCreate = async (req, res, next) => {
   try {
-    const avatar = req.files?.avatar[0] ? req.files.avatar[0].location : "";
-    const companyUnitLogo = req.files?.companyUnitLogo[0]
+    const avatar = req.files?.avatar?.[0] ? req.files.avatar[0].location : "";
+    const companyUnitLogo = req.files?.companyUnitLogo?.[0]
       ? req.files.companyUnitLogo[0].location
       : "";
 
-    // Support new 'offices' array field. Accepts JSON array, comma-separated string or individual office1/office2 for backward compatibility.
     let offices = [];
     if (req.body.offices) {
       if (typeof req.body.offices === "string") {
         try {
-          offices = JSON.parse(req.body.offices);
-          if (!Array.isArray(offices)) offices = [offices];
+          const parsed = JSON.parse(req.body.offices);
+          if (Array.isArray(parsed)) offices = parsed;
+          else offices = [parsed];
         } catch (e) {
-          // fallback: comma separated
           offices = req.body.offices
             .split(",")
             .map((s) => s.trim())
@@ -56,7 +55,6 @@ const consultantCreate = async (req, res, next) => {
         offices = req.body.offices;
       }
     } else {
-      // backward compatibility: build from office1 and office2 if provided
       if (req.body.office1) offices.push(req.body.office1);
       if (req.body.office2) offices.push(req.body.office2);
     }
@@ -96,24 +94,25 @@ const consultantUpdate = async (req, res, next) => {
       return next(error);
     }
 
-    // Actualización de los campos básicos
     fieldsToUpdate.fullName = req.body.fullName;
     fieldsToUpdate.consultantToken = req.body.consultantToken;
     fieldsToUpdate.consultantMobileNumber = req.body.consultantMobileNumber;
     fieldsToUpdate.consultantPhoneNumber = req.body.consultantPhoneNumber;
     fieldsToUpdate.position = req.body.position;
     fieldsToUpdate.profession = req.body.profession;
-    // Support new 'offices' array field in updates. Accept JSON string, array or comma-separated string.
+
+    // CORRECCIÓN SINTÁCTICA: El bloque 'offices' estaba mal anidado en tu código original
     let offices = [];
     if (req.body.offices) {
       if (typeof req.body.offices === "string") {
         try {
           const parsed = JSON.parse(req.body.offices);
-          if (Array.isArray(parsed))
+          if (Array.isArray(parsed)) {
             offices = parsed.map((s) => String(s).trim()).filter(Boolean);
-          else if (typeof parsed === "string") offices = [parsed.trim()];
+          } else if (typeof parsed === "string") {
+            offices = [parsed.trim()];
+          }
         } catch (e) {
-          // fallback: comma-separated
           offices = req.body.offices
             .split(",")
             .map((s) => s.trim())
@@ -123,7 +122,6 @@ const consultantUpdate = async (req, res, next) => {
         offices = req.body.offices.map((s) => String(s).trim()).filter(Boolean);
       }
     } else {
-      // backward compatibility: use office1 and office2 if provided
       if (req.body.office1) offices.push(String(req.body.office1).trim());
       if (req.body.office2) offices.push(String(req.body.office2).trim());
     }
@@ -133,127 +131,120 @@ const consultantUpdate = async (req, res, next) => {
     fieldsToUpdate.role = req.body.role;
     fieldsToUpdate.showOnWeb = req.body.showOnWeb;
 
-    if (req.body.consultantEmail) {
-      // 1. Comprueba si el email ha cambiado
-      if (req.body.consultantEmail !== consultant.consultantEmail) {
-        // 2. Si ha cambiado, busca si ya existe en otro consultor
-        const emailExists = await Consultant.findOne({
-          consultantEmail: req.body.consultantEmail,
-        });
+    if (
+      req.body.consultantEmail &&
+      req.body.consultantEmail !== consultant.consultantEmail
+    ) {
+      const emailExists = await Consultant.findOne({
+        consultantEmail: req.body.consultantEmail,
+      });
 
-        if (emailExists) {
-          return res
-            .status(409)
-            .json({ message: "El correo electrónico ya está en uso" });
-        }
-
-        // 3. Si no existe, lo añade para actualizar
-        fieldsToUpdate.consultantEmail = req.body.consultantEmail;
+      if (emailExists) {
+        return res
+          .status(409)
+          .json({ message: "El correo electrónico ya está en uso" });
       }
+      fieldsToUpdate.consultantEmail = req.body.consultantEmail;
     }
 
-    // Manejo de zonas de firma de correo electrónico
     if (req.body.consultantEmailSignZones) {
       const consultantEmailSignZones =
         typeof req.body.consultantEmailSignZones === "string"
           ? JSON.parse(req.body.consultantEmailSignZones)
           : req.body.consultantEmailSignZones;
 
-      // Inicializamos el campo de zonas si no existe
       fieldsToUpdate.consultantEmailSignZones =
         consultant.consultantEmailSignZones || {};
 
-      // Recorremos las zonas y actualizamos con los nuevos valores
       Object.keys(consultantEmailSignZones).forEach((priority) => {
+        if (!fieldsToUpdate.consultantEmailSignZones[priority]) {
+          fieldsToUpdate.consultantEmailSignZones[priority] = {};
+        }
         Object.keys(consultantEmailSignZones[priority]).forEach((zoneKey) => {
           const zoneData = consultantEmailSignZones[priority][zoneKey];
-
-          // Limpiamos los datos innecesarios y actualizamos
-          const cleanedZoneData = {
+          fieldsToUpdate.consultantEmailSignZones[priority][zoneKey] = {
             zoneId: zoneData.zoneId || zoneData._id,
             zone: zoneData.zone,
             name: zoneData.name,
-            image: zoneData.image || "", // La imagen puede estar vacía
+            image: zoneData.image || "",
           };
-
-          // Verificamos si las zonas ya existen, si no las inicializamos
-          if (!fieldsToUpdate.consultantEmailSignZones[priority]) {
-            fieldsToUpdate.consultantEmailSignZones[priority] = {};
-          }
-
-          // Actualizamos la zona específica
-          fieldsToUpdate.consultantEmailSignZones[priority][zoneKey] =
-            cleanedZoneData;
         });
       });
     }
 
-    // Manejo de archivos subidos (imágenes)
     if (req.files) {
       const { avatar, companyUnitLogo, ...backgroundImages } = req.files;
 
-      // Actualización del avatar
+      // CORRECCIÓN: Borrado en paralelo y manejando el error para no frenar el update
+      const deletePromises = [];
+
       if (avatar) {
-        if (consultant.avatar) {
-          deleteImage(consultant.avatar); // Elimina la imagen anterior si existe
-        }
-        fieldsToUpdate.avatar = avatar[0].location; // Añadir nueva imagen de avatar
+        if (consultant.avatar)
+          deletePromises.push(deleteImage(consultant.avatar));
+        fieldsToUpdate.avatar = avatar[0].location;
       }
 
-      // Actualización del logo de la unidad de la empresa
       if (companyUnitLogo) {
-        if (consultant.companyUnitLogo) {
-          deleteImage(consultant.companyUnitLogo); // Elimina la imagen anterior si existe
-        }
-        fieldsToUpdate.companyUnitLogo = companyUnitLogo[0].location; // Añadir nuevo logo
+        if (consultant.companyUnitLogo)
+          deletePromises.push(deleteImage(consultant.companyUnitLogo));
+        fieldsToUpdate.companyUnitLogo = companyUnitLogo[0].location;
       }
 
-      // Actualizamos las imágenes de las zonas si se han subido
-      Object.keys(backgroundImages).forEach((key) => {
-        const [priority, zoneKey] = key.split("_").slice(0, 2); // Tomamos solo 'high' y 'zone1'
+      if (deletePromises.length > 0) {
+        try {
+          await Promise.all(deletePromises);
+        } catch (e) {
+          console.error(
+            "Aviso: Falló el borrado de imágenes viejas (avatar/logo) del consultor:",
+            e,
+          );
+        }
+      }
 
+      Object.keys(backgroundImages).forEach((key) => {
+        const [priority, zoneKey] = key.split("_").slice(0, 2);
+
+        if (!fieldsToUpdate.consultantEmailSignZones)
+          fieldsToUpdate.consultantEmailSignZones = {};
         if (!fieldsToUpdate.consultantEmailSignZones[priority]) {
           fieldsToUpdate.consultantEmailSignZones[priority] = {};
         }
-
-        // Asegúrate de que la zona exista antes de asignar la imagen
-        if (fieldsToUpdate.consultantEmailSignZones[priority][zoneKey]) {
-          fieldsToUpdate.consultantEmailSignZones[priority][zoneKey].image =
-            backgroundImages[key][0].location; // Asigna la URL de la imagen subida
+        if (!fieldsToUpdate.consultantEmailSignZones[priority][zoneKey]) {
+          fieldsToUpdate.consultantEmailSignZones[priority][zoneKey] = {};
         }
+
+        fieldsToUpdate.consultantEmailSignZones[priority][zoneKey].image =
+          backgroundImages[key][0].location;
       });
     }
 
-    if (req.body.consultantPassword) {
-      const isSameAsHash =
-        req.body.consultantPassword === consultant.consultantPassword;
-
-      if (!isSameAsHash) {
-        // 3. Validamos esa NUEVA contraseña en texto plano
-        if (isValidPassword(req.body.consultantPassword) === false) {
-          const error = new Error(
-            "La contraseña debe contener al menos entre 8 y 16 carácteres, 1 mayúscula, 1 minúscula y 1 dígito",
-          );
-          error.status = 400;
-          return next(error);
-        }
-
-        // 4. Hasheamos la NUEVA contraseña
-        fieldsToUpdate.consultantPassword = await bcrypt.hash(
-          req.body.consultantPassword,
-          10,
+    if (
+      req.body.consultantPassword &&
+      req.body.consultantPassword !== consultant.consultantPassword
+    ) {
+      if (isValidPassword(req.body.consultantPassword) === false) {
+        const error = new Error(
+          "La contraseña debe contener al menos entre 8 y 16 carácteres, 1 mayúscula, 1 minúscula y 1 dígito",
         );
+        error.status = 400;
+        return next(error);
       }
+      fieldsToUpdate.consultantPassword = await bcrypt.hash(
+        req.body.consultantPassword,
+        10,
+      );
     }
 
-    // Actualización del consultor
     const updatedConsultant = await Consultant.findByIdAndUpdate(
       req.body.id,
-      { $set: fieldsToUpdate }, // Utilizamos $set para asegurarnos de que solo se actualicen las propiedades específicas
+      { $set: fieldsToUpdate },
       { new: true },
     );
 
-    updatedConsultant.consultantPassword = null; // No enviar la contraseña en la respuesta
+    // Evitamos mutar el documento de Mongoose directamente. Convertimos a objeto plano o forzamos undefined
+    if (updatedConsultant) {
+      updatedConsultant.consultantPassword = undefined;
+    }
 
     return res.status(200).json(updatedConsultant);
   } catch (err) {
@@ -282,14 +273,25 @@ const deleteConsultantImage = async (req, res, next) => {
     const imageToDelete = consultant.get(imageField);
 
     if (imageToDelete !== toDelete) {
-      return res.status(400).json({ message: "La imagen no coincide" });
+      return res
+        .status(400)
+        .json({
+          message: "La imagen enviada no coincide con la base de datos",
+        });
+    }
+
+    // CORRECCIÓN: Borramos de S3, pero si falla, al menos limpiamos la BD.
+    try {
+      await deleteImage(imageToDelete);
+    } catch (e) {
+      console.error(
+        "Aviso: S3 falló al borrar la imagen de firma del consultor, procediendo en BD.",
+        e,
+      );
     }
 
     consultant.set(imageField, "");
     await consultant.save();
-
-    // Elimina la imagen del bucket
-    deleteImage(imageToDelete);
 
     res.status(200).json({ message: "Imagen eliminada correctamente" });
   } catch (err) {
@@ -300,33 +302,59 @@ const deleteConsultantImage = async (req, res, next) => {
 const consultantDelete = async (req, res, next) => {
   try {
     const { id } = req.params;
-    let response = "";
 
-    const deleted = await Consultant.findByIdAndDelete(id);
-    if (deleted) response = "Consultor borrado de la base de datos";
-    else response = "No se ha podido encontrar este consultor.";
+    // CORRECCIÓN: AL IGUAL QUE EN LOS ANUNCIOS, DEBEMOS BORRAR LAS IMÁGENES AL BORRAR EL CONSULTOR
+    const consultantToDelete = await Consultant.findById(id);
 
-    return res.status(200).json(response);
+    if (!consultantToDelete) {
+      return res.status(404).json("No se ha podido encontrar este consultor.");
+    }
+
+    const imagesToClean = [];
+    if (consultantToDelete.avatar)
+      imagesToClean.push(consultantToDelete.avatar);
+    if (consultantToDelete.companyUnitLogo)
+      imagesToClean.push(consultantToDelete.companyUnitLogo);
+
+    if (imagesToClean.length > 0) {
+      try {
+        await Promise.all(imagesToClean.map((img) => deleteImage(img)));
+      } catch (e) {
+        console.error(
+          "Aviso: Error limpiando avatar/logo de S3 al borrar el consultor",
+          e,
+        );
+      }
+    }
+
+    await Consultant.findByIdAndDelete(id);
+    return res.status(200).json("Consultor borrado de la base de datos");
   } catch (error) {
     next(error);
   }
 };
 
 const getConsultantTokenById = async (req, res, next) => {
-  const consultant = await Consultant.findOne({
-    consultantEmail: req.body.consultant.consultantEmail,
-  });
-  if (
-    consultant !== null &&
-    consultant.consultantToken !== undefined &&
-    consultant.consultantToken !== ""
-  ) {
-    req.consultantToken = consultant.consultantToken;
-    req.offices = consultant.offices;
+  try {
+    const consultant = await Consultant.findOne({
+      consultantEmail: req.body.consultant?.consultantEmail,
+    });
 
-    return next();
-  } else
-    res.status(404).json({ message: "Error al recoger datos del consultor" });
+    if (
+      consultant !== null &&
+      consultant.consultantToken !== undefined &&
+      consultant.consultantToken !== ""
+    ) {
+      req.consultantToken = consultant.consultantToken;
+      req.offices = consultant.offices;
+
+      return next();
+    } else {
+      res.status(404).json({ message: "Error al recoger datos del consultor" });
+    }
+  } catch (err) {
+    next(err);
+  }
 };
 
 module.exports = {

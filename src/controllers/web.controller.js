@@ -1,4 +1,4 @@
-const { deleteImage } = require("../middlewares/file.middleware");
+const { deleteImage } = require("../middlewares/file.middleware"); // ¡CORRECCIÓN AQUÍ!
 const Ad = require("../models/ad.model");
 const WebHome = require("../models/webHome.model");
 const Consultant = require("../models/consultant.model");
@@ -9,10 +9,8 @@ const { makeDiacriticRegex } = require("../utils/utils");
 
 const webHomeGet = async (req, res, next) => {
   try {
-    // 1. Populamos para tener los datos frescos del anuncio (incluyendo checks de precio)
     const webDocs = await WebHome.find().populate({
       path: "videoSection.videos.adId",
-      // Traemos todo lo necesario para validar visibilidad y precios
       select: "adStatus showOnWeb gvOperationClose adType sale rent",
     });
 
@@ -21,19 +19,16 @@ const webHomeGet = async (req, res, next) => {
     const webHomeDoc = webDocs[0];
     const initialCount = webHomeDoc.videoSection.videos.length;
 
-    // 2. Limpieza y Validación Estricta de cada Video
     const validVideos = webHomeDoc.videoSection.videos.filter((video) => {
       const ad = video.adId;
       if (!ad) return false;
 
-      // Validación de visibilidad general
       const isVisible = ad.showOnWeb === true;
       const isActive = ["Activo", "En preparación"].includes(ad.adStatus);
       const isNotClosed = !ad.gvOperationClose || ad.gvOperationClose === "";
 
       if (!isVisible || !isActive || !isNotClosed) return false;
 
-      // --- TRIPLE VALIDACIÓN DE PRECIOS EN TIEMPO REAL ---
       const isSaleValid =
         ad.adType.includes("Venta") &&
         ad.sale?.saleValue &&
@@ -44,7 +39,6 @@ const webHomeGet = async (req, res, next) => {
         ad.rent?.rentValue &&
         ad.rent?.rentShowOnWeb === true;
 
-      // Actualizamos el objeto de precio del video con los datos frescos del anuncio poblado
       let labels = [];
       video.price.sale = isSaleValid ? ad.sale.saleValue : null;
       video.price.rent = isRentValid ? ad.rent.rentValue : null;
@@ -53,13 +47,9 @@ const webHomeGet = async (req, res, next) => {
       if (video.price.rent) labels.push("Alquiler");
       video.price.label = labels.join(" / ");
 
-      // Si después de validar no hay ningún precio disponible,
-      // podrías decidir si ocultar el video o dejarlo sin precio.
-      // Aquí asumimos que si el anuncio es visible, el video se queda.
       return true;
     });
 
-    // Si la lista cambió por seguridad, persistimos los cambios
     if (validVideos.length !== initialCount) {
       webHomeDoc.videoSection.videos = validVideos;
       await webHomeDoc.save();
@@ -67,7 +57,6 @@ const webHomeGet = async (req, res, next) => {
 
     const webData = webHomeDoc.toObject();
 
-    // 3. Conteos dinámicos (Se mantiene tu lógica actual)
     const activeFilter = {
       adStatus: { $in: ["Activo", "En preparación"] },
       showOnWeb: true,
@@ -135,11 +124,16 @@ const webHomeEdit = async (req, res, next) => {
     const { id } = req.params;
     const webHome = await WebHome.findById(id);
     const webHomeToUpdate = webHome;
-    // console.log(req.file);
     webHomeToUpdate.mainTitle = req.body.mainTitle;
     webHomeToUpdate.mainSubtitle = req.body.mainSubtitle;
     if (req.file?.bucket) {
-      deleteImage(webHomeToUpdate.portraidImage);
+      if (webHomeToUpdate.portraidImage) {
+        try {
+          await deleteImage(webHomeToUpdate.portraidImage);
+        } catch (e) {
+          console.error("Aviso: S3 falló al borrar la imagen anterior", e);
+        }
+      }
       webHomeToUpdate.portraidImage = req.file.location;
     }
     const updatedWebHome = await WebHome.findByIdAndUpdate(
@@ -220,11 +214,9 @@ const webVideoSectionUpdate = async (req, res, next) => {
       return res.status(404).json({ message: "WebHome no encontrado" });
     }
 
-    // Actualización de textos básicos
     if (req.body.title) webHome.videoSection.title = req.body.title;
     if (req.body.subtitle) webHome.videoSection.subtitle = req.body.subtitle;
 
-    // Gestión de Colección de Videos
     if (req.body.selectedAdIds && Array.isArray(req.body.selectedAdIds)) {
       if (req.body.selectedAdIds.length > 0) {
         const foundAds = await Ad.find({
@@ -238,11 +230,9 @@ const webVideoSectionUpdate = async (req, res, next) => {
             const ad = foundAds.find((a) => a._id.toString() === adId);
             if (!ad) return null;
 
-            // --- LÓGICA DE NEGOCIO ESTRICTA ---
             let priceObj = { sale: null, rent: null, label: "" };
             let labels = [];
 
-            // 1. Validación de Venta: adType + valor + check visibilidad
             const isSaleValid =
               ad.adType.includes("Venta") &&
               ad.sale?.saleValue &&
@@ -253,7 +243,6 @@ const webVideoSectionUpdate = async (req, res, next) => {
               labels.push("Venta");
             }
 
-            // 2. Validación de Alquiler: adType + valor + check visibilidad
             const isRentValid =
               ad.adType.includes("Alquiler") &&
               ad.rent?.rentValue &&
@@ -284,8 +273,6 @@ const webVideoSectionUpdate = async (req, res, next) => {
     }
 
     const updatedWebHome = await webHome.save();
-
-    // Revalidación para Next.js
     await revalidateWeb("home-data");
 
     return res.status(200).json(updatedWebHome);
@@ -297,14 +284,17 @@ const webVideoSectionUpdate = async (req, res, next) => {
 
 const webResidentialCategoryImageUpload = async (req, res, next) => {
   try {
-    // console.log(req.body);
-    // console.log(req.file);
     const { id } = req.params;
     const webHome = await WebHome.findById(id);
     const webHomeToUpdate = webHome;
     if (req.file) {
-      if (webHomeToUpdate.categoriesImages.residential)
-        deleteImage(webHomeToUpdate.categoriesImages.residential);
+      if (webHomeToUpdate.categoriesImages.residential) {
+        try {
+          await deleteImage(webHomeToUpdate.categoriesImages.residential);
+        } catch (e) {
+          console.error(e);
+        }
+      }
       webHomeToUpdate.categoriesImages.residential = req.file.location;
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
@@ -326,14 +316,17 @@ const webResidentialCategoryImageUpload = async (req, res, next) => {
 
 const webPatrimonialCategoryImageUpload = async (req, res, next) => {
   try {
-    // console.log(req.body);
-    // console.log(req.file);
     const { id } = req.params;
     const webHome = await WebHome.findById(id);
     const webHomeToUpdate = webHome;
     if (req.file) {
-      if (webHomeToUpdate.categoriesImages.patrimonial)
-        deleteImage(webHomeToUpdate.categoriesImages.patrimonial);
+      if (webHomeToUpdate.categoriesImages.patrimonial) {
+        try {
+          await deleteImage(webHomeToUpdate.categoriesImages.patrimonial);
+        } catch (e) {
+          console.error(e);
+        }
+      }
       webHomeToUpdate.categoriesImages.patrimonial = req.file.location;
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
@@ -355,14 +348,17 @@ const webPatrimonialCategoryImageUpload = async (req, res, next) => {
 
 const webArtCategoryImageUpload = async (req, res, next) => {
   try {
-    // console.log(req.body);
-    // console.log(req.file);
     const { id } = req.params;
     const webHome = await WebHome.findById(id);
     const webHomeToUpdate = webHome;
     if (req.file) {
-      if (webHomeToUpdate.categoriesImages.art)
-        deleteImage(webHomeToUpdate.categoriesImages.art);
+      if (webHomeToUpdate.categoriesImages.art) {
+        try {
+          await deleteImage(webHomeToUpdate.categoriesImages.art);
+        } catch (e) {
+          console.error(e);
+        }
+      }
       webHomeToUpdate.categoriesImages.art = req.file.location;
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
@@ -384,14 +380,17 @@ const webArtCategoryImageUpload = async (req, res, next) => {
 
 const webCatalogCategoryImageUpload = async (req, res, next) => {
   try {
-    // console.log(req.body);
-    // console.log(req.file);
     const { id } = req.params;
     const webHome = await WebHome.findById(id);
     const webHomeToUpdate = webHome;
     if (req.file) {
-      if (webHomeToUpdate.categoriesImages.catalog)
-        deleteImage(webHomeToUpdate.categoriesImages.catalog);
+      if (webHomeToUpdate.categoriesImages.catalog) {
+        try {
+          await deleteImage(webHomeToUpdate.categoriesImages.catalog);
+        } catch (e) {
+          console.error(e);
+        }
+      }
       webHomeToUpdate.categoriesImages.catalog = req.file.location;
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
@@ -413,14 +412,17 @@ const webCatalogCategoryImageUpload = async (req, res, next) => {
 
 const webCoastCategoryImageUpload = async (req, res, next) => {
   try {
-    // console.log(req.body);
-    // console.log(req.file);
     const { id } = req.params;
     const webHome = await WebHome.findById(id);
     const webHomeToUpdate = webHome;
     if (req.file) {
-      if (webHomeToUpdate.otherCategoriesImages.coast)
-        deleteImage(webHomeToUpdate.otherCategoriesImages.coast);
+      if (webHomeToUpdate.otherCategoriesImages.coast) {
+        try {
+          await deleteImage(webHomeToUpdate.otherCategoriesImages.coast);
+        } catch (e) {
+          console.error(e);
+        }
+      }
       webHomeToUpdate.otherCategoriesImages.coast = req.file.location;
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
@@ -442,14 +444,17 @@ const webCoastCategoryImageUpload = async (req, res, next) => {
 
 const webRusticCategoryImageUpload = async (req, res, next) => {
   try {
-    // console.log(req.body);
-    // console.log(req.file);
     const { id } = req.params;
     const webHome = await WebHome.findById(id);
     const webHomeToUpdate = webHome;
     if (req.file) {
-      if (webHomeToUpdate.otherCategoriesImages.rustic)
-        deleteImage(webHomeToUpdate.otherCategoriesImages.rustic);
+      if (webHomeToUpdate.otherCategoriesImages.rustic) {
+        try {
+          await deleteImage(webHomeToUpdate.otherCategoriesImages.rustic);
+        } catch (e) {
+          console.error(e);
+        }
+      }
       webHomeToUpdate.otherCategoriesImages.rustic = req.file.location;
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
@@ -471,14 +476,17 @@ const webRusticCategoryImageUpload = async (req, res, next) => {
 
 const webSingularCategoryImageUpload = async (req, res, next) => {
   try {
-    // console.log(req.body);
-    // console.log(req.file);
     const { id } = req.params;
     const webHome = await WebHome.findById(id);
     const webHomeToUpdate = webHome;
     if (req.file) {
-      if (webHomeToUpdate.otherCategoriesImages.singular)
-        deleteImage(webHomeToUpdate.otherCategoriesImages.singular);
+      if (webHomeToUpdate.otherCategoriesImages.singular) {
+        try {
+          await deleteImage(webHomeToUpdate.otherCategoriesImages.singular);
+        } catch (e) {
+          console.error(e);
+        }
+      }
       webHomeToUpdate.otherCategoriesImages.singular = req.file.location;
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
@@ -500,15 +508,18 @@ const webSingularCategoryImageUpload = async (req, res, next) => {
 
 const webInteriorismTextAndImageUpload = async (req, res, next) => {
   try {
-    // console.log(req.body);
-    // console.log(req.file);
     const { id } = req.params;
     const webHome = await WebHome.findById(id);
     const webHomeToUpdate = webHome;
     if (webHome) {
       if (req.file) {
-        if (webHomeToUpdate.sections.interiorims.image)
-          deleteImage(webHomeToUpdate.sections.interiorims.image);
+        if (webHomeToUpdate.sections.interiorims.image) {
+          try {
+            await deleteImage(webHomeToUpdate.sections.interiorims.image);
+          } catch (e) {
+            console.error(e);
+          }
+        }
         webHomeToUpdate.sections.interiorims.image = req.file.location;
       }
       webHomeToUpdate.sections.interiorims.title = req.body.title;
@@ -535,15 +546,18 @@ const webInteriorismTextAndImageUpload = async (req, res, next) => {
 
 const webSellTextAndImageUpload = async (req, res, next) => {
   try {
-    // console.log(req.body);
-    // console.log(req.file);
     const { id } = req.params;
     const webHome = await WebHome.findById(id);
     const webHomeToUpdate = webHome;
     if (webHome) {
       if (req.file) {
-        if (webHomeToUpdate.sections.sell.image)
-          deleteImage(webHomeToUpdate.sections.sell.image);
+        if (webHomeToUpdate.sections.sell.image) {
+          try {
+            await deleteImage(webHomeToUpdate.sections.sell.image);
+          } catch (e) {
+            console.error(e);
+          }
+        }
         webHomeToUpdate.sections.sell.image = req.file.location;
       }
       webHomeToUpdate.sections.sell.title = req.body.title;
@@ -569,15 +583,18 @@ const webSellTextAndImageUpload = async (req, res, next) => {
 
 const webOfficeTextAndImageUpload = async (req, res, next) => {
   try {
-    // console.log(req.body);
-    // console.log(req.file);
     const { id } = req.params;
     const webHome = await WebHome.findById(id);
     const webHomeToUpdate = webHome;
     if (webHome) {
       if (req.file) {
-        if (webHomeToUpdate.sections.offices.image)
-          deleteImage(webHomeToUpdate.sections.offices.image);
+        if (webHomeToUpdate.sections.offices.image) {
+          try {
+            await deleteImage(webHomeToUpdate.sections.offices.image);
+          } catch (e) {
+            console.error(e);
+          }
+        }
         webHomeToUpdate.sections.offices.image = req.file.location;
       }
       webHomeToUpdate.sections.offices.title = req.body.title;
@@ -609,40 +626,39 @@ const webHomeTalkWithUs = async (req, res, next) => {
     const webHomeToUpdate = webHome;
     if (webHome) {
       if (req.file) {
-        if (webHomeToUpdate.talkWithUs.contactImage)
-          deleteImage(webHomeToUpdate.talkWithUs.contactImage);
+        if (webHomeToUpdate.talkWithUs.contactImage) {
+          try {
+            await deleteImage(webHomeToUpdate.talkWithUs.contactImage);
+          } catch (e) {
+            console.error(e);
+          }
+        }
         webHomeToUpdate.talkWithUs.contactImage = req.file.location;
       }
       webHomeToUpdate.talkWithUs.titleHome = req.body.titleHome;
       webHomeToUpdate.talkWithUs.titleContact = req.body.titleContact;
 
-      // Preserve old directions to detect changes and update consultant offices
       const oldDirections = Array.isArray(webHomeToUpdate.talkWithUs.directions)
         ? webHomeToUpdate.talkWithUs.directions
         : [];
 
-      // Normalize incoming directions into an array
       let newDirections = req.body.directions;
       if (typeof newDirections === "string") {
         try {
           newDirections = JSON.parse(newDirections);
         } catch (e) {
-          // fallback: split by comma
           newDirections = newDirections.split(",").map((s) => s.trim());
         }
       }
       newDirections = Array.isArray(newDirections) ? newDirections : [];
 
       webHomeToUpdate.talkWithUs.directions = newDirections;
-
       webHomeToUpdate.talkWithUs.phones = req.body.phones;
       webHomeToUpdate.talkWithUs.email = req.body.email;
       webHomeToUpdate.talkWithUs.contactButton = req.body.contactButton;
       webHomeToUpdate.talkWithUs.descriptionContact =
         req.body.descriptionContact;
 
-      // Build replacements map by comparing old/new by index. If an entry changed,
-      // update consultant.offices entries that equal the old string and replace with the new string.
       const maxLen = Math.max(oldDirections.length, newDirections.length);
       const replacements = [];
       for (let i = 0; i < maxLen; i++) {
@@ -654,11 +670,8 @@ const webHomeTalkWithUs = async (req, res, next) => {
       }
 
       if (replacements.length > 0) {
-        // Try to run atomic updateMany operations with arrayFilters. If that fails,
-        // fall back to read-modify-write per consultant.
         try {
           for (const { from, to } of replacements) {
-            // Use updateMany with arrayFilters to replace matching array elements
             await Consultant.updateMany(
               { offices: from },
               { $set: { "offices.$[elem]": to } },
@@ -689,10 +702,8 @@ const webHomeTalkWithUs = async (req, res, next) => {
           }
         }
 
-        // Remove any office strings that are not present in the new directions
         try {
           if (Array.isArray(newDirections)) {
-            // atomic removal using $pull with $nin
             await Consultant.updateMany(
               { offices: { $elemMatch: { $nin: newDirections } } },
               { $pull: { offices: { $nin: newDirections } } },
@@ -704,7 +715,6 @@ const webHomeTalkWithUs = async (req, res, next) => {
             errPull,
           );
           try {
-            // fallback: read-modify-write
             const consultantsToFix = await Consultant.find({
               offices: { $elemMatch: { $nin: newDirections } },
             });
@@ -743,15 +753,18 @@ const webHomeTalkWithUs = async (req, res, next) => {
 
 const webDevelopmentServicesUpload = async (req, res, next) => {
   try {
-    // console.log(req.body);
-    // console.log(req.file);
     const { id } = req.params;
     const webHome = await WebHome.findById(id);
     const webHomeToUpdate = webHome;
     if (webHome) {
       if (req.file) {
-        if (webHomeToUpdate.services.development.image)
-          deleteImage(webHomeToUpdate.services.development.image);
+        if (webHomeToUpdate.services.development.image) {
+          try {
+            await deleteImage(webHomeToUpdate.services.development.image);
+          } catch (e) {
+            console.error(e);
+          }
+        }
         webHomeToUpdate.services.development.image = req.file.location;
       }
       webHomeToUpdate.services.development.title = req.body.title;
@@ -826,7 +839,6 @@ const webAssetManagementServicesUpload = async (req, res, next) => {
         webHomeToUpdate,
         { new: true },
       );
-
       return res.status(200).json(updatedWebHome);
     } else {
       return res.status(400).json({
@@ -860,7 +872,6 @@ const webCommercializationServicesUpload = async (req, res, next) => {
         webHomeToUpdate,
         { new: true },
       );
-
       return res.status(200).json(updatedWebHome);
     } else {
       return res.status(400).json({
@@ -881,8 +892,13 @@ const webInteriorismServicesUpload = async (req, res, next) => {
     const webHomeToUpdate = webHome;
     if (webHome) {
       if (req.file) {
-        if (webHomeToUpdate.services.interiorims.image)
-          deleteImage(webHomeToUpdate.services.interiorims.image);
+        if (webHomeToUpdate.services.interiorims.image) {
+          try {
+            await deleteImage(webHomeToUpdate.services.interiorims.image);
+          } catch (e) {
+            console.error(e);
+          }
+        }
         webHomeToUpdate.services.interiorims.image = req.file.location;
       }
       webHomeToUpdate.services.interiorims.title = req.body.title;
@@ -913,20 +929,10 @@ const getAdsByReference = async (req, res, next) => {
     if (!ref) return res.json([]);
 
     const ads = await Ad.find({
-      // 1. Coincidencia por referencia
       adReference: { $regex: ref, $options: "i" },
-
-      // 2. FILTRO DE ESTADO: Solo activos o en preparación
       adStatus: { $in: ["Activo", "En preparación"] },
-
-      // 3. FILTRO DE VISUALIZACIÓN EN WEB: Que estén marcados para visualizar en la web.
       showOnWeb: { $in: true },
-
-      // 4. FILTRO DE OPERACIÓN: Que no estén vendidos o alquilados
       gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
-
-      // 5. TIENE QUE TENER VIDEO
-      // Verificamos que 'images.media' exista, no sea nulo y no sea una cadena vacía
       "images.media": { $exists: true, $nin: ["", null] },
     })
       .select("adReference title _id")
@@ -945,7 +951,6 @@ const updateCategoriesSection = async (req, res, next) => {
     const { title, subtitle, key } = req.body;
     const file = req.file;
 
-    // 1. Validación de seguridad
     if (!key) {
       return res
         .status(400)
@@ -957,8 +962,6 @@ const updateCategoriesSection = async (req, res, next) => {
       return res.status(404).json({ message: "WebHome no encontrado" });
     }
 
-    // 2. Aseguramos que la estructura existe en el objeto
-    // (Esto evita errores de "Cannot read property of undefined")
     if (!webHome.categoriesSection) {
       webHome.categoriesSection = {};
     }
@@ -966,7 +969,6 @@ const updateCategoriesSection = async (req, res, next) => {
       webHome.categoriesSection[key] = {};
     }
 
-    // 3. Actualizamos el Título (solo si viene en el body)
     if (title) {
       webHome.categoriesSection[key].title = title;
     }
@@ -975,27 +977,22 @@ const updateCategoriesSection = async (req, res, next) => {
       webHome.categoriesSection[key].subtitle = subtitle;
     }
 
-    // 4. Actualizamos la Imagen (solo si viene un archivo nuevo)
     if (file) {
-      // A) LIMPIEZA: Obtenemos la imagen antigua
       const oldImageUrl = webHome.categoriesSection[key].image;
-
-      // Si existe una imagen antigua, la borramos de la nube
       if (oldImageUrl) {
-        // Lógica idéntica a tu videoSection
-        deleteImage(oldImageUrl);
+        try {
+          await deleteImage(oldImageUrl);
+        } catch (e) {
+          console.error(
+            "Aviso: S3 falló al borrar la imagen de categoría anterior",
+            e,
+          );
+        }
       }
-
-      // B) GUARDADO: Asignamos la nueva URL de DigitalOcean/S3
-      // Usamos .location porque así lo tienes configurado en tu Multer S3
       webHome.categoriesSection[key].image = file.location;
     }
 
-    // 5. Forzamos a Mongoose a detectar el cambio
-    // Al modificar propiedades dentro de un objeto anidado (Mixed),
-    // a veces Mongoose no se entera. Esto lo asegura.
     webHome.markModified("categoriesSection");
-
     const updatedWebHome = await webHome.save();
 
     return res.status(200).json(updatedWebHome);
@@ -1007,34 +1004,33 @@ const updateCategoriesSection = async (req, res, next) => {
 
 const getFilteredAds = async (req, res, next) => {
   try {
-    // 1. DESESTRUCTURACIÓN COMPLETA DE PARÁMETROS
     const {
       page = 1,
       limit = 15,
       department,
       zone,
-      operation, // Ahora puede ser: "sale", "rent" o undefined
+      operation,
       propertyType,
       maxPrice,
       maxSurface,
       pool,
       garage,
-      terrace, // Residenciales
+      terrace,
       profitability,
       coworking,
       smokeOutlet,
-      implanted, // Patrimoniales
+      implanted,
       separateEntrance,
       exclusiveOffice,
       classicBuilding,
       mixedBuilding,
       reformed,
       toReform,
+      sort,
     } = req.body;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // 2. LÓGICA DE RE-ASIGNACIÓN DE DEPARTAMENTO
     let targetDepartment =
       department === "Patrimonial" ? "Patrimonio" : department;
 
@@ -1045,7 +1041,6 @@ const getFilteredAds = async (req, res, next) => {
       }
     }
 
-    // 3. FILTRO BASE
     const filter = {
       showOnWeb: true,
       department: targetDepartment,
@@ -1053,12 +1048,10 @@ const getFilteredAds = async (req, res, next) => {
       gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
     };
 
-    // 4. LÓGICA DE FILTRADO OMNÍVORA (Mejora inyectada)
     if (operation && operation !== "") {
       const isSale =
         operation.toLowerCase() === "sale" ||
         operation.toLowerCase() === "venta";
-
       filter.adType = { $in: [isSale ? "Venta" : "Alquiler"] };
       const priceField = isSale ? "sale.saleValue" : "rent.rentValue";
 
@@ -1066,20 +1059,14 @@ const getFilteredAds = async (req, res, next) => {
         filter[priceField] = { $lte: Number(maxPrice), $ne: null };
       }
     } else {
-      // CASO "VER TODOS":
-      // Solo aplicamos el $or si el maxPrice enviado es MENOR que un valor absurdo (ej. 9 millones)
-      // para evitar filtrar innecesariamente cuando el usuario quiere ver TODO.
       if (maxPrice && Number(maxPrice) < 9000000) {
         filter.$or = [
           { "sale.saleValue": { $lte: Number(maxPrice), $gt: 0 } },
           { "rent.rentValue": { $lte: Number(maxPrice), $gt: 0 } },
         ];
       }
-      // Si el maxPrice es el valor máximo del slider, NO ponemos filter.$or
-      // Así MongoDB simplemente ignora el precio y devuelve todo.
     }
 
-    // 5. FILTROS DINÁMICOS DE SUPERFICIE Y TIPO
     if (propertyType && propertyType !== "Todos") {
       filter.adBuildingType = { $in: propertyType.split(",") };
     }
@@ -1087,7 +1074,6 @@ const getFilteredAds = async (req, res, next) => {
       filter.buildSurface = { $lte: Number(maxSurface) };
     }
 
-    // 6. MAPEADO DE ATRIBUTOS (Restaurado al 100%)
     if (pool === "true") filter["quality.others.swimmingPool"] = true;
     if (garage === "true") filter["quality.parking"] = { $gt: 0 };
     if (terrace === "true") filter["quality.others.terrace"] = true;
@@ -1105,45 +1091,51 @@ const getFilteredAds = async (req, res, next) => {
     if (reformed === "true") filter["quality.reformed"] = true;
     if (toReform === "true") filter["quality.toReform"] = true;
 
-    // 7. LÓGICA DE ZONAS (Restaurada con Regex y ObjectIds)
     if (
       zone &&
       zone.toLowerCase() !== "madrid" &&
       zone.toLowerCase() !== "espana"
     ) {
-      // 1. Convertimos el string "almagro,recoletos" en un array ['almagro', 'recoletos']
       const slugsArray = zone.split(",").map((s) => s.trim().toLowerCase());
-
       const zoneSearchDept =
         targetDepartment === "Patrimonio" ? "Patrimonial" : targetDepartment;
 
-      // 2. Creamos una condición regex para CADA zona del array
       const zoneConditions = slugsArray.map((slug) => {
         const nameToSearch = slug.replace(/-/g, " ");
         const flexiblePattern = makeDiacriticRegex(nameToSearch);
         return { name: { $regex: new RegExp(`^${flexiblePattern}$`, "i") } };
       });
 
-      // 3. Buscamos todas las zonas que coincidan con CUALQUIERA de los nombres ($or)
       const matchingZones = await Zone.find({
         zone: zoneSearchDept,
-        $or: zoneConditions, // Importante: Busca todas las zonas del array
+        $or: zoneConditions,
       })
         .select("_id")
         .lean();
 
       if (matchingZones.length > 0) {
-        // 4. Inyectamos los IDs en un filtro $in para los anuncios
         filter.zone = {
           $in: matchingZones.map((z) => new mongoose.Types.ObjectId(z._id)),
         };
       } else {
-        // Si no hay ninguna zona que coincida, forzamos 0 resultados
         filter.zone = new mongoose.Types.ObjectId();
       }
     }
 
-    // 8. EJECUCIÓN DE QUERIES
+    let sortQuery = { createdAt: -1 };
+
+    if (sort === "creat-asc") {
+      sortQuery = { createdAt: -1 };
+    } else if (sort === "creat-des") {
+      sortQuery = { createdAt: 1 };
+    } else if (sort === "price-asc") {
+      const isRent = operation === "rent" || operation === "alquiler";
+      sortQuery = isRent ? { "rent.rentValue": 1 } : { "sale.saleValue": 1 };
+    } else if (sort === "price-desc") {
+      const isRent = operation === "rent" || operation === "alquiler";
+      sortQuery = isRent ? { "rent.rentValue": -1 } : { "sale.saleValue": -1 };
+    }
+
     const fields = [
       "_id",
       "slug",
@@ -1189,7 +1181,7 @@ const getFilteredAds = async (req, res, next) => {
         .select(fields)
         .populate("zone", "name")
         .lean()
-        .sort({ createdAt: -1 })
+        .sort(sortQuery)
         .skip(skip)
         .limit(parseInt(limit)),
       statsQuery,
@@ -1201,7 +1193,6 @@ const getFilteredAds = async (req, res, next) => {
       maxSurface: 2000,
     };
 
-    // 9. FORMATEO DE RESULTADOS (Restaurado al 100%)
     const formattedAds = ads.map((ad) => {
       const allImages = [ad.images?.main, ...(ad.images?.others || [])].filter(
         Boolean,
@@ -1279,13 +1270,11 @@ const getHighlightAds = async (req, res, next) => {
   try {
     const ads = await Ad.find({ featuredOnMain: true })
       .select(
-        // Añadimos 'department' a la selección
         "title zone slug adType sale rent adDirection images quality buildSurface plotSurface department",
       )
       .populate("zone", "name");
 
     const formattedAds = ads.map((ad) => {
-      // 1. MAPEADO DE CATEGORÍA (Según tus reglas de negocio)
       const categoryMap = {
         Residencial: "residencial",
         Costa: "residencial",
@@ -1293,25 +1282,19 @@ const getHighlightAds = async (req, res, next) => {
         "Campos Rústicos & Activos Singulares": "otros-activos-y-zonas",
       };
 
-      // Si por alguna razón viene "Otros", caerá en residencial por defecto o puedes manejarlo
       const category = categoryMap[ad.department] || "residencial";
-
-      // 2. EVALUACIÓN DE ADTYPE
       const isSaleOperation = ad.adType.includes("Venta");
       const isRentOperation = ad.adType.includes("Alquiler");
 
-      // 3. VALIDACIÓN ESTRICTA DE PRECIOS
       const sPrice =
         isSaleOperation && ad.sale?.saleValue && ad.sale?.saleShowOnWeb === true
           ? ad.sale.saleValue
           : null;
-
       const rPrice =
         isRentOperation && ad.rent?.rentValue && ad.rent?.rentShowOnWeb === true
           ? ad.rent.rentValue
           : null;
 
-      // 4. PREPARACIÓN DE TAGS DINÁMICOS
       const activeTags = [];
       if (sPrice) activeTags.push("Venta");
       if (rPrice) activeTags.push("Alquiler");
@@ -1354,7 +1337,6 @@ const getAdDetails = async (req, res, next) => {
       return res.status(400).json({ message: "Falta el slug del inmueble" });
     }
 
-    // 1. Búsqueda con filtros y .lean() para máximo rendimiento
     const ad = await Ad.findOne({
       slug: slug,
       showOnWeb: true,
@@ -1372,15 +1354,12 @@ const getAdDetails = async (req, res, next) => {
       return res.status(404).json({ message: "Inmueble no encontrado" });
     }
 
-    // 2. Extraer información de la zona poblada
     const mainZone = ad.zone && ad.zone.length > 0 ? ad.zone[0] : null;
 
-    // 3. Lógica de Precios Dual (Venta / Alquiler)
     const salePrice =
       ad.sale?.saleShowOnWeb && ad.adType?.includes("Venta")
         ? ad.sale.saleValue
         : null;
-
     const rentPrice =
       ad.rent?.rentShowOnWeb && ad.adType?.includes("Alquiler")
         ? ad.rent.rentValue
@@ -1401,7 +1380,6 @@ const getAdDetails = async (req, res, next) => {
       priceLabel = "Consultar";
     }
 
-    // 4. Extracción de repercusión M2
     const saleRepercussionM2ShowOnWeb =
       ad.sale?.saleRepercussionM2ShowOnWeb || false;
     const rawRepercussion = ad.sale?.saleRepercussionM2;
@@ -1413,17 +1391,14 @@ const getAdDetails = async (req, res, next) => {
         ? Number(rawRepercussion)
         : null;
 
-    // 4b. Unificación de Galería de Imágenes
     let gallery = [];
     if (ad.images?.main) gallery.push(ad.images.main);
     if (ad.images?.others && Array.isArray(ad.images.others)) {
       gallery = [...gallery, ...ad.images.others];
     }
 
-    // 5. Mapeo Dinámico de Características
     const othersRaw = ad.quality?.others || {};
 
-    // 5.1 Extraemos de others SOLO las claves cuyo valor sea exactamente true
     const featuresList = Object.entries(othersRaw).reduce(
       (acc, [key, value]) => {
         if (value === true) {
@@ -1434,26 +1409,21 @@ const getAdDetails = async (req, res, next) => {
       {},
     );
 
-    // 5.2 Evaluamos las manuales y las añadimos SOLO si son verdaderas
     const hasPool =
       ad.quality?.others?.swimmingPool === true ||
       (ad.quality?.indoorPool || 0) > 0 ||
       (ad.quality?.outdoorPool || 0) > 0;
-
     if (hasPool) featuresList.pool = true;
 
     const hasGarage =
       (ad.quality?.parking || 0) > 0 || ad.quality?.others?.garage === true;
-
     if (hasGarage) featuresList.garage = true;
 
     const hasHeating =
       ad.quality?.others?.centralHeating === true ||
       ad.quality?.others?.subfloorHeating === true;
-
     if (hasHeating) featuresList.heating = true;
 
-    // 6. Construcción del objeto final (PropertyDetail)
     const propertyDetail = {
       id: ad._id,
       slug: ad.slug,
@@ -1463,23 +1433,17 @@ const getAdDetails = async (req, res, next) => {
       subzone: mainZone ? mainZone.subzone : null,
       zoneName: mainZone ? mainZone.name : null,
       operation: ad.adType,
-
       description: ad.description?.web || "Sin descripción disponible.",
       distribution:
         ad.description?.distribution || "Sin distribución disponible",
-
-      // Precios
       salePrice: salePrice,
       rentPrice: rentPrice,
       priceLabel: priceLabel,
       period: period,
       saleRepercussionM2: saleRepercussionM2,
       saleRepercussionM2ShowOnWeb: saleRepercussionM2ShowOnWeb,
-
-      // Superficies Extra
       m2Terrace: m2Terrace,
       m2StorageSpace: m2StorageSpace,
-
       location: {
         address: {
           street: ad.adDirection?.address?.street,
@@ -1490,7 +1454,6 @@ const getAdDetails = async (req, res, next) => {
         city: ad.adDirection?.city,
         country: ad.adDirection?.country,
       },
-
       specs: {
         beds: ad.quality?.bedrooms || 0,
         baths: ad.quality?.bathrooms || 0,
@@ -1502,11 +1465,8 @@ const getAdDetails = async (req, res, next) => {
           (ad.quality?.indoorPool || 0) + (ad.quality?.outdoorPool || 0),
         parkingSpots: ad.quality?.parking || 0,
       },
-
-      // Consultor (ya filtrado por el populate)
       consultant: ad.consultant || null,
-
-      features: featuresList, // <--- Aquí inyectamos el objeto dinámico limpio
+      features: featuresList,
       images: gallery,
       mainImage: ad.images?.main || "",
       blueprints: ad.images?.blueprint || "",
@@ -1515,7 +1475,6 @@ const getAdDetails = async (req, res, next) => {
       tags: [],
     };
 
-    // 7. Tags dinámicos basados en el tipo y calidades
     if (ad.adBuildingType && ad.adBuildingType.length > 0)
       propertyDetail.tags.push(ad.adBuildingType[0]);
     if (ad.quality?.reformed) propertyDetail.tags.push("Reformado");
@@ -1531,7 +1490,6 @@ const getAdDetails = async (req, res, next) => {
 const getActiveInventoryZones = async (req, res) => {
   try {
     const { department } = req.body;
-    // Buscamos anuncios activos y populamos la zona para obtener su nombre
     const ads = await Ad.find({
       department,
       adStatus: { $in: ["Activo", "En preparación"] },
@@ -1539,15 +1497,11 @@ const getActiveInventoryZones = async (req, res) => {
       gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
     }).populate("zone", "name");
 
-    // Extraemos nombres únicos
     const activeNames = [
       ...new Set(ads.flatMap((ad) => ad.zone.map((z) => z.name))),
     ];
 
-    res.status(200).json({
-      success: true,
-      data: activeNames,
-    });
+    res.status(200).json({ success: true, data: activeNames });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -1557,36 +1511,30 @@ const getSimilarAds = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 1. Obtener el anuncio base para comparar
     const currentAd = await Ad.findById(id).lean();
 
     if (!currentAd) {
       return res.status(404).json({ message: "Anuncio no encontrado" });
     }
 
-    // Calcular rango de precio similar (+/- 20%)
     const basePrice = currentAd.sale?.saleValue || 0;
     const minPrice = basePrice * 0.8;
     const maxPrice = basePrice * 1.2;
 
-    // Asegurarnos de que los arrays existan para evitar errores en la agregación
     const currentZones = currentAd.zone || [];
     const currentAdTypes = currentAd.adType || [];
     const currentBuildingTypes = currentAd.adBuildingType || [];
 
-    // 2. Ejecutar el Aggregation Pipeline
     const similarAds = await Ad.aggregate([
-      // PASO 1: Match obligatorio y Prioridad 1
       {
         $match: {
-          _id: { $ne: new mongoose.Types.ObjectId(id) }, // Excluir el anuncio actual
+          _id: { $ne: new mongoose.Types.ObjectId(id) },
           showOnWeb: true,
           adStatus: { $in: ["En preparación", "Activo"] },
           department: currentAd.department,
-          adType: { $in: currentAdTypes }, // Intersección: que comparta al menos un adType
+          adType: { $in: currentAdTypes },
         },
       },
-      // PASO 2: Sistema de Puntuación (Prioridades 2, 3 y 4)
       {
         $addFields: {
           zoneScore: {
@@ -1641,7 +1589,6 @@ const getSimilarAds = async (req, res) => {
           },
         },
       },
-      // PASO 3: Sumar puntuación total
       {
         $addFields: {
           totalScore: {
@@ -1649,24 +1596,20 @@ const getSimilarAds = async (req, res) => {
           },
         },
       },
-      // PASO 4: Ordenar por puntuación (de mayor a menor)
       {
         $sort: { totalScore: -1 },
       },
-      // PASO 5: Limitar a 10 resultados
       {
         $limit: 10,
       },
-      // PASO 6: Lookup para "popular" las zonas (JOIN con la colección 'zones')
       {
         $lookup: {
-          from: "zones", // Nombre exacto de la colección en la base de datos (generalmente Mongoose lo pluraliza y en minúsculas)
-          localField: "zone", // El array de ObjectIds en tu modelo Ad
-          foreignField: "_id", // El campo por el que cruza en el modelo Zone
-          as: "zone", // El nombre del campo donde queremos guardar el resultado (sobrescribe el array de IDs por el de objetos)
+          from: "zones",
+          localField: "zone",
+          foreignField: "_id",
+          as: "zone",
         },
       },
-      // PASO 7: Proyección (solo devolver lo que el Frontend necesita)
       {
         $project: {
           _id: 1,
@@ -1677,7 +1620,7 @@ const getSimilarAds = async (req, res) => {
           "sale.saleShowOnWeb": 1,
           "images.main": 1,
           "adDirection.city": 1,
-          zone: 1, // Array de objetos completos de las zonas
+          zone: 1,
         },
       },
     ]);

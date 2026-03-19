@@ -1,39 +1,41 @@
-const aws = require("aws-sdk");
+const { S3Client, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const multer = require("multer");
 const multerS3 = require("multer-s3");
 const path = require("path");
 
 const sanitizeFilename = (filename) => {
-  // Separa el nombre base de su extensión (ej: 'mi-imagen' y '.jpg')
   const fileExtension = path.extname(filename);
   const baseName = path.basename(filename, fileExtension);
 
-  // Limpia el nombre base
   const sanitizedBaseName = baseName
-    .toLowerCase() // Pasa todo a minúsculas
-    .replace(/\s+/g, "-") // Reemplaza uno o más espacios por un guión
-    .replace(/[^a-z0-9-]/g, "") // Elimina cualquier carácter que no sea letra, número o guión
-    .replace(/-+/g, "-"); // Reemplaza múltiples guiones por uno solo
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-");
 
-  // Devuelve el nombre limpio con su extensión original
   return sanitizedBaseName + fileExtension;
 };
 
-const { S3_ENDPOINT, BUCKET_NAME } = process.env;
+const { S3_ENDPOINT, BUCKET_NAME, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY } =
+  process.env;
 
-const spacesEndpoint = new aws.Endpoint(S3_ENDPOINT);
-const s3 = new aws.S3({
-  endpoint: spacesEndpoint.host,
+const s3 = new S3Client({
+  endpoint: S3_ENDPOINT,
   region: "eu-central-1",
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  credentials: {
+    accessKeyId: AWS_ACCESS_KEY_ID,
+    secretAccessKey: AWS_SECRET_ACCESS_KEY,
+  },
 });
 
 const VALID_FILE_TYPES = ["image/png", "image/jpg", "image/jpeg", "video/mp4"];
 
 const ImageFilter = (req, file, cb) => {
   if (!VALID_FILE_TYPES.includes(file.mimetype)) {
-    const error = new Error("Tipo de archivo inválido. Solo png y jpg");
+    // CORRECCIÓN: Mensaje actualizado para coincidir con los tipos válidos
+    const error = new Error(
+      "Tipo de archivo inválido. Solo se admiten imágenes (png, jpg, jpeg) y videos (mp4)",
+    );
     cb(error);
   } else {
     cb(null, true);
@@ -42,15 +44,7 @@ const ImageFilter = (req, file, cb) => {
 
 const FileFilter = (req, data, cb) => {
   try {
-    // if (!VALID_FILE_TYPES.includes(data.mimetype)) {
     cb(null, true);
-    // }
-    // else {
-    //   const error = new Error(
-    //     "Tipo de archivo inválido. No se admiten imágenes"
-    //   );
-    //   cb(error);
-    // }
   } catch (err) {
     console.log(err);
   }
@@ -58,59 +52,63 @@ const FileFilter = (req, data, cb) => {
 
 const upload = multer({
   storage: multerS3({
-    s3,
+    s3: s3,
     bucket: BUCKET_NAME,
     acl: "public-read",
     metadata: (req, file, cb) => {
-      cb(null, {
-        fieldname: file.fieldname,
-      });
+      cb(null, { fieldname: file.fieldname });
     },
-    // <-- 2. ¡AQUÍ ESTÁ LA ACTUALIZACIÓN EN LA FUNCIÓN 'KEY'! -->
     key: (req, file, cb) => {
-      // Primero, sanitizamos el nombre original del archivo
       const sanitizedName = sanitizeFilename(file.originalname);
-
-      // Luego, creamos el nombre final con el timestamp para que sea único
       const finalKey = `${Date.now()}-${sanitizedName}`;
-
-      // Pasamos el nombre final y limpio al callback
       cb(null, finalKey);
     },
   }),
-  ImageFilter, // Tu filtro se mantiene igual
+  ImageFilter,
 });
 
 const uploadFiles = multer({
   storage: multerS3({
-    s3,
+    s3: s3,
     bucket: BUCKET_NAME,
     acl: "public-read",
     metadata: (req, data, cb) => {
-      cb(null, {
-        fieldname: data.fieldname,
-      });
+      cb(null, { fieldname: data.fieldname });
     },
     key: (req, data, cb) => {
-      cb(null, `${Date.now()}-${data.originalname.replace(" ", "-")}`);
+      // CORRECCIÓN MENOR: Aplico tu misma sanitización aquí para mantener consistencia,
+      // en lugar de usar solo un .replace(" ", "-") básico.
+      const sanitizedName = sanitizeFilename(data.originalname);
+      cb(null, `${Date.now()}-${sanitizedName}`);
     },
   }),
   FileFilter,
 });
 
-const deleteImage = (req, res) => {
-  let key = req.substring(48);
+// --- 2. ELIMINACIÓN DE ARCHIVOS CORREGIDA ---
+const deleteImage = async (fileUrl) => {
+  try {
+    // CORRECCIÓN: Parseamos la URL de forma segura.
+    // Extrae "/nombre-del-archivo.jpg" y le quita la primera barra ("/").
+    const parsedUrl = new URL(fileUrl);
+    let key = parsedUrl.pathname.substring(1);
 
-  const params = {
-    Bucket: BUCKET_NAME,
-    Key: decodeURI(key),
-  };
-
-  s3.deleteObject(params, function (err, data) {
-    if (err) {
-      return err;
+    // Si tu proveedor S3 pone el nombre del bucket en la ruta (path-style), lo quitamos para quedarnos solo con el Key real
+    if (key.startsWith(`${BUCKET_NAME}/`)) {
+      key = key.replace(`${BUCKET_NAME}/`, "");
     }
-  });
+
+    const command = new DeleteObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: decodeURI(key),
+    });
+
+    const data = await s3.send(command);
+    return data;
+  } catch (err) {
+    console.error("Error eliminando objeto de S3:", err);
+    throw err; // CORRECCIÓN: Lanzamos el error para que tu controlador se entere de que falló
+  }
 };
 
 module.exports = { upload, uploadFiles, s3, deleteImage };
