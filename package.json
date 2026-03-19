@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "aws-sdk": "^2.1024.0",
+    "axios": "^1.13.6",
     "bcrypt": "^5.0.1",
     "cloudinary": "^1.27.1",
     "connect-mongo": "^4.6.0",
