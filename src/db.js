@@ -11,7 +11,7 @@ const connect = async () => {
     const { name, host } = db.connection;
     console.log(`Connected to the database ${name} in host ${host}`);
   } catch (err) {
-    console.log("Ha ocurrido un error conectando a la base de datos.", err);
+    console.log("Ha ocurrido un error conectandose a la base de datos.", err);
   }
 };
 
