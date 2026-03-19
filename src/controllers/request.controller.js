@@ -46,14 +46,14 @@ const requestsGetByFilters = async (req, res, next) => {
         {
           fullName: { $regex: new RegExp(search, "i") },
         },
-        "_id"
+        "_id",
       ).then((contacts) => contacts.map((contact) => contact._id));
 
       const consultantIds = await Consultant.find(
         {
           fullName: { $regex: new RegExp(search, "i") },
         },
-        "_id"
+        "_id",
       ).then((consultants) => consultants.map((consultant) => consultant._id));
 
       if (consultantIds.length > 0) {
@@ -182,129 +182,114 @@ const requestGetAdsMatched = async (req, res, next) => {
     const { id } = req.params;
     let request = await Request.findById(id);
 
-    // Si no se encuentra la solicitud, o si es nula por alguna razón, manejar el caso
     if (!request) {
       return res.status(404).json({ message: "Solicitud no encontrada." });
     }
 
-    // Array para acumular todas las condiciones principales (que se encadenarán con AND)
     let andConditions = [{ adStatus: "Activo" }];
 
-    // --- Filtros que ya funcionan con lógica AND ---
-
-    if (request.requestAdType && request.requestAdType.length !== 0) {
+    // --- Filtros de Arrays ---
+    if (request.requestAdType && request.requestAdType.length > 0) {
       andConditions.push({ adType: { $in: request.requestAdType } });
     }
-    if (
-      request.requestBuildingType &&
-      request.requestBuildingType.length !== 0
-    ) {
+    if (request.requestBuildingType && request.requestBuildingType.length > 0) {
       andConditions.push({
         adBuildingType: { $in: request.requestBuildingType },
       });
     }
-    if (request.requestZone && request.requestZone.length !== 0) {
+    if (request.requestZone && request.requestZone.length > 0) {
       andConditions.push({ zone: { $in: request.requestZone } });
     }
 
-    // Filtros de precios de venta
-    const salePriceMin = request.requestSalePrice?.salePriceMin ?? 0; // Usamos ?? para manejar null/undefined y 0 si es cadena vacía
-    const salePriceMax = request.requestSalePrice?.salePriceMax ?? 999999999;
-    andConditions.push({
-      "sale.saleValue": {
-        $gte: salePriceMin,
-        $lte: salePriceMax,
-      },
-    });
+    // --- Filtros Numéricos (Solo se aplican si no son los valores por defecto) ---
 
-    // Filtros de precios de alquiler
+    // Precio de Venta
+    const salePriceMin = request.requestSalePrice?.salePriceMin ?? 0;
+    const salePriceMax = request.requestSalePrice?.salePriceMax ?? 999999999;
+    if (salePriceMin > 0 || salePriceMax < 999999999) {
+      andConditions.push({
+        "sale.saleValue": { $gte: salePriceMin, $lte: salePriceMax },
+      });
+    }
+
+    // Precio de Alquiler
     const rentPriceMin = request.requestRentPrice?.rentPriceMin ?? 0;
     const rentPriceMax = request.requestRentPrice?.rentPriceMax ?? 999999999;
-    andConditions.push({
-      "rent.rentValue": {
-        $lte: rentPriceMax,
-        $gte: rentPriceMin,
-      },
-    });
+    if (rentPriceMin > 0 || rentPriceMax < 999999999) {
+      andConditions.push({
+        "rent.rentValue": { $gte: rentPriceMin, $lte: rentPriceMax },
+      });
+    }
 
-    // Filtros de superficie construida
+    // Superficie Construida
     const buildSurfaceMin = request.requestBuildSurface?.buildSurfaceMin ?? 0;
     const buildSurfaceMax =
       request.requestBuildSurface?.buildSurfaceMax ?? 999999999;
-    andConditions.push({
-      buildSurface: {
-        $gte: buildSurfaceMin,
-        $lte: buildSurfaceMax,
-      },
-    });
+    if (buildSurfaceMin > 0 || buildSurfaceMax < 999999999) {
+      andConditions.push({
+        buildSurface: { $gte: buildSurfaceMin, $lte: buildSurfaceMax },
+      });
+    }
 
-    // Filtros de superficie de parcela
+    // Superficie de Parcela
     const plotSurfaceMin = request.requestPlotSurface?.plotSurfaceMin ?? 0;
     const plotSurfaceMax =
       request.requestPlotSurface?.plotSurfaceMax ?? 999999999;
-    andConditions.push({
-      plotSurface: {
-        $gte: plotSurfaceMin,
-        $lte: plotSurfaceMax,
-      },
-    });
+    if (plotSurfaceMin > 0 || plotSurfaceMax < 999999999) {
+      andConditions.push({
+        plotSurface: { $gte: plotSurfaceMin, $lte: plotSurfaceMax },
+      });
+    }
 
-    // Filtros de dormitorios
+    // Dormitorios (Unificado a 999 según tu código original)
     const bedroomsMin = request.requestBedrooms?.bedroomsMin ?? 0;
     const bedroomsMax = request.requestBedrooms?.bedroomsMax ?? 999;
-    andConditions.push({
-      "quality.bedrooms": {
-        $gte: bedroomsMin,
-        $lte: bedroomsMax,
-      },
-    });
+    if (bedroomsMin > 0 || bedroomsMax < 999) {
+      andConditions.push({
+        "quality.bedrooms": { $gte: bedroomsMin, $lte: bedroomsMax },
+      });
+    }
 
-    // Filtros de baños
+    // Baños (Unificado a 999 según tu código original)
     const bathroomsMin = request.requestBathrooms?.bathroomsMin ?? 0;
     const bathroomsMax = request.requestBathrooms?.bathroomsMax ?? 999;
-    andConditions.push({
-      "quality.bathrooms": {
-        $gte: bathroomsMin,
-        $lte: bathroomsMax,
-      },
-    });
-
-    // --- ¡Manejo especial para 'reformed' y 'toReform' con lógica OR! ---
-    const caracterristicConditions = [];
-
-    // Si 'reformado' está marcado en la solicitud, añádelo como una condición OR
-    if (request.reformed === true) {
-      caracterristicConditions.push({ "quality.reformed": true });
+    if (bathroomsMin > 0 || bathroomsMax < 999) {
+      andConditions.push({
+        "quality.bathrooms": { $gte: bathroomsMin, $lte: bathroomsMax },
+      });
     }
 
-    // Si 'a reformar' está marcado en la solicitud, añádelo como una condición OR
-    if (request.toReform === true) {
-      caracterristicConditions.push({ "quality.toReform": true });
-    }
+    // --- Filtros Booleanos (Características) ---
 
+    // Estos deben ser AND obligatorios si el cliente los solicita
     if (request.smokeOutlet === true) {
-      caracterristicConditions.push({ "quality.others.smokeOutlet": true });
+      andConditions.push({ "quality.others.smokeOutlet": true });
     }
-
     if (request.profitability === true) {
-      caracterristicConditions.push({ profitability: true });
+      andConditions.push({ profitability: true });
     }
 
-    // Si alguna de las condiciones de 'reformed' o 'toReform' fue activada,
-    // la añadimos a las condiciones principales usando $or
-    if (caracterristicConditions.length > 0) {
-      andConditions.push({ $or: caracterristicConditions });
+    // 'reformed' y 'toReform' sí pueden ser OR entre ellos si se marcan ambos
+    const reformConditions = [];
+    if (request.reformed === true) {
+      reformConditions.push({ "quality.reformed": true });
     }
-    // Si ninguna está marcada, no se añade ninguna condición para estos campos,
-    // lo que significa que se muestran anuncios independientemente de su estado de reforma.
+    if (request.toReform === true) {
+      reformConditions.push({ "quality.toReform": true });
+    }
 
-    // Ejecutamos la query combinando todas las condiciones AND
-    // Si andConditions solo tiene la condición inicial, la pasamos directamente
-    // Si tiene más, usamos $and para combinarlas
+    if (reformConditions.length > 0) {
+      andConditions.push({ $or: reformConditions });
+    }
+
+    // --- Ejecución de la Query ---
     const finalQuery =
       andConditions.length > 1 ? { $and: andConditions } : andConditions[0];
 
-    const ads = await Ad.find(finalQuery).exec();
+    // IMPORTANTE: Añadimos el .sort() para ordenar por los más recientes
+    const ads = await Ad.find(finalQuery)
+      .sort({ "sale.saleValue": -1, "rent.rentValue": -1 })
+      .exec();
 
     return res.status(200).json(ads);
   } catch (err) {
@@ -315,90 +300,116 @@ const requestGetAdsMatched = async (req, res, next) => {
 
 const requestGetNewMatched = async (req, res, next) => {
   try {
-    let query = Ad.find();
-    query.where({ adStatus: "Activo" });
+    // Array para acumular todas las condiciones
+    let andConditions = [{ adStatus: "Activo" }];
 
-    if (req.body.requestAdType.length !== 0)
-      query.where({ adType: { $in: req.body.requestAdType } });
-    if (req.body.requestZone.length !== 0)
-      query.where({ zone: { $in: req.body.requestZone } });
-    if (req.body.requestBuildingType.length !== 0)
-      query.where({ adBuildingType: { $in: req.body.requestBuildingType } });
-
-    if (!req.body.salePriceMax) req.body.salePriceMax = 999999999;
-    if (!req.body.salePriceMin) req.body.salePriceMin = 0;
-    query.and({
-      "sale.saleValue": {
-        $gte: req.body.salePriceMin,
-        $lte: req.body.salePriceMax,
-      },
-    });
-
-    if (!req.body.rentPriceMax) req.body.rentPriceMax = 999999999;
-    if (!req.body.rentPriceMin) req.body.rentPriceMin = 0;
-    query.and({
-      "rent.rentValue": {
-        $gte: req.body.rentPriceMin,
-        $lte: req.body.rentPriceMax,
-      },
-    });
-
-    if (!req.body.buildSurfaceMax) req.body.buildSurfaceMax = 999999999;
-    if (!req.body.buildSurfaceMin) req.body.buildSurfaceMin = 0;
-    query.where({
-      buildSurface: {
-        $gte: req.body.buildSurfaceMin,
-        $lte: req.body.buildSurfaceMax,
-      },
-    });
-
-    if (!req.body.plotSurfaceMax) req.body.plotSurfaceMax = 999999999;
-    if (!req.body.plotSurfaceMin) req.body.plotSurfaceMin = 0;
-    query.where({
-      plotSurface: {
-        $gte: req.body.plotSurfaceMin,
-        $lte: req.body.plotSurfaceMax,
-      },
-    });
-
-    if (!req.body.bedroomsMax) req.body.bedroomsMax = 999;
-    if (!req.body.bedroomsMin) req.body.bedroomsMin = 0;
-    query.where({
-      "quality.bedrooms": {
-        $gte: req.body.bedroomsMin,
-        $lte: req.body.bedroomsMax,
-      },
-    });
-
-    if (!req.body.bathroomsMax) req.body.bathroomsMax = 999;
-    if (!req.body.bathroomsMin) req.body.bathroomsMin = 0;
-    query.where({
-      "quality.bathrooms": {
-        $gte: req.body.bathroomsMin,
-        $lte: req.body.bathroomsMax,
-      },
-    });
-
-    if (req.body.reformed === true) {
-      query.where({ "quality.reformed": true });
+    // --- Filtros de Arrays ---
+    if (req.body.requestAdType && req.body.requestAdType.length > 0) {
+      andConditions.push({ adType: { $in: req.body.requestAdType } });
+    }
+    if (req.body.requestZone && req.body.requestZone.length > 0) {
+      andConditions.push({ zone: { $in: req.body.requestZone } });
+    }
+    if (
+      req.body.requestBuildingType &&
+      req.body.requestBuildingType.length > 0
+    ) {
+      andConditions.push({
+        adBuildingType: { $in: req.body.requestBuildingType },
+      });
     }
 
-    if (req.body.toReform === true) {
-      query.where({ "quality.toReform": true });
+    // --- Filtros Numéricos (Solo se aplican si no son los valores por defecto) ---
+
+    // Precio de Venta
+    const salePriceMin = req.body.salePriceMin ?? 0;
+    const salePriceMax = req.body.salePriceMax ?? 999999999;
+    if (salePriceMin > 0 || salePriceMax < 999999999) {
+      andConditions.push({
+        "sale.saleValue": { $gte: salePriceMin, $lte: salePriceMax },
+      });
     }
 
+    // Precio de Alquiler
+    const rentPriceMin = req.body.rentPriceMin ?? 0;
+    const rentPriceMax = req.body.rentPriceMax ?? 999999999;
+    if (rentPriceMin > 0 || rentPriceMax < 999999999) {
+      andConditions.push({
+        "rent.rentValue": { $gte: rentPriceMin, $lte: rentPriceMax },
+      });
+    }
+
+    // Superficie Construida
+    const buildSurfaceMin = req.body.buildSurfaceMin ?? 0;
+    const buildSurfaceMax = req.body.buildSurfaceMax ?? 999999999;
+    if (buildSurfaceMin > 0 || buildSurfaceMax < 999999999) {
+      andConditions.push({
+        buildSurface: { $gte: buildSurfaceMin, $lte: buildSurfaceMax },
+      });
+    }
+
+    // Superficie de Parcela
+    const plotSurfaceMin = req.body.plotSurfaceMin ?? 0;
+    const plotSurfaceMax = req.body.plotSurfaceMax ?? 999999999;
+    if (plotSurfaceMin > 0 || plotSurfaceMax < 999999999) {
+      andConditions.push({
+        plotSurface: { $gte: plotSurfaceMin, $lte: plotSurfaceMax },
+      });
+    }
+
+    // Dormitorios
+    const bedroomsMin = req.body.bedroomsMin ?? 0;
+    const bedroomsMax = req.body.bedroomsMax ?? 999;
+    if (bedroomsMin > 0 || bedroomsMax < 999) {
+      andConditions.push({
+        "quality.bedrooms": { $gte: bedroomsMin, $lte: bedroomsMax },
+      });
+    }
+
+    // Baños
+    const bathroomsMin = req.body.bathroomsMin ?? 0;
+    const bathroomsMax = req.body.bathroomsMax ?? 999;
+    if (bathroomsMin > 0 || bathroomsMax < 999) {
+      andConditions.push({
+        "quality.bathrooms": { $gte: bathroomsMin, $lte: bathroomsMax },
+      });
+    }
+
+    // --- Filtros Booleanos (Características) ---
+
+    // Obligatorias
     if (req.body.smokeOutlet === true) {
-      query.where({ "quality.others.smokeOutlet": true });
+      andConditions.push({ "quality.others.smokeOutlet": true });
     }
-
     if (req.body.profitability === true) {
-      query.where({ profitability: true });
+      andConditions.push({ profitability: true });
     }
 
-    const ads = await query.exec();
+    // Lógica OR para reformado / a reformar
+    const reformConditions = [];
+    if (req.body.reformed === true) {
+      reformConditions.push({ "quality.reformed": true });
+    }
+    if (req.body.toReform === true) {
+      reformConditions.push({ "quality.toReform": true });
+    }
+
+    if (reformConditions.length > 0) {
+      andConditions.push({ $or: reformConditions });
+    }
+
+    // --- Ejecución de la Query ---
+    const finalQuery =
+      andConditions.length > 1 ? { $and: andConditions } : andConditions[0];
+
+    // Mismo ordenamiento por precio de venta y de alquiler que en el otro controlador
+    const ads = await Ad.find(finalQuery)
+      .sort({ "sale.saleValue": -1, "rent.rentValue": -1 })
+      .exec();
 
     return res.status(200).json(ads);
   } catch (err) {
+    console.error("Error en requestGetNewMatched:", err);
     return next(err);
   }
 };
@@ -515,7 +526,7 @@ const requestUpdate = async (req, res, next) => {
     const updatedRequest = await Request.findByIdAndUpdate(
       req.body.id,
       fieldsToUpdate,
-      { new: true }
+      { new: true },
     );
 
     return res.status(200).json(updatedRequest);
@@ -531,7 +542,7 @@ const requyestsUpdateManyConsultantByConsultantId = async (req, res, next) => {
     /* console.log(currentConsultant) */
     const updatedRequests = await Request.updateMany(
       { requestConsultant: currentConsultant },
-      { requestConsultant: req.body[0].requestConsultant }
+      { requestConsultant: req.body[0].requestConsultant },
     );
     /* console.log('resultado',updatedRequests) */
     if (updatedRequests !== null) {
