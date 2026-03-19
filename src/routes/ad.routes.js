@@ -27,37 +27,6 @@ const {
 
 const router = express.Router();
 
-// router.get("/", isAuth, adGetAll);
-// router.get("/matching/:id", isAuth, adGetMatchedRequests);
-// router.get("/:id", adGetOne);
-// router.post("/create", isAuth, adCreate);
-// router.put("/edit", isAuth, adUpdate);
-// router.put(
-//   "/upload/main/:id",
-//   [isAuth, upload.single("main")],
-//   adMainImageUpload
-// );
-// router.put("/delete/main/:id", isAuth, adMainImagesDelete);
-// router.put(
-//   "/upload/media/:id",
-//   [isAuth, upload.single("media")],
-//   adMediaImageUpload
-// );
-// router.put("/delete/media/:id", isAuth, adMediaImagesDelete);
-// router.put(
-//   "/upload/blueprint/:id",
-//   [isAuth, upload.array("blueprint")],
-//   adBlueprintImageUpload
-// );
-// router.put("/delete/blueprint/:id", isAuth, adBlueprintImagesDelete);
-// router.put(
-//   "/upload/others/:id",
-//   [isAuth, upload.array("others")],
-//   adOthersImagesUpload
-// );
-// router.put("/delete/others/:id", isAuth, adOthersImagesDelete);
-// router.delete("/delete/:id", [isAuth, isAdmin], adDelete);
-
 router.get("/", adGetAll);
 router.get("/filter", adGetByFilters);
 router.get("/matching/:id", adGetMatchedRequests);
