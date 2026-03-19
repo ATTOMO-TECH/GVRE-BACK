@@ -1,5 +1,5 @@
 const express = require("express");
-const { upload, deleteImage } = require("../middlewares/file.middleware");
+const { upload } = require("../middlewares/file.middleware");
 const {
   adGetAll,
   adGetByFilters,

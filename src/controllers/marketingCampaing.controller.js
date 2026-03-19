@@ -1,4 +1,3 @@
-const { ObjectId } = require("mongodb");
 const { deleteImage } = require("../middlewares/file.middleware");
 const MarketingCampaign = require("../models/marketingCampaing.model");
 const Contact = require("../models/contact.model");
@@ -18,12 +17,11 @@ const marketingCampaignsGetAll = async (req, res, next) => {
     return next(err);
   }
 };
+
 const marketingCampaignsFilterByTags = async (req, res, next) => {
   try {
-    // Obtener los tags seleccionados desde la consulta (query params)
-    const { tags } = req.query; // Suponiendo que 'tags' es un array de IDs de tags
+    const { tags } = req.query;
 
-    // Si no se proporcionan tags, devolver todas las campañas
     if (!tags || tags.length === 0) {
       const marketingCampaigns = await MarketingCampaign.find()
         .sort({ createdAt: -1 })
@@ -36,9 +34,8 @@ const marketingCampaignsFilterByTags = async (req, res, next) => {
       return res.status(200).json(marketingCampaigns);
     }
 
-    // Filtrar las campañas por los tags proporcionados
     const marketingCampaigns = await MarketingCampaign.find({
-      tags: { $in: tags }, // Filtrar las campañas cuyo array 'tags' contenga al menos uno de los tags proporcionados
+      tags: { $in: tags },
     })
       .sort({ createdAt: -1 })
       .populate({ path: "consultant", select: "fullName" })
@@ -92,20 +89,16 @@ const marketingCampaignCreate = async (req, res, next) => {
   try {
     const { title, htmlBody, design, consultant } = req.body;
 
-    // Verificamos que venga el diseño del editor en lugar del archivo
     if (htmlBody) {
       const newMarketingCampaign = new MarketingCampaign({
-        title, // Usará el título autogenerado por fecha
+        title,
         htmlBody,
         design,
         contactList: [],
         consultant,
-        // image: ... <- Ya no guardamos imagen de portada aquí
-        // description: ... <- Ya no hay descripción manual
       });
 
       const marketingCampaignCreated = await newMarketingCampaign.save();
-
       return res.status(200).json(marketingCampaignCreated);
     } else {
       return res
@@ -123,11 +116,7 @@ const marketingCampaignUpdate = async (req, res, next) => {
     const { title, htmlBody, design } = req.body;
     const { idCampaign } = req.params;
 
-    const fieldsToUpdate = {
-      title,
-      htmlBody,
-      design,
-    };
+    const fieldsToUpdate = { title, htmlBody, design };
 
     const campaignUpdated = await MarketingCampaign.findByIdAndUpdate(
       idCampaign,
@@ -155,9 +144,10 @@ const marketingCampaignSendEmail = async (req, res, next) => {
       const { campaign, contacts } = req.body;
       let editCampaign = {};
       let editContact = {};
+
       const marketingCampaign = await MarketingCampaign.findById(campaign._id);
+
       if (marketingCampaign !== null) {
-        const updateMarketingCampaign = marketingCampaign;
         let filterContact = [];
 
         if (marketingCampaign.contactList.length === 0) {
@@ -171,43 +161,49 @@ const marketingCampaignSendEmail = async (req, res, next) => {
             (value) => !listString.includes(value),
           );
         }
+
         const newContactList =
-          updateMarketingCampaign.contactList.concat(filterContact);
-        updateMarketingCampaign.contactList = newContactList;
+          marketingCampaign.contactList.concat(filterContact);
+        marketingCampaign.contactList = newContactList;
+
         const campaignUpdated = await MarketingCampaign.findByIdAndUpdate(
           campaign._id,
-          updateMarketingCampaign,
+          marketingCampaign,
           { new: true },
         );
         editCampaign = campaignUpdated;
 
-        contacts.map(async (contact) => {
-          const contactDB = await Contact.findById(contact._id);
-          if (contactDB !== null) {
-            const updateContact = contactDB;
-            let filterCampaigns = [];
-            const { marketingCampaings } = updateContact;
-            if (marketingCampaings === undefined) {
-              updateContact.marketingCampaings = [];
-            } else {
-              updateContact.marketingCampaings = marketingCampaings;
+        // CORRECCIÓN: Usamos Promise.all para esperar a que todos los updates terminen
+        await Promise.all(
+          contacts.map(async (contact) => {
+            const contactDB = await Contact.findById(contact._id);
+            if (contactDB !== null) {
+              const updateContact = contactDB;
+
+              if (updateContact.marketingCampaings === undefined) {
+                updateContact.marketingCampaings = [];
+              }
+
+              const contactsCampaignsString =
+                updateContact.marketingCampaings.map((objId) =>
+                  objId.toString(),
+                );
+              const filterCampaigns = [campaign._id].filter(
+                (value) => !contactsCampaignsString.includes(value),
+              );
+
+              updateContact.marketingCampaings =
+                updateContact.marketingCampaings.concat(filterCampaigns);
+
+              editContact = await Contact.findByIdAndUpdate(
+                contact._id,
+                updateContact,
+                { new: true },
+              );
             }
-            const contactsCampaignsString =
-              updateContact.marketingCampaings.map((objId) => objId.toString());
-            filterCampaigns = [campaign._id].filter(
-              (value) => !contactsCampaignsString.includes(value),
-            );
-            const newCampaignList =
-              updateContact.marketingCampaings.concat(filterCampaigns);
-            updateContact.marketingCampaings = newCampaignList;
-            const contactUpdated = await Contact.findByIdAndUpdate(
-              contact._id,
-              updateContact,
-              { new: true },
-            );
-            editContact = contactUpdated;
-          }
-        });
+          }),
+        );
+
         return res.status(200).json({ editCampaign, editContact });
       } else {
         return res
@@ -215,9 +211,6 @@ const marketingCampaignSendEmail = async (req, res, next) => {
           .json({ status: 500, message: "Fail to send emails" });
       }
     }
-
-    // introducir en el modelo de la campaña los contactos a los que se les ha enviado
-    // hacer lo mismo en el modelo de los contactos
   } catch (err) {
     return next(err);
   }
@@ -234,13 +227,15 @@ const contactReceiveEmail = async (req, res, next) => {
         },
       },
     };
-    const contactUpdated = await MarketingCampaign.findByIdAndUpdate(
+
+    // CORRECCIÓN: Cambiado de MarketingCampaign a Contact
+    const contactUpdated = await Contact.findByIdAndUpdate(
       req.body.contact._id,
       newReceivedEmails,
       { new: true },
     );
 
-    return res.status(200);
+    return res.status(200).json(contactUpdated);
   } catch (err) {
     return next(err);
   }
@@ -248,13 +243,19 @@ const contactReceiveEmail = async (req, res, next) => {
 
 const marketingCampaignDelete = async (req, res, next) => {
   try {
-    // 1. imageCampaign no viene por params, solo idCampaign. Lo limpiamos.
     const { idCampaign } = req.params;
     const { toDelete } = req.body;
 
-    // 2. 💥 PROTECCIÓN VITAL: Solo intentamos borrar en AWS si realmente hay una imagen
     if (toDelete) {
-      deleteImage(toDelete);
+      // CORRECCIÓN: Blindamos el borrado por si S3 falla
+      try {
+        await deleteImage(toDelete);
+      } catch (e) {
+        console.error(
+          "Aviso: Falló el borrado de la imagen asociada a la campaña en S3",
+          e,
+        );
+      }
     }
 
     const deleted = await MarketingCampaign.findByIdAndDelete(idCampaign);
@@ -271,17 +272,19 @@ const marketingCampaignDelete = async (req, res, next) => {
       });
     }
   } catch (error) {
-    console.error("Error al borrar la campaña:", error); // Siempre es bueno hacer log del error
+    console.error("Error al borrar la campaña:", error);
     next(error);
   }
 };
 
 module.exports = {
   marketingCampaignsGetAll,
+  marketingCampaignsFilterByTags, // Faltaba exportar
   marketingCampaignGetOne,
   marketingCampaignGetAllByContact,
   marketingCampaignCreate,
   marketingCampaignUpdate,
   marketingCampaignSendEmail,
+  contactReceiveEmail, // Faltaba exportar
   marketingCampaignDelete,
 };

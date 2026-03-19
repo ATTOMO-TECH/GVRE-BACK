@@ -1,88 +1,54 @@
-const nodemailer = require("nodemailer"); // email sender function
+const nodemailer = require("nodemailer");
 const { getPasswordByEmail, getTaggedEmail } = require("../utils/utils");
 const Consultant = require("../models/consultant.model");
-const AWS = require("aws-sdk");
 const Contact = require("./../models/contact.model");
 
-const SES_CONFIG = {
-  accessKeyId: process.env.SES_ACCESS_KEY,
-  secretAccessKey: process.env.SES_SECRET_ACCESS_KEY,
+// --- 1. IMPORTACIONES DE AWS SES v3 ---
+const { SESClient } = require("@aws-sdk/client-ses");
+
+// --- 2. CONFIGURACIÓN DEL CLIENTE SES v3 ---
+const sesClient = new SESClient({
   region: process.env.SES_REGION,
+  credentials: {
+    accessKeyId: process.env.SES_ACCESS_KEY,
+    secretAccessKey: process.env.SES_SECRET_ACCESS_KEY,
+  },
+});
+
+// 1. FUNCIÓN AUXILIAR (El "cerebro" centralizado)
+const getFormattedValue = (value, ref) => {
+  // Por si acaso llega un valor nulo o indefinido
+  if (value === undefined || value === null) return "Sin datos";
+
+  const isPrice = ref === "sale" || ref === "rent";
+
+  // Límite máximo
+  if (value === 999999999) return "Valor máx.";
+
+  // Valores a cero
+  if (value === 0) return isPrice ? "Sin precio" : "Sin datos";
+
+  // Formateo de números válidos
+  if (isPrice) {
+    // Para precios: separador de miles con espacio
+    const formattedNum = value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    return `${formattedNum} ${ref === "sale" ? "€" : "€/mes"}`;
+  } else {
+    // Para superficies: separador de miles con punto
+    const formattedNum = value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return `${formattedNum} m<sup>2</sup>`;
+  }
 };
 
+// 2. TUS FUNCIONES PRINCIPALES (Ahora súper limpias)
 const maskTemplate = (value, ref) => {
-  let render = "";
-
-  if (
-    (ref === "sale" && value === 999999999) ||
-    (ref === "rent" && value === 999999999)
-  ) {
-    render = `<p>Valor máx.</p>`;
-  } else if ((ref === "sale" || ref === "rent") && value === 0) {
-    render = `<p>Sin precio</p>`;
-  } else if (ref !== "sale" && ref !== "rent" && value === 0) {
-    render = `<p>Sin datos</p>`;
-  } else {
-    if (ref === "sale" || ref === "rent")
-      render = `<p>${value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} ${
-        ref === "sale" ? " €" : " €/mes"
-      }</p>`;
-    else
-      render = `<p>
-          ${value
-            .toString()
-            .replace(/\B(?=(\d{3})+(?!\d))/g, ".")} m<sup>2</sup>
-        </p>`;
-  }
-  return render;
+  return `<p>${getFormattedValue(value, ref)}</p>`;
 };
 
 const maskTemplate2 = (value1, ref1, value2, ref2) => {
-  let render1 = "";
-  let render2 = "";
+  const render1 = getFormattedValue(value1, ref1);
+  const render2 = getFormattedValue(value2, ref2);
 
-  if (
-    (ref1 === "sale" && value1 === 999999999) ||
-    (ref1 === "rent" && value1 === 999999999)
-  ) {
-    render1 = `Valor máx.`;
-  } else if ((ref1 === "sale" || ref1 === "rent") && value1 === 0) {
-    render1 = `Sin precio`;
-  } else if (ref1 !== "sale" && ref1 !== "rent" && value1 === 0) {
-    render1 = `Sin datos`;
-  } else {
-    if (ref1 === "sale" || ref1 === "rent")
-      render1 = `${value1.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} ${
-        ref1 === "sale" ? " €" : " €/mes"
-      }`;
-    else
-      render1 = `
-          ${value1
-            .toString()
-            .replace(/\B(?=(\d{3})+(?!\d))/g, ".")} m<sup>2</sup>
-        `;
-  }
-  if (
-    (ref2 === "sale" && value2 === 999999999) ||
-    (ref2 === "rent" && value2 === 999999999)
-  ) {
-    render2 = `Valor máx.`;
-  } else if ((ref2 === "sale" || ref2 === "rent") && value2 === 0) {
-    render2 = `Sin precio`;
-  } else if (ref2 !== "sale" && ref2 !== "rent" && value2 === 0) {
-    render2 = `Sin datos`;
-  } else {
-    if (ref2 === "sale" || ref2 === "rent")
-      render2 = `${value2.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} ${
-        ref2 === "sale" ? " €" : " €/mes"
-      }`;
-    else
-      render2 = `
-          ${value2
-            .toString()
-            .replace(/\B(?=(\d{3})+(?!\d))/g, ".")} m<sup>2</sup>
-        `;
-  }
   return `<p>${render1} &nbsp; ${render2}</p>`;
 };
 
@@ -655,7 +621,7 @@ const sendAdsToContact = async (req, res) => {
             ><o:OfficeDocumentSettings><o:AllowPNG /><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml
           ><!
         [endif]-->
-      </head>
+        </head>
 
       <body
         style="
@@ -894,13 +860,12 @@ const sendAdsToContact = async (req, res) => {
                           <br />Don't want to receive this type of email?<span>&nbsp;</span
                           >
                           <a 
-                            href="${
-                              process.env.BACKEND_URL
-                            }/mails/unsubscribe/${req.body.contact._id}">
+                            href="${process.env.BACKEND_URL}/mails/unsubscribe/${req.body.contact._id}"
                             style="color: rgb(153, 153, 153)"
                             target="_blank"
-                            >Unsubscribe</a
                           >
+                          Unsubscribe
+                          </a>
                           ><span>&nbsp;</span>&nbsp;<br />&nbsp;
                         </td>
                       </tr>
@@ -962,7 +927,12 @@ const sendAdToContacts = async (req, res) => {
   let counter = 1;
 
   const transporter = nodemailer.createTransport({
-    SES: new AWS.SES(SES_CONFIG),
+    SES: {
+      ses: sesClient,
+      aws: {
+        SendRawEmailCommand: require("@aws-sdk/client-ses").SendRawEmailCommand,
+      },
+    },
   });
 
   transporter.verify(function (error, success) {
@@ -1803,7 +1773,7 @@ const sendAdToContacts = async (req, res) => {
                         >
                           <br />Don't want to receive this type of email?<span>&nbsp;</span
                           > <a 
-                            href="\${unsubscribeLink}"
+                            href="${unsubscribeLink}"
                             style="color: rgb(153, 153, 153)"
                             target="_blank"
                           >
@@ -1860,9 +1830,23 @@ const sendAdToContacts = async (req, res) => {
   const sendEmails = async () => {
     for (let index = 0; index < req.body.requestsToSend.length; index++) {
       const recipient = req.body.requestsToSend[index];
+
+      const contactId =
+        recipient.requestContact?._id || recipient.requestContact;
+
+      // VALIDACIÓN: Solo enviamos el correo si el ID es de Mongoose
+      if (
+        !contactId ||
+        !mongoose.Types.ObjectId.isValid(contactId.toString())
+      ) {
+        console.error(
+          `Omitiendo correo para el índice ${index}: ID de contacto no válido (${contactId})`,
+        );
+        continue;
+      }
+
       const unsubscribeLink = `${process.env.BACKEND_URL}/mails/unsubscribe/${recipient.requestContact._id}`;
 
-      // 👇 Aquí montas el HTML personalizado para ese contacto
       const personalizedHtml = baseMailOptions.html.replace(
         /\$\{unsubscribeLink\}/g,
         unsubscribeLink,
@@ -1871,12 +1855,15 @@ const sendAdToContacts = async (req, res) => {
       mailOptions.from = req.body.consultant.consultantEmail;
       mailOptions.to = recipient.requestContact.email;
       mailOptions.bcc = bccWithTag;
-      ((mailOptions.html = personalizedHtml),
-        await sendMailWithDelay(mailOptions, 800));
+      mailOptions.html = personalizedHtml;
+
+      await sendMailWithDelay(mailOptions, 800);
     }
   };
 
   sendEmails().catch(console.error);
+  // Añadimos la respuesta para no dejar colgada la petición
+  return res.status(200).json("Envío de correos iniciado en segundo plano");
 };
 
 const generateZonesHTML = (zones) => {
@@ -1933,32 +1920,30 @@ const generateZonesHTML = (zones) => {
   let html = "";
 
   priorityLevels.forEach((priority) => {
-    const priorityZones = zones[priority]; // Zonas por prioridad
+    const priorityZones = zones[priority];
     if (!priorityZones) return;
 
     let content = "";
     let count = 0;
 
-    // Recorremos las zonas (zone1, zone2, etc.)
     Object.keys(priorityZones).forEach((zoneKey) => {
       const zone = priorityZones[zoneKey];
       if (count % 3 === 0) {
         if (count !== 0) {
           content += "</tr>";
         }
-        content += "<tr>"; // Abrimos una nueva fila cada 3 elementos
+        content += "<tr>";
       }
-      content += createZoneHTML(zone); // Generamos el HTML para cada zona
+      content += createZoneHTML(zone);
       count++;
     });
 
-    // Si la última fila tiene menos de 3 zonas, completamos con celdas vacías
     if (count % 3 !== 0) {
       while (count % 3 !== 0) {
         content += "<td></td>";
         count++;
       }
-      content += "</tr>"; // Cerramos la última fila
+      content += "</tr>";
     }
 
     html += `<table role="presentation" style="width: 100%; border-collapse: collapse;">${content}</table>`;
@@ -1968,7 +1953,6 @@ const generateZonesHTML = (zones) => {
 };
 
 const sendEmailReservationToClient = (req, res) => {
-  // console.log(req.body);
   const {
     contactName,
     contactSurname,
@@ -1981,7 +1965,7 @@ const sendEmailReservationToClient = (req, res) => {
   const transporter = nodemailer.createTransport({
     service: "Gmail",
     auth: {
-      user: "info@gvre.es", // aquí tenemos que poner el email de info@gvre.es e incluir el token en el .env y en la función getPass...
+      user: "info@gvre.es",
       pass: getPasswordByEmail("info@gvre.es"),
     },
   });
@@ -2183,7 +2167,7 @@ const sendEmailReservationToClient = (req, res) => {
                 ><o:OfficeDocumentSettings><o:AllowPNG /><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml
               ><!
             [endif]-->
-          </head>
+            </head>
     
           <body
             style="
@@ -2304,7 +2288,7 @@ const sendEmailReservationToClient = (req, res) => {
                                 <p>Un saludo,</p>
                                 <p>Equipo de Attomo</p>
                               </div>
-                            
+                              
                               <table cellpadding="0" cellspacing="0" border="0" style="border-spacing: 0px; width: 777.15625px">
                                 <tbody>
                                   <tr>
@@ -2404,8 +2388,24 @@ const sendEmailReservationToClient = (req, res) => {
 
 const unsubscribeEmails = async (req, res) => {
   try {
+    const contactId = req.params.id;
+
+    // 🔥 BLINDAJE CONTRA BOTS: Si el ID es basura (ej. "NjliMTliNT"), cortamos la petición aquí
+    if (!mongoose.Types.ObjectId.isValid(contactId)) {
+      return res.status(400).send(`
+        <html>
+          <head><title>Enlace no válido</title></head>
+          <body style="font-family: Helvetica, sans-serif; text-align: center; margin-top: 80px">
+            <h2>Enlace incorrecto</h2>
+            <p>Este enlace de desuscripción está corrupto o no es válido.</p>
+          </body>
+        </html>
+      `);
+    }
+
+    // Búsqueda real (solo llegará aquí si es un usuario real haciendo clic en un ID bueno)
     const contact = await Contact.findByIdAndUpdate(
-      req.params.id,
+      contactId,
       { notReceiveCommunications: true },
       { new: true },
     );

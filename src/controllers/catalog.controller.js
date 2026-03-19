@@ -47,17 +47,33 @@ const catalogEdit = async (req, res, next) => {
     const catalog = await Catalog.findById(id);
     const catalogToUpdate = catalog;
     catalogToUpdate.year = req.body.year;
+
     if (req.files.length === 2) {
-      deleteImage(catalogToUpdate.portraidImage);
-      deleteImage(catalogToUpdate.catalog);
+      // CORRECCIÓN: Borramos en paralelo y capturamos errores para que no bloquee la actualización
+      try {
+        await Promise.all([
+          deleteImage(catalogToUpdate.portraidImage),
+          deleteImage(catalogToUpdate.catalog),
+        ]);
+      } catch (e) {
+        console.error(
+          "Aviso: Error borrando imágenes antiguas de S3 en edición de catálogo",
+          e,
+        );
+      }
+
       catalogToUpdate.portraidImage = req.files[0].location;
       catalogToUpdate.catalog = `https://gvre-images.fra1.digitaloceanspaces.com/${req.files[1].key}`;
     } else if (req.files.length === 1) {
       if (req.files[0].mimetype.includes("pdf")) {
-        deleteImage(catalogToUpdate.catalog);
+        try {
+          await deleteImage(catalogToUpdate.catalog);
+        } catch (e) {}
         catalogToUpdate.catalog = `https://gvre-images.fra1.digitaloceanspaces.com/${req.files[0].key}`;
       } else {
-        deleteImage(catalogToUpdate.portraidImage);
+        try {
+          await deleteImage(catalogToUpdate.portraidImage);
+        } catch (e) {}
         catalogToUpdate.portraidImage = req.files[0].location;
       }
     }
@@ -82,9 +98,24 @@ const catalogDelete = async (req, res, next) => {
     const { id } = req.params;
     let response = "";
     const catalog = await Catalog.findById(id);
+
     if (catalog !== null) {
-      deleteImage(catalog.catalog);
-      deleteImage(catalog.portraidImage);
+      // CORRECCIÓN: Borramos en paralelo y evitamos que un fallo en S3 cancele el borrado en BD
+      try {
+        const deletePromises = [];
+        if (catalog.catalog) deletePromises.push(deleteImage(catalog.catalog));
+        if (catalog.portraidImage)
+          deletePromises.push(deleteImage(catalog.portraidImage));
+
+        if (deletePromises.length > 0) {
+          await Promise.all(deletePromises);
+        }
+      } catch (e) {
+        console.error(
+          "Aviso: No se pudo borrar el archivo de S3, pero se borrará de BD.",
+          e,
+        );
+      }
     }
 
     const deleted = await Catalog.findByIdAndDelete(id);
@@ -133,7 +164,15 @@ const deleteImageCatalogSection = async (req, res, next) => {
     const mainImageCatalog = await CatalogPage.findById(id);
 
     if (mainImageCatalog !== null) {
-      deleteImage(mainImageCatalog.imgSection);
+      // CORRECCIÓN: Manejo de errores en S3 independiente de la BD
+      try {
+        await deleteImage(mainImageCatalog.imgSection);
+      } catch (e) {
+        console.error(
+          "Aviso: No se pudo borrar la imagen de sección de S3.",
+          e,
+        );
+      }
     }
 
     const deleted = await CatalogPage.findByIdAndDelete(id);
@@ -151,6 +190,7 @@ const deleteImageCatalogSection = async (req, res, next) => {
 
 module.exports = {
   catalogGetAll,
+  catalogGetOne,
   catalogCreate,
   catalogEdit,
   catalogDelete,

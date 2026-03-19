@@ -40,13 +40,12 @@ const revalidateWeb = async (tag) => {
 
     // Intentamos leer la respuesta para logs más detallados
     const data = await response.json().catch(() => ({}));
-
     if (!response.ok) {
       throw new Error(
         `Status ${response.status}: ${data.message || response.statusText}`,
       );
     }
-
+    console.log(`✅ [Revalidate] Correcto para el tag: '${tag}`);
     return true;
   } catch (error) {
     if (error.name === "AbortError") {

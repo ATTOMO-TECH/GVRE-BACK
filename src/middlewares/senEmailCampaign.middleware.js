@@ -1,11 +1,15 @@
 const nodemailer = require("nodemailer"); // email sender function
-const AWS = require("aws-sdk");
+// --- 1. IMPORTACIONES DE AWS SES v3 ---
+const { SESClient, SendRawEmailCommand } = require("@aws-sdk/client-ses");
 
-const SES_CONFIG = {
-  accessKeyId: process.env.SES_ACCESS_KEY,
-  secretAccessKey: process.env.SES_SECRET_ACCESS_KEY,
+// --- 2. CONFIGURACIÓN DEL CLIENTE SES v3 ---
+const sesClient = new SESClient({
   region: process.env.SES_REGION,
-};
+  credentials: {
+    accessKeyId: process.env.SES_ACCESS_KEY,
+    secretAccessKey: process.env.SES_SECRET_ACCESS_KEY,
+  },
+});
 
 const sendEmailCampaignToContacts = async (req, res, next) => {
   const {
@@ -20,6 +24,7 @@ const sendEmailCampaignToContacts = async (req, res, next) => {
     campaign,
     htmlBody,
   } = req.body;
+
   const {
     fullName,
     consultantEmail,
@@ -34,8 +39,12 @@ const sendEmailCampaignToContacts = async (req, res, next) => {
 
   let counter = 1;
 
+  // --- 3. NUEVO TRANSPORTE SES PARA NODEMAILER v3 ---
   const transporter = nodemailer.createTransport({
-    SES: new AWS.SES(SES_CONFIG),
+    SES: {
+      ses: sesClient,
+      aws: { SendRawEmailCommand },
+    },
   });
 
   transporter.verify(function (error, success) {

@@ -429,52 +429,142 @@ const adGetMatchedRequests = async (req, res, next) => {
     const ad = await Ad.findById({ _id: id });
     const search = req.query.search;
 
-    // Query constructor
+    if (!ad) {
+      return res.status(404).json({ message: "Anuncio no encontrado." });
+    }
+
     let query = Request.find();
 
-    if (ad.adType.length !== 0)
+    if (ad.adType && ad.adType.length !== 0)
       query.where({ requestAdType: { $in: ad.adType } });
-    if (ad.adBuildingType.length !== 0)
+    if (ad.adBuildingType && ad.adBuildingType.length !== 0)
       query.where({ requestBuildingType: { $in: ad.adBuildingType } });
-    if (ad.zone.length !== 0) query.where({ requestZone: { $in: ad.zone } });
+    if (ad.zone && ad.zone.length !== 0)
+      query.where({ requestZone: { $in: ad.zone } });
 
-    if (!ad.sale.saleValue) ad.sale.saleValue = 0;
-    query.where({
-      "requestSalePrice.salePriceMax": { $gte: ad.sale.saleValue },
-      "requestSalePrice.salePriceMin": { $lte: ad.sale.saleValue },
-    });
+    // --- FILTROS DE RANGO CON MANEJO DE NULL / 0 (Sin Límite) ---
 
-    if (!ad.rent.rentValue) ad.rent.rentValue = 0;
-    query.where({
-      "requestRentPrice.rentPriceMax": { $gte: ad.rent.rentValue },
-      "requestRentPrice.rentPriceMin": { $lte: ad.rent.rentValue },
-    });
+    if (ad.sale && ad.sale.saleValue > 0) {
+      query.and([
+        {
+          $or: [
+            { "requestSalePrice.salePriceMax": { $gte: ad.sale.saleValue } },
+            { "requestSalePrice.salePriceMax": null },
+            { "requestSalePrice.salePriceMax": 0 },
+          ],
+        },
+        {
+          $or: [
+            { "requestSalePrice.salePriceMin": { $lte: ad.sale.saleValue } },
+            { "requestSalePrice.salePriceMin": null },
+            { "requestSalePrice.salePriceMin": 0 },
+          ],
+        },
+      ]);
+    }
 
-    if (!ad.buildSurface) ad.buildSurface = 0;
-    query.where({
-      "requestBuildSurface.buildSurfaceMax": { $gte: ad.buildSurface },
-      "requestBuildSurface.buildSurfaceMin": { $lte: ad.buildSurface },
-    });
+    if (ad.rent && ad.rent.rentValue > 0) {
+      query.and([
+        {
+          $or: [
+            { "requestRentPrice.rentPriceMax": { $gte: ad.rent.rentValue } },
+            { "requestRentPrice.rentPriceMax": null },
+            { "requestRentPrice.rentPriceMax": 0 },
+          ],
+        },
+        {
+          $or: [
+            { "requestRentPrice.rentPriceMin": { $lte: ad.rent.rentValue } },
+            { "requestRentPrice.rentPriceMin": null },
+            { "requestRentPrice.rentPriceMin": 0 },
+          ],
+        },
+      ]);
+    }
 
-    if (!ad.plotSurface) ad.plotSurface = 0;
-    query.where({
-      "requestPlotSurface.plotSurfaceMax": { $gte: ad.plotSurface },
-      "requestPlotSurface.plotSurfaceMin": { $lte: ad.plotSurface },
-    });
+    if (ad.buildSurface > 0) {
+      query.and([
+        {
+          $or: [
+            {
+              "requestBuildSurface.buildSurfaceMax": { $gte: ad.buildSurface },
+            },
+            { "requestBuildSurface.buildSurfaceMax": null },
+            { "requestBuildSurface.buildSurfaceMax": 0 },
+          ],
+        },
+        {
+          $or: [
+            {
+              "requestBuildSurface.buildSurfaceMin": { $lte: ad.buildSurface },
+            },
+            { "requestBuildSurface.buildSurfaceMin": null },
+            { "requestBuildSurface.buildSurfaceMin": 0 },
+          ],
+        },
+      ]);
+    }
 
-    if (!ad.quality.bedrooms) ad.quality.bedrooms = 0;
-    query.where({
-      "requestBedrooms.bedroomsMax": { $gte: ad.quality.bedrooms },
-      "requestBedrooms.bedroomsMin": { $lte: ad.quality.bedrooms },
-    });
+    if (ad.plotSurface > 0) {
+      query.and([
+        {
+          $or: [
+            { "requestPlotSurface.plotSurfaceMax": { $gte: ad.plotSurface } },
+            { "requestPlotSurface.plotSurfaceMax": null },
+            { "requestPlotSurface.plotSurfaceMax": 0 },
+          ],
+        },
+        {
+          $or: [
+            { "requestPlotSurface.plotSurfaceMin": { $lte: ad.plotSurface } },
+            { "requestPlotSurface.plotSurfaceMin": null },
+            { "requestPlotSurface.plotSurfaceMin": 0 },
+          ],
+        },
+      ]);
+    }
 
-    if (!ad.quality.bathrooms) ad.quality.bathrooms = 0;
-    query.where({
-      "requestBathrooms.bathroomsMax": { $gte: ad.quality.bathrooms },
-      "requestBathrooms.bathroomsMin": { $lte: ad.quality.bathrooms },
-    });
+    if (ad.quality && ad.quality.bedrooms > 0) {
+      query.and([
+        {
+          $or: [
+            { "requestBedrooms.bedroomsMax": { $gte: ad.quality.bedrooms } },
+            { "requestBedrooms.bedroomsMax": null },
+            { "requestBedrooms.bedroomsMax": 0 },
+          ],
+        },
+        {
+          $or: [
+            { "requestBedrooms.bedroomsMin": { $lte: ad.quality.bedrooms } },
+            { "requestBedrooms.bedroomsMin": null },
+            { "requestBedrooms.bedroomsMin": 0 },
+          ],
+        },
+      ]);
+    }
 
-    if (ad.quality.others.smokeOutlet === false) {
+    if (ad.quality && ad.quality.bathrooms > 0) {
+      query.and([
+        {
+          $or: [
+            { "requestBathrooms.bathroomsMax": { $gte: ad.quality.bathrooms } },
+            { "requestBathrooms.bathroomsMax": null },
+            { "requestBathrooms.bathroomsMax": 0 },
+          ],
+        },
+        {
+          $or: [
+            { "requestBathrooms.bathroomsMin": { $lte: ad.quality.bathrooms } },
+            { "requestBathrooms.bathroomsMin": null },
+            { "requestBathrooms.bathroomsMin": 0 },
+          ],
+        },
+      ]);
+    }
+
+    // --- RESTO DE FILTROS ---
+
+    if (!ad.quality?.others?.smokeOutlet) {
       query.where({ smokeOutlet: { $ne: true } });
     }
 
@@ -487,10 +577,10 @@ const adGetMatchedRequests = async (req, res, next) => {
       select: "fullName company email contactComments notReceiveCommunications",
     });
 
-    // Ejecutar la query
+    query.sort({ createdAt: -1 });
+
     const requests = await query.exec();
 
-    // Filtrar si hay búsqueda
     let filteredRequests = requests;
     if (search) {
       const regex = new RegExp(search, "i");
@@ -971,16 +1061,15 @@ const adMainImagesDelete = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    deleteImage(req.body.toDelete);
+    await deleteImage(req.body.toDelete);
+
     const ad = await Ad.findById(id);
     const fieldsToUpdate = ad;
-
     fieldsToUpdate.images.main = "";
 
     const updatedAd = await Ad.findByIdAndUpdate(id, fieldsToUpdate, {
       new: true,
     });
-
     return res.status(200).json(updatedAd);
   } catch (err) {
     return next(err);
@@ -991,16 +1080,15 @@ const adMediaImagesDelete = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    deleteImage(req.body.toDelete);
+    await deleteImage(req.body.toDelete);
+
     const ad = await Ad.findById(id);
     const fieldsToUpdate = ad;
-
     fieldsToUpdate.images.media = "";
 
     const updatedAd = await Ad.findByIdAndUpdate(id, fieldsToUpdate, {
       new: true,
     });
-
     return res.status(200).json(updatedAd);
   } catch (err) {
     return next(err);
@@ -1015,21 +1103,17 @@ const adBlueprintImagesDelete = async (req, res, next) => {
     const ad = await Ad.findById(id);
     const fieldsToUpdate = ad;
 
-    // Asegúrate de que sea un array
     const imagesToDelete = Array.isArray(toDelete) ? toDelete : [toDelete];
 
-    // Eliminar del storage
     await Promise.all(imagesToDelete.map((img) => deleteImage(img)));
-    // Filtrar las imágenes del array
+
     fieldsToUpdate.images.blueprint = fieldsToUpdate.images.blueprint.filter(
       (location) => !imagesToDelete.includes(location),
     );
 
-    // Guardar en la base de datos
     const updatedAd = await Ad.findByIdAndUpdate(id, fieldsToUpdate, {
       new: true,
     });
-
     return res.status(200).json(updatedAd);
   } catch (err) {
     return next(err);
@@ -1044,13 +1128,10 @@ const adOthersImagesDelete = async (req, res, next) => {
     const ad = await Ad.findById(id);
     const fieldsToUpdate = ad;
 
-    // ✅ Asegúrate de tener un array
     const imagesToDelete = Array.isArray(toDelete) ? toDelete : [toDelete];
 
-    // ✅ Elimina físicamente cada imagen
     await Promise.all(imagesToDelete.map((img) => deleteImage(img)));
 
-    // ✅ Filtra del array original
     fieldsToUpdate.images.others = fieldsToUpdate.images.others.filter(
       (location) => !imagesToDelete.includes(location),
     );
@@ -1058,7 +1139,6 @@ const adOthersImagesDelete = async (req, res, next) => {
     const updatedAd = await Ad.findByIdAndUpdate(id, fieldsToUpdate, {
       new: true,
     });
-
     return res.status(200).json(updatedAd);
   } catch (err) {
     return next(err);
