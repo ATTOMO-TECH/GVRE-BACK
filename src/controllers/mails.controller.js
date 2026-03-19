@@ -1,4 +1,5 @@
 const nodemailer = require("nodemailer");
+const mongoose = require("mongoose");
 const { getPasswordByEmail, getTaggedEmail } = require("../utils/utils");
 const Consultant = require("../models/consultant.model");
 const Contact = require("./../models/contact.model");
@@ -1772,13 +1773,9 @@ const sendAdToContacts = async (req, res) => {
                           "
                         >
                           <br />Don't want to receive this type of email?<span>&nbsp;</span
-                          > <a 
-                            href="${unsubscribeLink}"
-                            style="color: rgb(153, 153, 153)"
-                            target="_blank"
-                          >
-                            Unsubscribe
-                          </a>
+                          > <a href="{{unsubscribeLink}}" style="color: rgb(153, 153, 153)" target="_blank">
+  Unsubscribe
+</a>
                           ><span>&nbsp;</span>&nbsp;<br />&nbsp;
                         </td>
                       </tr>
@@ -1848,7 +1845,7 @@ const sendAdToContacts = async (req, res) => {
       const unsubscribeLink = `${process.env.BACKEND_URL}/mails/unsubscribe/${recipient.requestContact._id}`;
 
       const personalizedHtml = baseMailOptions.html.replace(
-        /\$\{unsubscribeLink\}/g,
+        /{{unsubscribeLink}}/g,
         unsubscribeLink,
       );
       const mailOptions = { ...baseMailOptions };

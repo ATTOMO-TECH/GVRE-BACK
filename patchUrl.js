@@ -2,13 +2,13 @@ require("dotenv").config();
 const mongoose = require("mongoose");
 
 // --- IMPORTA TUS MODELOS ---
-const Ad = require("../models/ad.model");
-const Blog = require("../models/blog.model");
-const Catalog = require("../models/catalog.model");
-const CatalogsPage = require("../models/catalogPage.model");
-const Consultant = require("../models/consultant.model");
-const MarketingCampaign = require("../models/marketingCampaing.model");
-const WebHome = require("../models/webHome.model");
+const Ad = require("./src/models/ad.model");
+const Blog = require("./src/models/blog.model");
+const Catalog = require("./src/models/catalog.model");
+const CatalogsPage = require("./src/models/catalogPage.model");
+const Consultant = require("./src/models/consultant.model");
+const MarketingCampaign = require("./src/models/marketingCampaing.model");
+const WebHome = require("./src/models/webHome.model");
 
 // --- LA MISMA CONFIGURACIÓN ---
 const migrationConfig = [
