@@ -18,18 +18,21 @@ router.post(
   "/create",
   //   upload.single("portraidImage catalog"),
   uploadFiles.array("files"),
-  catalogCreate
+  catalogCreate,
 );
 
 router.post(
   "/uploadImageCatalogSection",
   upload.single("mainImageCatalog"),
-  uploadMainImageCatalogSection
+  uploadMainImageCatalogSection,
 );
 
 router.get("/getImageCatalogSection", getMainImageCatalogSection);
 
-router.delete("/deleteImageCatalogSection/:id", deleteImageCatalogSection);
+router.delete(
+  "/await deleteImageCatalogSection/:id",
+  deleteImageCatalogSection,
+);
 
 router.put("/edit/:id", uploadFiles.array("files"), catalogEdit);
 

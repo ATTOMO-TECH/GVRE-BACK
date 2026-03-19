@@ -1061,16 +1061,15 @@ const adMainImagesDelete = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    deleteImage(req.body.toDelete);
+    await deleteImage(req.body.toDelete);
+
     const ad = await Ad.findById(id);
     const fieldsToUpdate = ad;
-
     fieldsToUpdate.images.main = "";
 
     const updatedAd = await Ad.findByIdAndUpdate(id, fieldsToUpdate, {
       new: true,
     });
-
     return res.status(200).json(updatedAd);
   } catch (err) {
     return next(err);
@@ -1081,16 +1080,15 @@ const adMediaImagesDelete = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    deleteImage(req.body.toDelete);
+    await deleteImage(req.body.toDelete);
+
     const ad = await Ad.findById(id);
     const fieldsToUpdate = ad;
-
     fieldsToUpdate.images.media = "";
 
     const updatedAd = await Ad.findByIdAndUpdate(id, fieldsToUpdate, {
       new: true,
     });
-
     return res.status(200).json(updatedAd);
   } catch (err) {
     return next(err);
@@ -1105,21 +1103,17 @@ const adBlueprintImagesDelete = async (req, res, next) => {
     const ad = await Ad.findById(id);
     const fieldsToUpdate = ad;
 
-    // Asegúrate de que sea un array
     const imagesToDelete = Array.isArray(toDelete) ? toDelete : [toDelete];
 
-    // Eliminar del storage
     await Promise.all(imagesToDelete.map((img) => deleteImage(img)));
-    // Filtrar las imágenes del array
+
     fieldsToUpdate.images.blueprint = fieldsToUpdate.images.blueprint.filter(
       (location) => !imagesToDelete.includes(location),
     );
 
-    // Guardar en la base de datos
     const updatedAd = await Ad.findByIdAndUpdate(id, fieldsToUpdate, {
       new: true,
     });
-
     return res.status(200).json(updatedAd);
   } catch (err) {
     return next(err);
@@ -1134,13 +1128,10 @@ const adOthersImagesDelete = async (req, res, next) => {
     const ad = await Ad.findById(id);
     const fieldsToUpdate = ad;
 
-    // ✅ Asegúrate de tener un array
     const imagesToDelete = Array.isArray(toDelete) ? toDelete : [toDelete];
 
-    // ✅ Elimina físicamente cada imagen
     await Promise.all(imagesToDelete.map((img) => deleteImage(img)));
 
-    // ✅ Filtra del array original
     fieldsToUpdate.images.others = fieldsToUpdate.images.others.filter(
       (location) => !imagesToDelete.includes(location),
     );
@@ -1148,7 +1139,6 @@ const adOthersImagesDelete = async (req, res, next) => {
     const updatedAd = await Ad.findByIdAndUpdate(id, fieldsToUpdate, {
       new: true,
     });
-
     return res.status(200).json(updatedAd);
   } catch (err) {
     return next(err);
