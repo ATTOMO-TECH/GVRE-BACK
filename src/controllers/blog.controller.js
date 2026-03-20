@@ -1,5 +1,6 @@
 const Blog = require("../models/blog.model");
 const { revalidateWeb } = require("../utils/revalidateWeb");
+const { getCdnUrl, deleteImage } = require("../middlewares/file.middleware");
 
 // 1. Crear Post con Imagen
 const createBlog = async (req, res) => {
@@ -16,14 +17,13 @@ const createBlog = async (req, res) => {
   }
 
   if (req.file) {
-    // Construimos la URL como en tu ejemplo de Ads
-    blog.image = `https://${req.file.bucket}.fra1.digitaloceanspaces.com/${req.file.key}`;
+    blog.image = getCdnUrl(req.file);
   }
 
   try {
     const blogStored = await blog.save();
 
-    revalidateWeb("get-blogs");
+    await revalidateWeb("get-blogs"); // Mejor con await por si es asíncrona
 
     res.status(201).send({ msg: "Blog creado con éxito", blog: blogStored });
   } catch (error) {
@@ -47,7 +47,18 @@ const updateBlog = async (req, res) => {
   }
 
   if (req.file) {
-    updates.image = `https://${req.file.bucket}.fra1.digitaloceanspaces.com/${req.file.key}`;
+    // CORRECCIÓN: Buscamos la imagen vieja y la borramos de AWS para no ocupar espacio
+    try {
+      const oldBlog = await Blog.findById(id);
+      if (oldBlog && oldBlog.image) {
+        await deleteImage(oldBlog.image);
+      }
+    } catch (e) {
+      console.error("Aviso: No se pudo borrar la imagen anterior de S3", e);
+    }
+
+    // CORRECCIÓN: Usamos la función centralizada
+    updates.image = getCdnUrl(req.file);
   }
 
   try {
@@ -57,8 +68,8 @@ const updateBlog = async (req, res) => {
     if (!blogUpdated)
       return res.status(404).send({ msg: "No se encontró el blog" });
 
-    revalidateWeb("get-blogs");
-    revalidateWeb(`blog-${blogUpdated.slug}`);
+    await revalidateWeb("get-blogs");
+    await revalidateWeb(`blog-${blogUpdated.slug}`);
 
     res
       .status(200)
@@ -122,11 +133,20 @@ const getPaginatedBlogs = async (req, res) => {
 const deleteBlog = async (req, res) => {
   const { id } = req.params;
   try {
+    const blogToDelete = await Blog.findById(id);
+    if (blogToDelete && blogToDelete.image) {
+      try {
+        await deleteImage(blogToDelete.image);
+      } catch (e) {
+        console.error("Aviso: No se pudo borrar la imagen de S3", e);
+      }
+    }
+
     const blogDeleted = await Blog.findByIdAndDelete(id);
 
     if (blogDeleted) {
-      revalidateWeb("get-blogs");
-      revalidateWeb(`blog-${blogDeleted.slug}`);
+      await revalidateWeb("get-blogs");
+      await revalidateWeb(`blog-${blogDeleted.slug}`);
     }
 
     res.status(200).send({ msg: "Blog eliminado" });
