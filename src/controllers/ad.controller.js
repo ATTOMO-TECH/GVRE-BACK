@@ -1,6 +1,6 @@
 const Ad = require("./../models/ad.model");
 const Request = require("./../models/request.model");
-const { deleteImage } = require("../middlewares/file.middleware");
+const { deleteImage, getCdnUrl } = require("../middlewares/file.middleware");
 const mongoose = require("mongoose");
 const Contact = require("../models/contact.model");
 const Consultant = require("../models/consultant.model");
@@ -945,18 +945,15 @@ const adCreate = async (req, res, next) => {
 const adMainImageUpload = async (req, res, next) => {
   try {
     const { id } = req.params;
-
     const ad = await Ad.findById(id);
     const fieldsToUpdate = ad;
 
-    fieldsToUpdate.images.main = req.file
-      ? `https://${req.file.bucket}.fra1.digitaloceanspaces.com/${req.file.key}`
-      : "";
+    // CORRECCIÓN: Uso de getCdnUrl
+    fieldsToUpdate.images.main = req.file ? getCdnUrl(req.file) : "";
 
     const updatedAd = await Ad.findByIdAndUpdate(id, fieldsToUpdate, {
       new: true,
     });
-
     return res.status(200).json(updatedAd);
   } catch (err) {
     return next(err);
@@ -966,18 +963,15 @@ const adMainImageUpload = async (req, res, next) => {
 const adMediaImageUpload = async (req, res, next) => {
   try {
     const { id } = req.params;
-
     const ad = await Ad.findById(id);
     const fieldsToUpdate = ad;
 
-    fieldsToUpdate.images.media = req.file
-      ? `https://${req.file.bucket}.fra1.digitaloceanspaces.com/${req.file.key}`
-      : "";
+    // CORRECCIÓN: Uso de getCdnUrl
+    fieldsToUpdate.images.media = req.file ? getCdnUrl(req.file) : "";
 
     const updatedAd = await Ad.findByIdAndUpdate(id, fieldsToUpdate, {
       new: true,
     });
-
     return res.status(200).json(updatedAd);
   } catch (err) {
     return next(err);
@@ -988,11 +982,9 @@ const adBlueprintImageUpload = async (req, res, next) => {
   try {
     const { id } = req.params;
 
+    // CORRECCIÓN: Uso de getCdnUrl en el mapeo
     const newImageUrls = req.files
-      ? req.files.map(
-          (file) =>
-            `https://${file.bucket}.fra1.digitaloceanspaces.com/${file.key}`,
-        )
+      ? req.files.map((file) => getCdnUrl(file))
       : [];
 
     if (newImageUrls.length === 0) {
@@ -1002,16 +994,12 @@ const adBlueprintImageUpload = async (req, res, next) => {
 
     const updatedAd = await Ad.findByIdAndUpdate(
       id,
-      {
-        $push: { "images.blueprint": { $each: newImageUrls } },
-      },
+      { $push: { "images.blueprint": { $each: newImageUrls } } },
       { new: true },
     );
 
-    if (!updatedAd) {
+    if (!updatedAd)
       return res.status(404).json({ message: "Anuncio no encontrado." });
-    }
-
     return res.status(200).json(updatedAd);
   } catch (err) {
     return next(err);
@@ -1022,35 +1010,24 @@ const adOthersImagesUpload = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    // 1. Obtenemos las URLs de los archivos recién subidos por Multer.
+    // CORRECCIÓN: Uso de getCdnUrl en el mapeo
     const newImageUrls = req.files
-      ? req.files.map(
-          (file) =>
-            `https://${file.bucket}.fra1.digitaloceanspaces.com/${file.key}`,
-        )
+      ? req.files.map((file) => getCdnUrl(file))
       : [];
 
-    // Si por alguna razón no se subieron archivos, devolvemos el anuncio actual.
     if (newImageUrls.length === 0) {
       const ad = await Ad.findById(id);
       return res.status(200).json(ad);
     }
 
-    // 2. Usamos '$push' con '$each' para añadir TODAS las nuevas URLs al array 'images.others'
-    // en una sola operación atómica y segura.
     const updatedAd = await Ad.findByIdAndUpdate(
       id,
-      {
-        $push: { "images.others": { $each: newImageUrls } },
-      },
-      { new: true }, // Esta opción nos devuelve el documento ya actualizado.
+      { $push: { "images.others": { $each: newImageUrls } } },
+      { new: true },
     );
 
-    if (!updatedAd) {
+    if (!updatedAd)
       return res.status(404).json({ message: "Anuncio no encontrado." });
-    }
-
-    // 3. Devolvemos el anuncio completo y actualizado al frontend.
     return res.status(200).json(updatedAd);
   } catch (err) {
     return next(err);
@@ -1673,6 +1650,37 @@ const adDelete = async (req, res, next) => {
           "No se ha podido encontrar este anuncio. ¿Estás seguro de que existe?",
         );
     }
+
+    // =====================================================================
+    // 🧹 NUEVO: LIMPIEZA DE S3 (Evitamos imágenes huérfanas)
+    // =====================================================================
+    try {
+      const deletePromises = [];
+
+      if (adToDelete.images?.main)
+        deletePromises.push(deleteImage(adToDelete.images.main));
+      if (adToDelete.images?.media)
+        deletePromises.push(deleteImage(adToDelete.images.media));
+
+      if (adToDelete.images?.blueprint?.length > 0) {
+        adToDelete.images.blueprint.forEach((img) =>
+          deletePromises.push(deleteImage(img)),
+        );
+      }
+
+      if (adToDelete.images?.others?.length > 0) {
+        adToDelete.images.others.forEach((img) =>
+          deletePromises.push(deleteImage(img)),
+        );
+      }
+
+      if (deletePromises.length > 0) {
+        await Promise.allSettled(deletePromises);
+      }
+    } catch (e) {
+      console.error("Aviso: Error durante el borrado de imágenes en S3", e);
+    }
+    // =====================================================================
 
     response = "Anuncio borrado de la base de datos";
 
