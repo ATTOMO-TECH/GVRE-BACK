@@ -147,7 +147,7 @@ const sendAdsToContact = async (req, res) => {
                             <img
                               src=${
                                 !!ad.images.main
-                                  ? `https://ik.imagekit.io/qj2hsqo2q/${path}?tr=w-600,h-400`
+                                  ? ad.images.main
                                   : "https://images.assetsdelivery.com/compings_v2/pavelstasevich/pavelstasevich1811/pavelstasevich181101031.jpg"
                               }
                               width="600px"
