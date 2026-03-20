@@ -1,4 +1,4 @@
-const { deleteImage } = require("../middlewares/file.middleware"); // ¡CORRECCIÓN AQUÍ!
+const { deleteImage, getCdnUrl } = require("../middlewares/file.middleware"); // ¡CORRECCIÓN AQUÍ!
 const Ad = require("../models/ad.model");
 const WebHome = require("../models/webHome.model");
 const Consultant = require("../models/consultant.model");
@@ -109,7 +109,8 @@ const webHomeCreate = async (req, res, next) => {
     const newWebHome = new WebHome({
       mainTitle: req.body.mainTitle,
       mainSubtitle: req.body.mainSubtitle,
-      portraidImage: req.file.location,
+      // CORRECCIÓN: Uso de getCdnUrl
+      portraidImage: req.file ? getCdnUrl(req.file) : "",
     });
     const webHomeCreated = await newWebHome.save();
     return res.status(200).json(webHomeCreated);
@@ -126,7 +127,9 @@ const webHomeEdit = async (req, res, next) => {
     const webHomeToUpdate = webHome;
     webHomeToUpdate.mainTitle = req.body.mainTitle;
     webHomeToUpdate.mainSubtitle = req.body.mainSubtitle;
-    if (req.file?.bucket) {
+
+    // CORRECCIÓN: Detectamos file y aplicamos getCdnUrl
+    if (req.file) {
       if (webHomeToUpdate.portraidImage) {
         try {
           await deleteImage(webHomeToUpdate.portraidImage);
@@ -134,7 +137,7 @@ const webHomeEdit = async (req, res, next) => {
           console.error("Aviso: S3 falló al borrar la imagen anterior", e);
         }
       }
-      webHomeToUpdate.portraidImage = req.file.location;
+      webHomeToUpdate.portraidImage = getCdnUrl(req.file);
     }
     const updatedWebHome = await WebHome.findByIdAndUpdate(
       id,
@@ -295,7 +298,8 @@ const webResidentialCategoryImageUpload = async (req, res, next) => {
           console.error(e);
         }
       }
-      webHomeToUpdate.categoriesImages.residential = req.file.location;
+      // CORRECCIÓN: Uso de getCdnUrl
+      webHomeToUpdate.categoriesImages.residential = getCdnUrl(req.file);
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
@@ -327,7 +331,8 @@ const webPatrimonialCategoryImageUpload = async (req, res, next) => {
           console.error(e);
         }
       }
-      webHomeToUpdate.categoriesImages.patrimonial = req.file.location;
+      // CORRECCIÓN: Uso de getCdnUrl
+      webHomeToUpdate.categoriesImages.patrimonial = getCdnUrl(req.file);
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
@@ -359,7 +364,8 @@ const webArtCategoryImageUpload = async (req, res, next) => {
           console.error(e);
         }
       }
-      webHomeToUpdate.categoriesImages.art = req.file.location;
+      // CORRECCIÓN: Uso de getCdnUrl
+      webHomeToUpdate.categoriesImages.art = getCdnUrl(req.file);
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
@@ -391,7 +397,8 @@ const webCatalogCategoryImageUpload = async (req, res, next) => {
           console.error(e);
         }
       }
-      webHomeToUpdate.categoriesImages.catalog = req.file.location;
+      // CORRECCIÓN: Uso de getCdnUrl
+      webHomeToUpdate.categoriesImages.catalog = getCdnUrl(req.file);
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
@@ -423,7 +430,8 @@ const webCoastCategoryImageUpload = async (req, res, next) => {
           console.error(e);
         }
       }
-      webHomeToUpdate.otherCategoriesImages.coast = req.file.location;
+      // CORRECCIÓN: Uso de getCdnUrl
+      webHomeToUpdate.otherCategoriesImages.coast = getCdnUrl(req.file);
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
@@ -455,7 +463,8 @@ const webRusticCategoryImageUpload = async (req, res, next) => {
           console.error(e);
         }
       }
-      webHomeToUpdate.otherCategoriesImages.rustic = req.file.location;
+      // CORRECCIÓN: Uso de getCdnUrl
+      webHomeToUpdate.otherCategoriesImages.rustic = getCdnUrl(req.file);
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
@@ -487,7 +496,8 @@ const webSingularCategoryImageUpload = async (req, res, next) => {
           console.error(e);
         }
       }
-      webHomeToUpdate.otherCategoriesImages.singular = req.file.location;
+      // CORRECCIÓN: Uso de getCdnUrl
+      webHomeToUpdate.otherCategoriesImages.singular = getCdnUrl(req.file);
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
@@ -520,7 +530,8 @@ const webInteriorismTextAndImageUpload = async (req, res, next) => {
             console.error(e);
           }
         }
-        webHomeToUpdate.sections.interiorims.image = req.file.location;
+        // CORRECCIÓN: Uso de getCdnUrl
+        webHomeToUpdate.sections.interiorims.image = getCdnUrl(req.file);
       }
       webHomeToUpdate.sections.interiorims.title = req.body.title;
       webHomeToUpdate.sections.interiorims.buttonText = req.body.buttonText;
@@ -558,7 +569,8 @@ const webSellTextAndImageUpload = async (req, res, next) => {
             console.error(e);
           }
         }
-        webHomeToUpdate.sections.sell.image = req.file.location;
+        // CORRECCIÓN: Uso de getCdnUrl
+        webHomeToUpdate.sections.sell.image = getCdnUrl(req.file);
       }
       webHomeToUpdate.sections.sell.title = req.body.title;
       webHomeToUpdate.sections.sell.buttonText = req.body.buttonText;
@@ -595,7 +607,8 @@ const webOfficeTextAndImageUpload = async (req, res, next) => {
             console.error(e);
           }
         }
-        webHomeToUpdate.sections.offices.image = req.file.location;
+        // CORRECCIÓN: Uso de getCdnUrl
+        webHomeToUpdate.sections.offices.image = getCdnUrl(req.file);
       }
       webHomeToUpdate.sections.offices.title = req.body.title;
       webHomeToUpdate.sections.offices.buttonText = req.body.buttonText;
@@ -633,7 +646,7 @@ const webHomeTalkWithUs = async (req, res, next) => {
             console.error(e);
           }
         }
-        webHomeToUpdate.talkWithUs.contactImage = req.file.location;
+        webHomeToUpdate.talkWithUs.contactImage = getCdnUrl(req.file);
       }
       webHomeToUpdate.talkWithUs.titleHome = req.body.titleHome;
       webHomeToUpdate.talkWithUs.titleContact = req.body.titleContact;
@@ -765,7 +778,8 @@ const webDevelopmentServicesUpload = async (req, res, next) => {
             console.error(e);
           }
         }
-        webHomeToUpdate.services.development.image = req.file.location;
+        // CORRECCIÓN: Uso de getCdnUrl
+        webHomeToUpdate.services.development.image = getCdnUrl(req.file);
       }
       webHomeToUpdate.services.development.title = req.body.title;
       webHomeToUpdate.services.development.description = req.body.description;
@@ -899,7 +913,8 @@ const webInteriorismServicesUpload = async (req, res, next) => {
             console.error(e);
           }
         }
-        webHomeToUpdate.services.interiorims.image = req.file.location;
+        // CORRECCIÓN: Uso de getCdnUrl
+        webHomeToUpdate.services.interiorims.image = getCdnUrl(req.file);
       }
       webHomeToUpdate.services.interiorims.title = req.body.title;
       webHomeToUpdate.services.interiorims.description = req.body.description;
@@ -989,7 +1004,8 @@ const updateCategoriesSection = async (req, res, next) => {
           );
         }
       }
-      webHome.categoriesSection[key].image = file.location;
+      // CORRECCIÓN: Uso de getCdnUrl
+      webHome.categoriesSection[key].image = getCdnUrl(file);
     }
 
     webHome.markModified("categoriesSection");

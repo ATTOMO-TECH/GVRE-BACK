@@ -1,6 +1,6 @@
 const Consultant = require("./../models/consultant.model");
 const bcrypt = require("bcrypt");
-const { deleteImage } = require("../middlewares/file.middleware");
+const { deleteImage, getCdnUrl } = require("../middlewares/file.middleware");
 const { isValidPassword, isValidEmail } = require("../auth/utils");
 
 const consultantGetAll = async (req, res, next) => {
@@ -30,12 +30,12 @@ const consultantGetOne = async (req, res, next) => {
     return next(err);
   }
 };
-
 const consultantCreate = async (req, res, next) => {
   try {
-    const avatar = req.files?.avatar?.[0] ? req.files.avatar[0].location : "";
+    // CORRECCIÓN: Usamos getCdnUrl para el avatar y el logo
+    const avatar = req.files?.avatar?.[0] ? getCdnUrl(req.files.avatar[0]) : "";
     const companyUnitLogo = req.files?.companyUnitLogo?.[0]
-      ? req.files.companyUnitLogo[0].location
+      ? getCdnUrl(req.files.companyUnitLogo[0])
       : "";
 
     let offices = [];
@@ -175,19 +175,20 @@ const consultantUpdate = async (req, res, next) => {
     if (req.files) {
       const { avatar, companyUnitLogo, ...backgroundImages } = req.files;
 
-      // CORRECCIÓN: Borrado en paralelo y manejando el error para no frenar el update
       const deletePromises = [];
 
       if (avatar) {
         if (consultant.avatar)
           deletePromises.push(deleteImage(consultant.avatar));
-        fieldsToUpdate.avatar = avatar[0].location;
+        // CORRECCIÓN: Usamos getCdnUrl
+        fieldsToUpdate.avatar = getCdnUrl(avatar[0]);
       }
 
       if (companyUnitLogo) {
         if (consultant.companyUnitLogo)
           deletePromises.push(deleteImage(consultant.companyUnitLogo));
-        fieldsToUpdate.companyUnitLogo = companyUnitLogo[0].location;
+        // CORRECCIÓN: Usamos getCdnUrl
+        fieldsToUpdate.companyUnitLogo = getCdnUrl(companyUnitLogo[0]);
       }
 
       if (deletePromises.length > 0) {
@@ -201,6 +202,7 @@ const consultantUpdate = async (req, res, next) => {
         }
       }
 
+      // Procesamiento dinámico de las firmas de email
       Object.keys(backgroundImages).forEach((key) => {
         const [priority, zoneKey] = key.split("_").slice(0, 2);
 
@@ -213,8 +215,9 @@ const consultantUpdate = async (req, res, next) => {
           fieldsToUpdate.consultantEmailSignZones[priority][zoneKey] = {};
         }
 
+        // CORRECCIÓN: Usamos getCdnUrl para las imágenes de las firmas
         fieldsToUpdate.consultantEmailSignZones[priority][zoneKey].image =
-          backgroundImages[key][0].location;
+          getCdnUrl(backgroundImages[key][0]);
       });
     }
 
@@ -273,11 +276,9 @@ const deleteConsultantImage = async (req, res, next) => {
     const imageToDelete = consultant.get(imageField);
 
     if (imageToDelete !== toDelete) {
-      return res
-        .status(400)
-        .json({
-          message: "La imagen enviada no coincide con la base de datos",
-        });
+      return res.status(400).json({
+        message: "La imagen enviada no coincide con la base de datos",
+      });
     }
 
     // CORRECCIÓN: Borramos de S3, pero si falla, al menos limpiamos la BD.
@@ -303,7 +304,6 @@ const consultantDelete = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    // CORRECCIÓN: AL IGUAL QUE EN LOS ANUNCIOS, DEBEMOS BORRAR LAS IMÁGENES AL BORRAR EL CONSULTOR
     const consultantToDelete = await Consultant.findById(id);
 
     if (!consultantToDelete) {
@@ -311,17 +311,35 @@ const consultantDelete = async (req, res, next) => {
     }
 
     const imagesToClean = [];
+
+    // 1. Borramos Avatar y Logo
     if (consultantToDelete.avatar)
       imagesToClean.push(consultantToDelete.avatar);
     if (consultantToDelete.companyUnitLogo)
       imagesToClean.push(consultantToDelete.companyUnitLogo);
 
+    // 2. Borramos las imágenes de las firmas de email (que están anidadas)
+    if (consultantToDelete.consultantEmailSignZones) {
+      const zones = consultantToDelete.consultantEmailSignZones;
+      // Recorremos las prioridades (high, medium, low)
+      Object.keys(zones).forEach((priority) => {
+        if (typeof zones[priority] === "object") {
+          // Recorremos las zonas dentro de cada prioridad (zone1, zone2...)
+          Object.keys(zones[priority]).forEach((zoneKey) => {
+            const img = zones[priority][zoneKey]?.image;
+            if (img) imagesToClean.push(img);
+          });
+        }
+      });
+    }
+
+    // Ejecutamos el borrado masivo en S3
     if (imagesToClean.length > 0) {
       try {
-        await Promise.all(imagesToClean.map((img) => deleteImage(img)));
+        await Promise.allSettled(imagesToClean.map((img) => deleteImage(img)));
       } catch (e) {
         console.error(
-          "Aviso: Error limpiando avatar/logo de S3 al borrar el consultor",
+          "Aviso: Error limpiando imágenes de S3 al borrar el consultor",
           e,
         );
       }

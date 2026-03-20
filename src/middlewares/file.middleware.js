@@ -111,4 +111,9 @@ const deleteImage = async (fileUrl) => {
   }
 };
 
-module.exports = { upload, uploadFiles, s3, deleteImage };
+const getCdnUrl = (file) => {
+  if (!file) return null;
+  return `https://${file.bucket}.fra1.cdn.digitaloceanspaces.com/${file.key}`;
+};
+
+module.exports = { upload, uploadFiles, s3, deleteImage, getCdnUrl };
