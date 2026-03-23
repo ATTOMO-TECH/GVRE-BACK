@@ -28,6 +28,7 @@ const {
   getFilteredAds,
   getActiveInventoryZones,
   getSimilarAds,
+  getFilterStats,
 } = require("../controllers/web.controller");
 
 const router = express.Router();
@@ -158,6 +159,9 @@ router.put("/home/categories-section/edit/:id", upload.single("image"));
 
 //ACITVE ZONES
 router.post("/active-inventory-zones", getActiveInventoryZones);
+
+// FILTERED STATS
+router.post("/filter-stats", getFilterStats);
 
 //FILTERED ADS
 router.post("/filtered-ads", getFilteredAds);

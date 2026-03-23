@@ -1,4 +1,4 @@
-const { deleteImage } = require("../middlewares/file.middleware"); // ¡CORRECCIÓN AQUÍ!
+const { deleteImage, getCdnUrl } = require("../middlewares/file.middleware"); // ¡CORRECCIÓN AQUÍ!
 const Ad = require("../models/ad.model");
 const WebHome = require("../models/webHome.model");
 const Consultant = require("../models/consultant.model");
@@ -109,7 +109,8 @@ const webHomeCreate = async (req, res, next) => {
     const newWebHome = new WebHome({
       mainTitle: req.body.mainTitle,
       mainSubtitle: req.body.mainSubtitle,
-      portraidImage: req.file.location,
+      // CORRECCIÓN: Uso de getCdnUrl
+      portraidImage: req.file ? getCdnUrl(req.file) : "",
     });
     const webHomeCreated = await newWebHome.save();
     return res.status(200).json(webHomeCreated);
@@ -126,7 +127,9 @@ const webHomeEdit = async (req, res, next) => {
     const webHomeToUpdate = webHome;
     webHomeToUpdate.mainTitle = req.body.mainTitle;
     webHomeToUpdate.mainSubtitle = req.body.mainSubtitle;
-    if (req.file?.bucket) {
+
+    // CORRECCIÓN: Detectamos file y aplicamos getCdnUrl
+    if (req.file) {
       if (webHomeToUpdate.portraidImage) {
         try {
           await deleteImage(webHomeToUpdate.portraidImage);
@@ -134,7 +137,7 @@ const webHomeEdit = async (req, res, next) => {
           console.error("Aviso: S3 falló al borrar la imagen anterior", e);
         }
       }
-      webHomeToUpdate.portraidImage = req.file.location;
+      webHomeToUpdate.portraidImage = getCdnUrl(req.file);
     }
     const updatedWebHome = await WebHome.findByIdAndUpdate(
       id,
@@ -295,7 +298,8 @@ const webResidentialCategoryImageUpload = async (req, res, next) => {
           console.error(e);
         }
       }
-      webHomeToUpdate.categoriesImages.residential = req.file.location;
+      // CORRECCIÓN: Uso de getCdnUrl
+      webHomeToUpdate.categoriesImages.residential = getCdnUrl(req.file);
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
@@ -327,7 +331,8 @@ const webPatrimonialCategoryImageUpload = async (req, res, next) => {
           console.error(e);
         }
       }
-      webHomeToUpdate.categoriesImages.patrimonial = req.file.location;
+      // CORRECCIÓN: Uso de getCdnUrl
+      webHomeToUpdate.categoriesImages.patrimonial = getCdnUrl(req.file);
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
@@ -359,7 +364,8 @@ const webArtCategoryImageUpload = async (req, res, next) => {
           console.error(e);
         }
       }
-      webHomeToUpdate.categoriesImages.art = req.file.location;
+      // CORRECCIÓN: Uso de getCdnUrl
+      webHomeToUpdate.categoriesImages.art = getCdnUrl(req.file);
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
@@ -391,7 +397,8 @@ const webCatalogCategoryImageUpload = async (req, res, next) => {
           console.error(e);
         }
       }
-      webHomeToUpdate.categoriesImages.catalog = req.file.location;
+      // CORRECCIÓN: Uso de getCdnUrl
+      webHomeToUpdate.categoriesImages.catalog = getCdnUrl(req.file);
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
@@ -423,7 +430,8 @@ const webCoastCategoryImageUpload = async (req, res, next) => {
           console.error(e);
         }
       }
-      webHomeToUpdate.otherCategoriesImages.coast = req.file.location;
+      // CORRECCIÓN: Uso de getCdnUrl
+      webHomeToUpdate.otherCategoriesImages.coast = getCdnUrl(req.file);
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
@@ -455,7 +463,8 @@ const webRusticCategoryImageUpload = async (req, res, next) => {
           console.error(e);
         }
       }
-      webHomeToUpdate.otherCategoriesImages.rustic = req.file.location;
+      // CORRECCIÓN: Uso de getCdnUrl
+      webHomeToUpdate.otherCategoriesImages.rustic = getCdnUrl(req.file);
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
@@ -487,7 +496,8 @@ const webSingularCategoryImageUpload = async (req, res, next) => {
           console.error(e);
         }
       }
-      webHomeToUpdate.otherCategoriesImages.singular = req.file.location;
+      // CORRECCIÓN: Uso de getCdnUrl
+      webHomeToUpdate.otherCategoriesImages.singular = getCdnUrl(req.file);
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
@@ -520,7 +530,8 @@ const webInteriorismTextAndImageUpload = async (req, res, next) => {
             console.error(e);
           }
         }
-        webHomeToUpdate.sections.interiorims.image = req.file.location;
+        // CORRECCIÓN: Uso de getCdnUrl
+        webHomeToUpdate.sections.interiorims.image = getCdnUrl(req.file);
       }
       webHomeToUpdate.sections.interiorims.title = req.body.title;
       webHomeToUpdate.sections.interiorims.buttonText = req.body.buttonText;
@@ -558,7 +569,8 @@ const webSellTextAndImageUpload = async (req, res, next) => {
             console.error(e);
           }
         }
-        webHomeToUpdate.sections.sell.image = req.file.location;
+        // CORRECCIÓN: Uso de getCdnUrl
+        webHomeToUpdate.sections.sell.image = getCdnUrl(req.file);
       }
       webHomeToUpdate.sections.sell.title = req.body.title;
       webHomeToUpdate.sections.sell.buttonText = req.body.buttonText;
@@ -595,7 +607,8 @@ const webOfficeTextAndImageUpload = async (req, res, next) => {
             console.error(e);
           }
         }
-        webHomeToUpdate.sections.offices.image = req.file.location;
+        // CORRECCIÓN: Uso de getCdnUrl
+        webHomeToUpdate.sections.offices.image = getCdnUrl(req.file);
       }
       webHomeToUpdate.sections.offices.title = req.body.title;
       webHomeToUpdate.sections.offices.buttonText = req.body.buttonText;
@@ -633,7 +646,7 @@ const webHomeTalkWithUs = async (req, res, next) => {
             console.error(e);
           }
         }
-        webHomeToUpdate.talkWithUs.contactImage = req.file.location;
+        webHomeToUpdate.talkWithUs.contactImage = getCdnUrl(req.file);
       }
       webHomeToUpdate.talkWithUs.titleHome = req.body.titleHome;
       webHomeToUpdate.talkWithUs.titleContact = req.body.titleContact;
@@ -765,7 +778,8 @@ const webDevelopmentServicesUpload = async (req, res, next) => {
             console.error(e);
           }
         }
-        webHomeToUpdate.services.development.image = req.file.location;
+        // CORRECCIÓN: Uso de getCdnUrl
+        webHomeToUpdate.services.development.image = getCdnUrl(req.file);
       }
       webHomeToUpdate.services.development.title = req.body.title;
       webHomeToUpdate.services.development.description = req.body.description;
@@ -899,7 +913,8 @@ const webInteriorismServicesUpload = async (req, res, next) => {
             console.error(e);
           }
         }
-        webHomeToUpdate.services.interiorims.image = req.file.location;
+        // CORRECCIÓN: Uso de getCdnUrl
+        webHomeToUpdate.services.interiorims.image = getCdnUrl(req.file);
       }
       webHomeToUpdate.services.interiorims.title = req.body.title;
       webHomeToUpdate.services.interiorims.description = req.body.description;
@@ -989,7 +1004,8 @@ const updateCategoriesSection = async (req, res, next) => {
           );
         }
       }
-      webHome.categoriesSection[key].image = file.location;
+      // CORRECCIÓN: Uso de getCdnUrl
+      webHome.categoriesSection[key].image = getCdnUrl(file);
     }
 
     webHome.markModified("categoriesSection");
@@ -1008,7 +1024,7 @@ const getFilteredAds = async (req, res, next) => {
       page = 1,
       limit = 15,
       department,
-      zone,
+      zone, // Este campo ahora trae slugs: "almagro,recoletos"
       operation,
       propertyType,
       maxPrice,
@@ -1031,16 +1047,64 @@ const getFilteredAds = async (req, res, next) => {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
+    // 1. Normalización del Departamento
     let targetDepartment =
       department === "Patrimonial" ? "Patrimonio" : department;
 
-    if (targetDepartment === "Residencial" && zone) {
-      const costaZones = ["marbella", "sotogrande", "puerto santa maria"];
-      if (costaZones.some((z) => zone.toLowerCase().includes(z))) {
-        targetDepartment = "Costa";
+    // --- 2. LÓGICA DE ZONAS (Sincronizada por Slugs) ---
+    let zoneIds = [];
+
+    if (zone && !["madrid", "espana"].includes(zone.toLowerCase())) {
+      const zoneString = Array.isArray(zone) ? zone.join(",") : String(zone);
+      const decodedZone = decodeURIComponent(zoneString).trim().toLowerCase();
+
+      // Definimos el ámbito de búsqueda
+      const searchZonesIn =
+        targetDepartment === "Patrimonio"
+          ? ["Patrimonial"]
+          : ["Residencial", "Costa"];
+
+      // 💡 MAPA DE CIUDADES DE LA COSTA (Intercepta el botón "Ver Todos")
+      const citySubzones = {
+        marbella: "Marbella",
+        sotogrande: "Sotogrande",
+        "puerto santa maria": "Puerto de Santa María",
+      };
+
+      let matchingZones = [];
+
+      if (citySubzones[decodedZone]) {
+        // A) Es una CIUDAD de la Costa -> Traemos TODOS sus barrios de golpe
+        matchingZones = await Zone.find({
+          subzone: citySubzones[decodedZone],
+          zone: { $in: searchZonesIn },
+        }).lean();
+      } else {
+        // B) Es una búsqueda normal de BARRIOS -> Búsqueda exacta por SLUG
+        const slugsArray = decodedZone.split(",").map((s) => s.trim());
+        matchingZones = await Zone.find({
+          slug: { $in: slugsArray },
+          zone: { $in: searchZonesIn },
+        }).lean();
+      }
+
+      if (matchingZones.length > 0) {
+        zoneIds = matchingZones.map((z) => z._id);
+
+        // Inteligencia: Si detectamos que la zona es de Costa, cambiamos el departamento
+        const hasCostaZone = matchingZones.some((z) => z.zone === "Costa");
+        if (hasCostaZone && targetDepartment === "Residencial") {
+          targetDepartment = "Costa";
+        }
+      } else {
+        // Si se filtró por una zona que no existe, devolvemos array vacío de resultados
+        return res
+          .status(200)
+          .json({ data: [], pagination: { total: 0, page, totalPages: 0 } });
       }
     }
 
+    // 3. Construcción del Filtro Principal de Anuncios
     const filter = {
       showOnWeb: true,
       department: targetDepartment,
@@ -1048,25 +1112,28 @@ const getFilteredAds = async (req, res, next) => {
       gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
     };
 
-    if (operation && operation !== "") {
-      const isSale =
-        operation.toLowerCase() === "sale" ||
-        operation.toLowerCase() === "venta";
-      filter.adType = { $in: [isSale ? "Venta" : "Alquiler"] };
-      const priceField = isSale ? "sale.saleValue" : "rent.rentValue";
-
-      if (maxPrice) {
-        filter[priceField] = { $lte: Number(maxPrice), $ne: null };
-      }
-    } else {
-      if (maxPrice && Number(maxPrice) < 9000000) {
-        filter.$or = [
-          { "sale.saleValue": { $lte: Number(maxPrice), $gt: 0 } },
-          { "rent.rentValue": { $lte: Number(maxPrice), $gt: 0 } },
-        ];
-      }
+    if (zoneIds.length > 0) {
+      filter.zone = { $in: zoneIds };
     }
 
+    // --- 4. FILTROS DE OPERACIÓN Y PRECIO ---
+    if (operation) {
+      const isSale = ["sale", "venta"].includes(operation.toLowerCase());
+      filter.adType = { $in: [isSale ? "Venta" : "Alquiler"] };
+
+      const priceField = isSale ? "sale.saleValue" : "rent.rentValue";
+      if (maxPrice) {
+        filter[priceField] = { $lte: Number(maxPrice), $gt: 0 };
+      }
+    } else if (maxPrice) {
+      // Si no hay operación definida pero sí precio máximo (fallback)
+      filter.$or = [
+        { "sale.saleValue": { $lte: Number(maxPrice), $gt: 0 } },
+        { "rent.rentValue": { $lte: Number(maxPrice), $gt: 0 } },
+      ];
+    }
+
+    // --- 5. ATRIBUTOS Y SUPERFICIE ---
     if (propertyType && propertyType !== "Todos") {
       filter.adBuildingType = { $in: propertyType.split(",") };
     }
@@ -1074,95 +1141,50 @@ const getFilteredAds = async (req, res, next) => {
       filter.buildSurface = { $lte: Number(maxSurface) };
     }
 
-    if (pool === "true") filter["quality.others.swimmingPool"] = true;
+    // Mapeo dinámico de booleanos
+    const booleanFilters = {
+      "quality.others.swimmingPool": pool,
+      "quality.others.terrace": terrace,
+      profitability: profitability,
+      "quality.others.coworking": coworking,
+      "quality.others.smokeOutlet": smokeOutlet,
+      "quality.others.implanted": implanted,
+      "quality.others.separateEntrance": separateEntrance,
+      "quality.others.exclusiveOfficeBuilding": exclusiveOffice,
+      "quality.others.classicBuilding": classicBuilding,
+      "quality.others.mixedBuilding": mixedBuilding,
+      "quality.reformed": reformed,
+      "quality.toReform": toReform,
+    };
+
+    Object.entries(booleanFilters).forEach(([path, value]) => {
+      if (value === "true") filter[path] = true;
+    });
+
     if (garage === "true") filter["quality.parking"] = { $gt: 0 };
-    if (terrace === "true") filter["quality.others.terrace"] = true;
-    if (profitability === "true") filter.profitability = true;
-    if (coworking === "true") filter["quality.others.coworking"] = true;
-    if (smokeOutlet === "true") filter["quality.others.smokeOutlet"] = true;
-    if (implanted === "true") filter["quality.others.implanted"] = true;
-    if (separateEntrance === "true")
-      filter["quality.others.separateEntrance"] = true;
-    if (exclusiveOffice === "true")
-      filter["quality.others.exclusiveOfficeBuilding"] = true;
-    if (classicBuilding === "true")
-      filter["quality.others.classicBuilding"] = true;
-    if (mixedBuilding === "true") filter["quality.others.mixedBuilding"] = true;
-    if (reformed === "true") filter["quality.reformed"] = true;
-    if (toReform === "true") filter["quality.toReform"] = true;
 
-    if (
-      zone &&
-      zone.toLowerCase() !== "madrid" &&
-      zone.toLowerCase() !== "espana"
-    ) {
-      const slugsArray = zone.split(",").map((s) => s.trim().toLowerCase());
-      const zoneSearchDept =
-        targetDepartment === "Patrimonio" ? "Patrimonial" : targetDepartment;
-
-      const zoneConditions = slugsArray.map((slug) => {
-        const nameToSearch = slug.replace(/-/g, " ");
-        const flexiblePattern = makeDiacriticRegex(nameToSearch);
-        return { name: { $regex: new RegExp(`^${flexiblePattern}$`, "i") } };
-      });
-
-      const matchingZones = await Zone.find({
-        zone: zoneSearchDept,
-        $or: zoneConditions,
-      })
-        .select("_id")
-        .lean();
-
-      if (matchingZones.length > 0) {
-        filter.zone = {
-          $in: matchingZones.map((z) => new mongoose.Types.ObjectId(z._id)),
-        };
-      } else {
-        filter.zone = new mongoose.Types.ObjectId();
-      }
-    }
-
+    // --- 6. ORDENACIÓN ---
     let sortQuery = { createdAt: -1 };
+    const isRent = ["rent", "alquiler"].includes(operation?.toLowerCase());
 
-    if (sort === "creat-asc") {
-      sortQuery = { createdAt: -1 };
-    } else if (sort === "creat-des") {
-      sortQuery = { createdAt: 1 };
-    } else if (sort === "price-asc") {
-      const isRent = operation === "rent" || operation === "alquiler";
-      sortQuery = isRent ? { "rent.rentValue": 1 } : { "sale.saleValue": 1 };
-    } else if (sort === "price-desc") {
-      const isRent = operation === "rent" || operation === "alquiler";
-      sortQuery = isRent ? { "rent.rentValue": -1 } : { "sale.saleValue": -1 };
-    }
+    const sortOptions = {
+      "creat-asc": { createdAt: -1 },
+      "creat-des": { createdAt: 1 },
+      "price-asc": isRent ? { "rent.rentValue": 1 } : { "sale.saleValue": 1 },
+      "price-desc": isRent
+        ? { "rent.rentValue": -1 }
+        : { "sale.saleValue": -1 },
+    };
+    if (sortOptions[sort]) sortQuery = sortOptions[sort];
 
-    const fields = [
-      "_id",
-      "slug",
-      "title",
-      "zone",
-      "adReference",
-      "adType",
-      "sale",
-      "rent",
-      "adDirection",
-      "images.main",
-      "images.others",
-      "adBuildingType",
-      "buildSurface",
-      "plotSurface",
-      "quality",
-      "profitability",
-      "createdAt",
-    ].join(" ");
-
+    // --- 7. EJECUCIÓN PARALELA (Data + Stats) ---
+    // Agregación para obtener los valores máximos dinámicos del slider
     const statsQuery = Ad.aggregate([
       {
         $match: {
-          showOnWeb: true,
           department: targetDepartment,
-          adStatus: { $in: ["Activo", "En preparación"] },
-          gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
+          showOnWeb: true,
+          adStatus: "Activo",
         },
       },
       {
@@ -1178,67 +1200,59 @@ const getFilteredAds = async (req, res, next) => {
     const [totalDocs, ads, statsResult] = await Promise.all([
       Ad.countDocuments(filter),
       Ad.find(filter)
-        .select(fields)
         .populate("zone", "name")
-        .lean()
         .sort(sortQuery)
         .skip(skip)
-        .limit(parseInt(limit)),
+        .limit(parseInt(limit))
+        .lean(),
       statsQuery,
     ]);
 
     const stats = statsResult[0] || {
       maxPriceSale: 10000000,
-      maxPriceRent: 15000,
-      maxSurface: 2000,
+      maxPriceRent: 20000,
+      maxSurface: 5000,
     };
 
+    // --- 8. FORMATEO DE RESPUESTA ---
     const formattedAds = ads.map((ad) => {
-      const allImages = [ad.images?.main, ...(ad.images?.others || [])].filter(
-        Boolean,
-      );
-      const isSaleOp = ad.adType && ad.adType.includes("Venta");
-      const isRentOp = ad.adType && ad.adType.includes("Alquiler");
-
-      const sPrice =
-        isSaleOp && ad.sale?.saleValue && ad.sale?.saleShowOnWeb === true
-          ? ad.sale.saleValue
-          : null;
-      const rPrice =
-        isRentOp && ad.rent?.rentValue && ad.rent?.rentShowOnWeb === true
-          ? ad.rent.rentValue
-          : null;
-
       const activeTags = [];
-      if (sPrice) activeTags.push("Venta");
-      if (rPrice) activeTags.push("Alquiler");
+      if (ad.sale?.saleValue && ad.sale?.saleShowOnWeb)
+        activeTags.push("Venta");
+      if (ad.rent?.rentValue && ad.rent?.rentShowOnWeb)
+        activeTags.push("Alquiler");
 
       return {
         id: ad._id.toString(),
         slug: ad.slug,
         title: ad.title,
+        category: ad.department,
+        subzone: ad.zone?.[0]?.subzone || null,
         ref: ad.adReference,
-        salePrice: sPrice,
-        rentPrice: rPrice,
-        operation:
-          activeTags.length > 0
-            ? activeTags.join(" / ")
-            : ad.adType.join(" / "),
-        location:
-          (ad.adDirection?.city || "Madrid").charAt(0).toUpperCase() +
-          (ad.adDirection?.city || "Madrid").slice(1),
-        image: allImages[0] || null,
+        salePrice: ad.sale?.saleValue || null,
+        rentPrice: ad.rent?.rentValue || null,
+        operation: activeTags,
+        location: ad.adDirection?.city || "Madrid",
+        image: ad.images?.main || null,
+        images: [ad.images?.main, ...(ad.images?.others || [])]
+          .filter(Boolean)
+          .slice(0, 3),
         specs: {
           beds: ad.quality?.bedrooms || 0,
           bathrooms: ad.quality?.bathrooms || 0,
-          area: ad.buildSurface || ad.plotSurface || 0,
+          area: ad.buildSurface || 0,
+          plotArea: ad.plotSurface || 0,
+          garage: ad.quality?.parking || 0,
+          pool: ad.quality?.others?.swimmingPool
+            ? Number(ad.quality.indoorPool || 0) +
+                Number(ad.quality.outdoorPool || 0) || 1
+            : 0,
         },
-        zoneName: ad.zone[0]?.name,
+        zoneName: ad.zone?.[0]?.name || "",
         tags: [
           ad.adBuildingType?.[0],
           ad.quality?.reformed && "Reformado",
           ad.profitability && "Rentabilidad",
-          ad.quality?.others?.exclusiveOfficeBuilding && "Oficinas",
           ...activeTags,
         ]
           .filter(Boolean)
@@ -1255,24 +1269,34 @@ const getFilteredAds = async (req, res, next) => {
         totalPages: Math.ceil(totalDocs / limit),
       },
       absoluteValues: {
-        maxPriceSale: stats.maxPriceSale || 10000000,
-        maxPriceRent: stats.maxPriceRent || 15000,
-        maxSurface: stats.maxSurface || 2000,
+        maxPriceSale: stats.maxPriceSale,
+        maxPriceRent: stats.maxPriceRent,
+        maxSurface: stats.maxSurface,
       },
     });
   } catch (error) {
-    console.error("Error en getFilteredAds:", error);
+    console.error("❌ Error en getFilteredAds:", error);
     next(error);
   }
 };
 
 const getHighlightAds = async (req, res, next) => {
   try {
-    const ads = await Ad.find({ featuredOnMain: true })
+    const filter = {
+      featuredOnMain: true,
+      showOnWeb: true,
+      adStatus: { $in: ["Activo", "En preparación"] },
+      gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
+    };
+
+    const ads = await Ad.find(filter)
       .select(
-        "title zone slug adType sale rent adDirection images quality buildSurface plotSurface department",
+        "title zone slug adType sale rent adDirection images quality buildSurface plotSurface department adReference",
       )
-      .populate("zone", "name");
+      .populate("zone", "name")
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .lean();
 
     const formattedAds = ads.map((ad) => {
       const categoryMap = {
@@ -1283,48 +1307,60 @@ const getHighlightAds = async (req, res, next) => {
       };
 
       const category = categoryMap[ad.department] || "residencial";
-      const isSaleOperation = ad.adType.includes("Venta");
-      const isRentOperation = ad.adType.includes("Alquiler");
 
-      const sPrice =
-        isSaleOperation && ad.sale?.saleValue && ad.sale?.saleShowOnWeb === true
-          ? ad.sale.saleValue
-          : null;
-      const rPrice =
-        isRentOperation && ad.rent?.rentValue && ad.rent?.rentShowOnWeb === true
-          ? ad.rent.rentValue
-          : null;
-
+      // Lógica de precios y etiquetas activas
       const activeTags = [];
+      const sPrice =
+        ad.sale?.saleValue && ad.sale?.saleShowOnWeb ? ad.sale.saleValue : null;
+      const rPrice =
+        ad.rent?.rentValue && ad.rent?.rentShowOnWeb ? ad.rent.rentValue : null;
+
       if (sPrice) activeTags.push("Venta");
       if (rPrice) activeTags.push("Alquiler");
+
+      // Si no hay precios marcados para web, usamos el adType por defecto
+      const finalOperations = activeTags.length > 0 ? activeTags : ad.adType;
 
       return {
         id: ad._id.toString(),
         slug: ad.slug,
         title: ad.title,
+        ref: ad.adReference,
         zoneName: ad.zone[0]?.name || "",
         category,
         salePrice: sPrice,
         rentPrice: rPrice,
-        operation:
-          activeTags.length > 0
-            ? activeTags.join(" / ")
-            : ad.adType.join(" / "),
+        operation: finalOperations,
         location: ad.adDirection?.city || "Madrid",
         image: ad.images?.main || "",
+        // 🚀 SINCRONIZADO: Añadimos array de imágenes para el carrusel horizontal
+        images: [ad.images?.main, ...(ad.images?.others || [])]
+          .filter(Boolean)
+          .slice(0, 3),
         specs: {
           beds: ad.quality?.bedrooms || 0,
-          area: ad.buildSurface || ad.plotSurface || 0,
           bathrooms: ad.quality?.bathrooms || 0,
+          area: ad.buildSurface || 0,
+          plotArea: ad.plotSurface || 0,
+          garage: ad.quality?.parking || 0,
+          pool: ad.quality?.others?.swimmingPool
+            ? Number(ad.quality.indoorPool || 0) +
+                Number(ad.quality.outdoorPool || 0) || 1
+            : 0,
         },
-        tags: activeTags.length > 0 ? activeTags : ad.adType,
+        tags: [
+          ad.adBuildingType?.[0],
+          ad.quality?.reformed && "Reformado",
+          ...finalOperations,
+        ]
+          .filter(Boolean)
+          .slice(0, 4),
       };
     });
 
     res.status(200).json(formattedAds);
   } catch (error) {
-    console.error("Error en getHighlightAds:", error);
+    console.error("❌ Error en getHighlightAds:", error);
     next(error);
   }
 };
@@ -1495,20 +1531,125 @@ const getAdDetails = async (req, res, next) => {
 const getActiveInventoryZones = async (req, res) => {
   try {
     const { department } = req.body;
+
+    // 1. Buscamos los anuncios y traemos el campo 'slug' de la zona referenciada
     const ads = await Ad.find({
       department,
       adStatus: { $in: ["Activo", "En preparación"] },
       showOnWeb: true,
       gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
-    }).populate("zone", "name");
+    }).populate("zone", "slug"); // 🔄 CAMBIO: Pedimos el slug, no el name
 
-    const activeNames = [
-      ...new Set(ads.flatMap((ad) => ad.zone.map((z) => z.name))),
+    // 2. Extraemos los slugs únicos
+    // Usamos z.slug en lugar de z.name
+    const activeSlugs = [
+      ...new Set(ads.flatMap((ad) => ad.zone.map((z) => z.slug))),
     ];
 
-    res.status(200).json({ success: true, data: activeNames });
+    // 3. Devolvemos la lista de slugs
+    res.status(200).json({ success: true, data: activeSlugs });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getFilterStats = async (req, res, next) => {
+  try {
+    const { department, zone } = req.body;
+
+    // 1. Identificación inicial
+    let targetDepartment =
+      department === "Patrimonial" ? "Patrimonio" : department;
+
+    // 2. Búsqueda de zonas para determinar el departamento real y obtener IDs
+    let zoneIds = [];
+    if (
+      zone &&
+      zone.toLowerCase() !== "madrid" &&
+      zone.toLowerCase() !== "espana"
+    ) {
+      const slugsArray = zone.split(",").map((s) => s.trim().toLowerCase());
+
+      // Buscamos en ambos departamentos posibles para evitar conflictos
+      const searchZonesIn =
+        targetDepartment === "Patrimonio"
+          ? ["Patrimonial"]
+          : ["Residencial", "Costa"];
+
+      const zoneConditions = slugsArray.map((slug) => {
+        let nameToSearch = slug.replace(/-/g, " ");
+        if (nameToSearch === "puerto santa maria")
+          nameToSearch = "puerto de santa maria";
+
+        const flexiblePattern = makeDiacriticRegex(nameToSearch);
+        return {
+          $or: [
+            { subzone: { $regex: new RegExp(`^${flexiblePattern}$`, "i") } },
+            { name: { $regex: new RegExp(`^${flexiblePattern}$`, "i") } },
+          ],
+        };
+      });
+
+      const matchingZones = await Zone.find({
+        zone: { $in: searchZonesIn },
+        $or: zoneConditions,
+      }).lean();
+
+      if (matchingZones.length > 0) {
+        zoneIds = matchingZones.map((z) => z._id);
+
+        // Si encontramos que la zona es de "Costa", actualizamos el departamento
+        const hasCostaZone = matchingZones.some((z) => z.zone === "Costa");
+        if (hasCostaZone && targetDepartment === "Residencial") {
+          targetDepartment = "Costa";
+        }
+      } else {
+        zoneIds = [new mongoose.Types.ObjectId()];
+      }
+    }
+
+    // 3. Filtro base para la agregación
+    const statsMatch = {
+      showOnWeb: true,
+      department: targetDepartment,
+      adStatus: { $in: ["Activo", "En preparación"] },
+      gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
+    };
+
+    if (zoneIds.length > 0) {
+      statsMatch.zone = { $in: zoneIds };
+    }
+
+    // 4. Ejecución de la agregación
+    const statsResult = await Ad.aggregate([
+      { $match: statsMatch },
+      {
+        $group: {
+          _id: null,
+          maxPriceSale: { $max: "$sale.saleValue" },
+          maxPriceRent: { $max: "$rent.rentValue" },
+          maxSurface: { $max: "$buildSurface" },
+        },
+      },
+    ]);
+
+    const stats = statsResult[0] || {
+      maxPriceSale: 10000000,
+      maxPriceRent: 15000,
+      maxSurface: 5000,
+    };
+
+    res.status(200).json({
+      success: true,
+      data: {
+        maxPriceSale: stats.maxPriceSale || 10000000,
+        maxPriceRent: stats.maxPriceRent || 15000,
+        maxSurface: stats.maxSurface || 5000,
+      },
+    });
+  } catch (error) {
+    console.error("Error en getFilterStats:", error);
+    next(error);
   }
 };
 
@@ -1664,5 +1805,6 @@ module.exports = {
   getHighlightAds,
   getAdDetails,
   getActiveInventoryZones,
+  getFilterStats,
   getSimilarAds,
 };

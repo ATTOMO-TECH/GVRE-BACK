@@ -1,4 +1,4 @@
-const { deleteImage } = require("../middlewares/file.middleware");
+const { deleteImage, getCdnUrl } = require("../middlewares/file.middleware");
 const Catalog = require("../models/catalog.model");
 const CatalogPage = require("../models/catalogPage.model");
 const { revalidateWeb } = require("../utils/revalidateWeb");
@@ -26,8 +26,8 @@ const catalogCreate = async (req, res, next) => {
   try {
     const newCatalog = new Catalog({
       year: req.body.year,
-      portraidImage: req.files[0].location,
-      catalog: `https://gvre-images.fra1.digitaloceanspaces.com/${req.files[1].key}`,
+      portraidImage: getCdnUrl(req.files[0]),
+      catalog: getCdnUrl(req.files[1]),
     });
 
     const catalogCreated = await newCatalog.save();
@@ -49,7 +49,6 @@ const catalogEdit = async (req, res, next) => {
     catalogToUpdate.year = req.body.year;
 
     if (req.files.length === 2) {
-      // CORRECCIÓN: Borramos en paralelo y capturamos errores para que no bloquee la actualización
       try {
         await Promise.all([
           deleteImage(catalogToUpdate.portraidImage),
@@ -62,19 +61,19 @@ const catalogEdit = async (req, res, next) => {
         );
       }
 
-      catalogToUpdate.portraidImage = req.files[0].location;
-      catalogToUpdate.catalog = `https://gvre-images.fra1.digitaloceanspaces.com/${req.files[1].key}`;
+      catalogToUpdate.portraidImage = getCdnUrl(req.files[0]);
+      catalogToUpdate.catalog = getCdnUrl(req.files[1]);
     } else if (req.files.length === 1) {
       if (req.files[0].mimetype.includes("pdf")) {
         try {
           await deleteImage(catalogToUpdate.catalog);
         } catch (e) {}
-        catalogToUpdate.catalog = `https://gvre-images.fra1.digitaloceanspaces.com/${req.files[0].key}`;
+        catalogToUpdate.catalog = getCdnUrl(req.files[0]);
       } else {
         try {
           await deleteImage(catalogToUpdate.portraidImage);
         } catch (e) {}
-        catalogToUpdate.portraidImage = req.files[0].location;
+        catalogToUpdate.portraidImage = getCdnUrl(req.files[0]);
       }
     }
 
@@ -135,7 +134,7 @@ const catalogDelete = async (req, res, next) => {
 const uploadMainImageCatalogSection = async (req, res, next) => {
   try {
     const newCatalogPage = new CatalogPage({
-      imgSection: req.file.location,
+      imgSection: getCdnUrl(req.file),
     });
     await newCatalogPage.save();
 
