@@ -1055,7 +1055,15 @@ const getFilteredAds = async (req, res, next) => {
     let zoneIds = [];
 
     if (zone && !["madrid", "espana"].includes(zone.toLowerCase())) {
-      const slugsArray = zone.split(",").map((s) => s.trim().toLowerCase());
+      const zoneString = Array.isArray(zone) ? zone.join(",") : String(zone);
+
+      // 🔄 FIX 2: Decodificamos el string por si las comas vienen como "%2C"
+      const decodedZone = decodeURIComponent(zoneString);
+
+      // Ahora sí separamos por comas de forma segura
+      const slugsArray = decodedZone
+        .split(",")
+        .map((s) => s.trim().toLowerCase());
 
       // Definimos el ámbito de búsqueda
       const searchZonesIn =
