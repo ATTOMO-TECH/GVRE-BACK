@@ -916,6 +916,9 @@ const adCreate = async (req, res, next) => {
 
         // C. MAPA: Para que la zona se active si era el primer activo
         revalidateWeb("inventory-zones"),
+
+        // D. STATS: Porque el precio/superficie máximo pudo haber subido
+        revalidateWeb("filter-stats"),
       ];
 
       // D. Destacados: Solo si está marcado
@@ -1574,6 +1577,7 @@ const adUpdate = async (req, res, next) => {
       revalidationPromises.push(
         revalidateWeb("home-data"),
         revalidateWeb("ads-list"),
+        revalidateWeb("filter-stats"),
       );
     }
     if (
@@ -1695,9 +1699,10 @@ const adDelete = async (req, res, next) => {
       adToDelete.showOnWeb && validStatuses.includes(adToDelete.adStatus);
 
     if (wasVisible) {
-      // Siempre limpiamos Home y Listado
+      // Siempre limpiamos Home , listado y stats
       await revalidateWeb("home-data");
       await revalidateWeb("ads-list");
+      await revalidateWeb("filter-stats");
 
       // Si era destacado, limpiamos esa sección
       if (adToDelete.featuredOnMain) {
