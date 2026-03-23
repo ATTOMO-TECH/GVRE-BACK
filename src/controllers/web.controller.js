@@ -1024,7 +1024,7 @@ const getFilteredAds = async (req, res, next) => {
       page = 1,
       limit = 15,
       department,
-      zone, // Este campo ahora trae slugs: "almagro,recoletos"
+      zone,
       operation,
       propertyType,
       maxPrice,
@@ -1051,20 +1051,13 @@ const getFilteredAds = async (req, res, next) => {
     let targetDepartment =
       department === "Patrimonial" ? "Patrimonio" : department;
 
-    // --- 2. LÓGICA DE ZONAS (Sincronizada por Slugs) ---
+    // --- 2. LÓGICA DE ZONAS ---
     let zoneIds = [];
 
     if (zone && !["madrid", "espana"].includes(zone.toLowerCase())) {
       const zoneString = Array.isArray(zone) ? zone.join(",") : String(zone);
       const decodedZone = decodeURIComponent(zoneString).trim().toLowerCase();
 
-      // Definimos el ámbito de búsqueda
-      const searchZonesIn =
-        targetDepartment === "Patrimonio"
-          ? ["Patrimonial"]
-          : ["Residencial", "Costa"];
-
-      // 💡 MAPA DE CIUDADES DE LA COSTA (Intercepta el botón "Ver Todos")
       const citySubzones = {
         marbella: "Marbella",
         sotogrande: "Sotogrande",
@@ -1073,14 +1066,17 @@ const getFilteredAds = async (req, res, next) => {
 
       let matchingZones = [];
 
+      const searchZonesIn =
+        targetDepartment === "Patrimonio"
+          ? ["Patrimonial"]
+          : ["Residencial", "Costa"];
+
       if (citySubzones[decodedZone]) {
-        // A) Es una CIUDAD de la Costa -> Traemos TODOS sus barrios de golpe
         matchingZones = await Zone.find({
           subzone: citySubzones[decodedZone],
           zone: { $in: searchZonesIn },
         }).lean();
       } else {
-        // B) Es una búsqueda normal de BARRIOS -> Búsqueda exacta por SLUG
         const slugsArray = decodedZone.split(",").map((s) => s.trim());
         matchingZones = await Zone.find({
           slug: { $in: slugsArray },
@@ -1090,58 +1086,46 @@ const getFilteredAds = async (req, res, next) => {
 
       if (matchingZones.length > 0) {
         zoneIds = matchingZones.map((z) => z._id);
-
-        // Inteligencia: Si detectamos que la zona es de Costa, cambiamos el departamento
         const hasCostaZone = matchingZones.some((z) => z.zone === "Costa");
         if (hasCostaZone && targetDepartment === "Residencial") {
           targetDepartment = "Costa";
         }
       } else {
-        // Si se filtró por una zona que no existe, devolvemos array vacío de resultados
         return res
           .status(200)
           .json({ data: [], pagination: { total: 0, page, totalPages: 0 } });
       }
     }
 
-    // 3. Construcción del Filtro Principal de Anuncios
+    // 3. Filtro Principal
     const filter = {
-      showOnWeb: true,
+      $or: [{ showOnWeb: true }, { showOnWebOffMarket: true }],
       department: targetDepartment,
       adStatus: { $in: ["Activo", "En preparación"] },
       gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
     };
 
-    if (zoneIds.length > 0) {
-      filter.zone = { $in: zoneIds };
-    }
+    if (zoneIds.length > 0) filter.zone = { $in: zoneIds };
 
     // --- 4. FILTROS DE OPERACIÓN Y PRECIO ---
     if (operation) {
       const isSale = ["sale", "venta"].includes(operation.toLowerCase());
       filter.adType = { $in: [isSale ? "Venta" : "Alquiler"] };
-
       const priceField = isSale ? "sale.saleValue" : "rent.rentValue";
-      if (maxPrice) {
-        filter[priceField] = { $lte: Number(maxPrice), $gt: 0 };
-      }
+      if (maxPrice) filter[priceField] = { $lte: Number(maxPrice), $gt: 0 };
     } else if (maxPrice) {
-      // Si no hay operación definida pero sí precio máximo (fallback)
       filter.$or = [
         { "sale.saleValue": { $lte: Number(maxPrice), $gt: 0 } },
         { "rent.rentValue": { $lte: Number(maxPrice), $gt: 0 } },
       ];
     }
 
-    // --- 5. ATRIBUTOS Y SUPERFICIE ---
+    // --- 5. ATRIBUTOS ---
     if (propertyType && propertyType !== "Todos") {
       filter.adBuildingType = { $in: propertyType.split(",") };
     }
-    if (maxSurface) {
-      filter.buildSurface = { $lte: Number(maxSurface) };
-    }
+    if (maxSurface) filter.buildSurface = { $lte: Number(maxSurface) };
 
-    // Mapeo dinámico de booleanos
     const booleanFilters = {
       "quality.others.swimmingPool": pool,
       "quality.others.terrace": terrace,
@@ -1165,20 +1149,19 @@ const getFilteredAds = async (req, res, next) => {
 
     // --- 6. ORDENACIÓN ---
     let sortQuery = { createdAt: -1 };
-    const isRent = ["rent", "alquiler"].includes(operation?.toLowerCase());
-
     const sortOptions = {
       "creat-asc": { createdAt: -1 },
       "creat-des": { createdAt: 1 },
-      "price-asc": isRent ? { "rent.rentValue": 1 } : { "sale.saleValue": 1 },
-      "price-desc": isRent
+      "price-asc": ["rent", "alquiler"].includes(operation?.toLowerCase())
+        ? { "rent.rentValue": 1 }
+        : { "sale.saleValue": 1 },
+      "price-desc": ["rent", "alquiler"].includes(operation?.toLowerCase())
         ? { "rent.rentValue": -1 }
         : { "sale.saleValue": -1 },
     };
     if (sortOptions[sort]) sortQuery = sortOptions[sort];
 
-    // --- 7. EJECUCIÓN PARALELA (Data + Stats) ---
-    // Agregación para obtener los valores máximos dinámicos del slider
+    // --- 7. EJECUCIÓN PARALELA ---
     const statsQuery = Ad.aggregate([
       {
         $match: {
@@ -1214,51 +1197,99 @@ const getFilteredAds = async (req, res, next) => {
       maxSurface: 5000,
     };
 
-    // --- 8. FORMATEO DE RESPUESTA ---
-    const formattedAds = ads.map((ad) => {
-      const activeTags = [];
-      if (ad.sale?.saleValue && ad.sale?.saleShowOnWeb)
-        activeTags.push("Venta");
-      if (ad.rent?.rentValue && ad.rent?.rentShowOnWeb)
-        activeTags.push("Alquiler");
+    // --- 8. FORMATEO DE RESPUESTA Y MEZCLA (1 Off-Market cada 6 Normales) ---
+    const normalAds = [];
+    const offMarketAds = [];
 
-      return {
-        id: ad._id.toString(),
-        slug: ad.slug,
-        title: ad.title,
-        category: ad.department,
-        subzone: ad.zone?.[0]?.subzone || null,
-        ref: ad.adReference,
-        salePrice: ad.sale?.saleValue || null,
-        rentPrice: ad.rent?.rentValue || null,
-        operation: activeTags,
-        location: ad.adDirection?.city || "Madrid",
-        image: ad.images?.main || null,
-        images: [ad.images?.main, ...(ad.images?.others || [])]
-          .filter(Boolean)
-          .slice(0, 3),
-        specs: {
-          beds: ad.quality?.bedrooms || 0,
-          bathrooms: ad.quality?.bathrooms || 0,
-          area: ad.buildSurface || 0,
-          plotArea: ad.plotSurface || 0,
-          garage: ad.quality?.parking || 0,
-          pool: ad.quality?.others?.swimmingPool
-            ? Number(ad.quality.indoorPool || 0) +
-                Number(ad.quality.outdoorPool || 0) || 1
-            : 0,
-        },
-        zoneName: ad.zone?.[0]?.name || "",
-        tags: [
-          ad.adBuildingType?.[0],
-          ad.quality?.reformed && "Reformado",
-          ad.profitability && "Rentabilidad",
-          ...activeTags,
-        ]
-          .filter(Boolean)
-          .slice(0, 4),
-      };
+    // 8.1. Separar y formatear los anuncios según su tipo
+    ads.forEach((ad) => {
+      const isOffMarket = ad.showOnWebOffMarket === true;
+
+      if (isOffMarket) {
+        offMarketAds.push({
+          id: ad._id.toString(),
+          slug: ad.slug,
+          title: ad.title,
+          location: ad.adDirection?.city || "Madrid",
+          category: ad.department,
+          isOffMarket: true,
+        });
+      } else {
+        const activeTags = [];
+        if (ad.sale?.saleValue && ad.sale?.saleShowOnWeb)
+          activeTags.push("Venta");
+        if (ad.rent?.rentValue && ad.rent?.rentShowOnWeb)
+          activeTags.push("Alquiler");
+
+        normalAds.push({
+          id: ad._id.toString(),
+          slug: ad.slug,
+          title: ad.title,
+          category: ad.department,
+          subzone: ad.zone?.[0]?.subzone || null,
+          ref: ad.adReference,
+          salePrice: ad.sale?.saleValue || null,
+          rentPrice: ad.rent?.rentValue || null,
+          operation: activeTags,
+          location: ad.adDirection?.city || "Madrid",
+          image: ad.images?.main || null,
+          isOffMarket: false,
+          images: [ad.images?.main, ...(ad.images?.others || [])]
+            .filter(Boolean)
+            .slice(0, 3),
+          specs: {
+            beds: ad.quality?.bedrooms || 0,
+            bathrooms: ad.quality?.bathrooms || 0,
+            area: ad.buildSurface || 0,
+            plotArea: ad.plotSurface || 0,
+            garage: ad.quality?.parking || 0,
+            pool: ad.quality?.others?.swimmingPool
+              ? Number(ad.quality.indoorPool || 0) +
+                  Number(ad.quality.outdoorPool || 0) || 1
+              : 0,
+          },
+          zoneName: ad.zone?.[0]?.name || "",
+          tags: [
+            ad.adBuildingType?.[0],
+            ad.quality?.reformed && "Reformado",
+            ad.profitability && "Rentabilidad",
+            ...activeTags,
+          ]
+            .filter(Boolean)
+            .slice(0, 4),
+        });
+      }
     });
+
+    // 8.2. Ordenar aleatoriamente (shuffle) los anuncios Off-Market
+    for (let i = offMarketAds.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [offMarketAds[i], offMarketAds[j]] = [offMarketAds[j], offMarketAds[i]];
+    }
+
+    // 8.3. Intercalar: 6 Normales seguidos de 1 Off-Market
+    const formattedAds = [];
+    let normalIndex = 0;
+    let offMarketIndex = 0;
+
+    while (
+      normalIndex < normalAds.length ||
+      offMarketIndex < offMarketAds.length
+    ) {
+      // Metemos hasta 6 normales manteniendo su orden de la BBDD
+      let count = 0;
+      while (count < 6 && normalIndex < normalAds.length) {
+        formattedAds.push(normalAds[normalIndex]);
+        normalIndex++;
+        count++;
+      }
+
+      // Metemos 1 Off-Market aleatorio
+      if (offMarketIndex < offMarketAds.length) {
+        formattedAds.push(offMarketAds[offMarketIndex]);
+        offMarketIndex++;
+      }
+    }
 
     res.status(200).json({
       data: formattedAds,
@@ -1490,6 +1521,11 @@ const getAdDetails = async (req, res, next) => {
         city: ad.adDirection?.city,
         country: ad.adDirection?.country,
       },
+      profitability: ad.profitability,
+      profitabilityValue: ad.profitabilityValue,
+      ibi: ad.ibi,
+      trashFee: ad.trashFee,
+      communityExpenses: ad.communityExpenses,
       specs: {
         beds: ad.quality?.bedrooms || 0,
         baths: ad.quality?.bathrooms || 0,
