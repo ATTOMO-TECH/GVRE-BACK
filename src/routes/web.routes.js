@@ -155,7 +155,11 @@ router.put(
 // HOME
 router.put("/home/videosection/edit/:id", webVideoSectionUpdate);
 router.get("/home/ads/search", getAdsByReference);
-router.put("/home/categories-section/edit/:id", upload.single("image"));
+router.put(
+  "/home/categories-section/edit/:id",
+  upload.single("image"),
+  updateCategoriesSection,
+);
 
 //ACITVE ZONES
 router.post("/active-inventory-zones", getActiveInventoryZones);
