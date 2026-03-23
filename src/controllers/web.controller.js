@@ -1024,7 +1024,7 @@ const getFilteredAds = async (req, res, next) => {
       page = 1,
       limit = 15,
       department,
-      zone,
+      zone, // Este campo ahora trae slugs: "almagro,recoletos"
       operation,
       propertyType,
       maxPrice,
@@ -1047,16 +1047,45 @@ const getFilteredAds = async (req, res, next) => {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
+    // 1. Normalización del Departamento
     let targetDepartment =
       department === "Patrimonial" ? "Patrimonio" : department;
 
-    if (targetDepartment === "Residencial" && zone) {
-      const costaZones = ["marbella", "sotogrande", "puerto santa maria"];
-      if (costaZones.some((z) => zone.toLowerCase().includes(z))) {
-        targetDepartment = "Costa";
+    // --- 2. LÓGICA DE ZONAS (Sincronizada por Slugs) ---
+    let zoneIds = [];
+
+    if (zone && !["madrid", "espana"].includes(zone.toLowerCase())) {
+      const slugsArray = zone.split(",").map((s) => s.trim().toLowerCase());
+
+      // Definimos el ámbito de búsqueda
+      const searchZonesIn =
+        targetDepartment === "Patrimonio"
+          ? ["Patrimonial"]
+          : ["Residencial", "Costa"];
+
+      // 🚀 Búsqueda exacta por SLUG (Mucho más eficiente)
+      const matchingZones = await Zone.find({
+        slug: { $in: slugsArray },
+        zone: { $in: searchZonesIn },
+      }).lean();
+
+      if (matchingZones.length > 0) {
+        zoneIds = matchingZones.map((z) => z._id);
+
+        // Inteligencia: Si detectamos que la zona es de Costa, cambiamos el departamento
+        const hasCostaZone = matchingZones.some((z) => z.zone === "Costa");
+        if (hasCostaZone && targetDepartment === "Residencial") {
+          targetDepartment = "Costa";
+        }
+      } else {
+        // Si se filtró por una zona que no existe, devolvemos array vacío de resultados
+        return res
+          .status(200)
+          .json({ data: [], pagination: { total: 0, page, totalPages: 0 } });
       }
     }
 
+    // 3. Construcción del Filtro Principal de Anuncios
     const filter = {
       showOnWeb: true,
       department: targetDepartment,
@@ -1064,25 +1093,28 @@ const getFilteredAds = async (req, res, next) => {
       gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
     };
 
-    if (operation && operation !== "") {
-      const isSale =
-        operation.toLowerCase() === "sale" ||
-        operation.toLowerCase() === "venta";
-      filter.adType = { $in: [isSale ? "Venta" : "Alquiler"] };
-      const priceField = isSale ? "sale.saleValue" : "rent.rentValue";
-
-      if (maxPrice) {
-        filter[priceField] = { $lte: Number(maxPrice), $ne: null };
-      }
-    } else {
-      if (maxPrice && Number(maxPrice) < 9000000) {
-        filter.$or = [
-          { "sale.saleValue": { $lte: Number(maxPrice), $gt: 0 } },
-          { "rent.rentValue": { $lte: Number(maxPrice), $gt: 0 } },
-        ];
-      }
+    if (zoneIds.length > 0) {
+      filter.zone = { $in: zoneIds };
     }
 
+    // --- 4. FILTROS DE OPERACIÓN Y PRECIO ---
+    if (operation) {
+      const isSale = ["sale", "venta"].includes(operation.toLowerCase());
+      filter.adType = { $in: [isSale ? "Venta" : "Alquiler"] };
+
+      const priceField = isSale ? "sale.saleValue" : "rent.rentValue";
+      if (maxPrice) {
+        filter[priceField] = { $lte: Number(maxPrice), $gt: 0 };
+      }
+    } else if (maxPrice) {
+      // Si no hay operación definida pero sí precio máximo (fallback)
+      filter.$or = [
+        { "sale.saleValue": { $lte: Number(maxPrice), $gt: 0 } },
+        { "rent.rentValue": { $lte: Number(maxPrice), $gt: 0 } },
+      ];
+    }
+
+    // --- 5. ATRIBUTOS Y SUPERFICIE ---
     if (propertyType && propertyType !== "Todos") {
       filter.adBuildingType = { $in: propertyType.split(",") };
     }
@@ -1090,95 +1122,50 @@ const getFilteredAds = async (req, res, next) => {
       filter.buildSurface = { $lte: Number(maxSurface) };
     }
 
-    if (pool === "true") filter["quality.others.swimmingPool"] = true;
+    // Mapeo dinámico de booleanos
+    const booleanFilters = {
+      "quality.others.swimmingPool": pool,
+      "quality.others.terrace": terrace,
+      profitability: profitability,
+      "quality.others.coworking": coworking,
+      "quality.others.smokeOutlet": smokeOutlet,
+      "quality.others.implanted": implanted,
+      "quality.others.separateEntrance": separateEntrance,
+      "quality.others.exclusiveOfficeBuilding": exclusiveOffice,
+      "quality.others.classicBuilding": classicBuilding,
+      "quality.others.mixedBuilding": mixedBuilding,
+      "quality.reformed": reformed,
+      "quality.toReform": toReform,
+    };
+
+    Object.entries(booleanFilters).forEach(([path, value]) => {
+      if (value === "true") filter[path] = true;
+    });
+
     if (garage === "true") filter["quality.parking"] = { $gt: 0 };
-    if (terrace === "true") filter["quality.others.terrace"] = true;
-    if (profitability === "true") filter.profitability = true;
-    if (coworking === "true") filter["quality.others.coworking"] = true;
-    if (smokeOutlet === "true") filter["quality.others.smokeOutlet"] = true;
-    if (implanted === "true") filter["quality.others.implanted"] = true;
-    if (separateEntrance === "true")
-      filter["quality.others.separateEntrance"] = true;
-    if (exclusiveOffice === "true")
-      filter["quality.others.exclusiveOfficeBuilding"] = true;
-    if (classicBuilding === "true")
-      filter["quality.others.classicBuilding"] = true;
-    if (mixedBuilding === "true") filter["quality.others.mixedBuilding"] = true;
-    if (reformed === "true") filter["quality.reformed"] = true;
-    if (toReform === "true") filter["quality.toReform"] = true;
 
-    if (
-      zone &&
-      zone.toLowerCase() !== "madrid" &&
-      zone.toLowerCase() !== "espana"
-    ) {
-      const slugsArray = zone.split(",").map((s) => s.trim().toLowerCase());
-      const zoneSearchDept =
-        targetDepartment === "Patrimonio" ? "Patrimonial" : targetDepartment;
-
-      const zoneConditions = slugsArray.map((slug) => {
-        const nameToSearch = slug.replace(/-/g, " ");
-        const flexiblePattern = makeDiacriticRegex(nameToSearch);
-        return { name: { $regex: new RegExp(`^${flexiblePattern}$`, "i") } };
-      });
-
-      const matchingZones = await Zone.find({
-        zone: zoneSearchDept,
-        $or: zoneConditions,
-      })
-        .select("_id")
-        .lean();
-
-      if (matchingZones.length > 0) {
-        filter.zone = {
-          $in: matchingZones.map((z) => new mongoose.Types.ObjectId(z._id)),
-        };
-      } else {
-        filter.zone = new mongoose.Types.ObjectId();
-      }
-    }
-
+    // --- 6. ORDENACIÓN ---
     let sortQuery = { createdAt: -1 };
+    const isRent = ["rent", "alquiler"].includes(operation?.toLowerCase());
 
-    if (sort === "creat-asc") {
-      sortQuery = { createdAt: -1 };
-    } else if (sort === "creat-des") {
-      sortQuery = { createdAt: 1 };
-    } else if (sort === "price-asc") {
-      const isRent = operation === "rent" || operation === "alquiler";
-      sortQuery = isRent ? { "rent.rentValue": 1 } : { "sale.saleValue": 1 };
-    } else if (sort === "price-desc") {
-      const isRent = operation === "rent" || operation === "alquiler";
-      sortQuery = isRent ? { "rent.rentValue": -1 } : { "sale.saleValue": -1 };
-    }
+    const sortOptions = {
+      "creat-asc": { createdAt: -1 },
+      "creat-des": { createdAt: 1 },
+      "price-asc": isRent ? { "rent.rentValue": 1 } : { "sale.saleValue": 1 },
+      "price-desc": isRent
+        ? { "rent.rentValue": -1 }
+        : { "sale.saleValue": -1 },
+    };
+    if (sortOptions[sort]) sortQuery = sortOptions[sort];
 
-    const fields = [
-      "_id",
-      "slug",
-      "title",
-      "zone",
-      "adReference",
-      "adType",
-      "sale",
-      "rent",
-      "adDirection",
-      "images.main",
-      "images.others",
-      "adBuildingType",
-      "buildSurface",
-      "plotSurface",
-      "quality",
-      "profitability",
-      "createdAt",
-    ].join(" ");
-
+    // --- 7. EJECUCIÓN PARALELA (Data + Stats) ---
+    // Agregación para obtener los valores máximos dinámicos del slider
     const statsQuery = Ad.aggregate([
       {
         $match: {
-          showOnWeb: true,
           department: targetDepartment,
-          adStatus: { $in: ["Activo", "En preparación"] },
-          gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
+          showOnWeb: true,
+          adStatus: "Activo",
         },
       },
       {
@@ -1194,67 +1181,48 @@ const getFilteredAds = async (req, res, next) => {
     const [totalDocs, ads, statsResult] = await Promise.all([
       Ad.countDocuments(filter),
       Ad.find(filter)
-        .select(fields)
         .populate("zone", "name")
-        .lean()
         .sort(sortQuery)
         .skip(skip)
-        .limit(parseInt(limit)),
+        .limit(parseInt(limit))
+        .lean(),
       statsQuery,
     ]);
 
     const stats = statsResult[0] || {
       maxPriceSale: 10000000,
-      maxPriceRent: 15000,
-      maxSurface: 2000,
+      maxPriceRent: 20000,
+      maxSurface: 5000,
     };
 
+    // --- 8. FORMATEO DE RESPUESTA ---
     const formattedAds = ads.map((ad) => {
-      const allImages = [ad.images?.main, ...(ad.images?.others || [])].filter(
-        Boolean,
-      );
-      const isSaleOp = ad.adType && ad.adType.includes("Venta");
-      const isRentOp = ad.adType && ad.adType.includes("Alquiler");
-
-      const sPrice =
-        isSaleOp && ad.sale?.saleValue && ad.sale?.saleShowOnWeb === true
-          ? ad.sale.saleValue
-          : null;
-      const rPrice =
-        isRentOp && ad.rent?.rentValue && ad.rent?.rentShowOnWeb === true
-          ? ad.rent.rentValue
-          : null;
-
       const activeTags = [];
-      if (sPrice) activeTags.push("Venta");
-      if (rPrice) activeTags.push("Alquiler");
+      if (ad.sale?.saleValue && ad.sale?.saleShowOnWeb)
+        activeTags.push("Venta");
+      if (ad.rent?.rentValue && ad.rent?.rentShowOnWeb)
+        activeTags.push("Alquiler");
 
       return {
         id: ad._id.toString(),
         slug: ad.slug,
         title: ad.title,
         ref: ad.adReference,
-        salePrice: sPrice,
-        rentPrice: rPrice,
-        operation:
-          activeTags.length > 0
-            ? activeTags.join(" / ")
-            : ad.adType.join(" / "),
-        location:
-          (ad.adDirection?.city || "Madrid").charAt(0).toUpperCase() +
-          (ad.adDirection?.city || "Madrid").slice(1),
-        image: allImages[0] || null,
+        salePrice: ad.sale?.saleValue || null,
+        rentPrice: ad.rent?.rentValue || null,
+        operation: activeTags.join(" / "),
+        location: ad.adDirection?.city || "Madrid",
+        image: ad.images?.main || null,
         specs: {
           beds: ad.quality?.bedrooms || 0,
           bathrooms: ad.quality?.bathrooms || 0,
           area: ad.buildSurface || ad.plotSurface || 0,
         },
-        zoneName: ad.zone[0]?.name,
+        zoneName: ad.zone?.[0]?.name || "",
         tags: [
           ad.adBuildingType?.[0],
           ad.quality?.reformed && "Reformado",
           ad.profitability && "Rentabilidad",
-          ad.quality?.others?.exclusiveOfficeBuilding && "Oficinas",
           ...activeTags,
         ]
           .filter(Boolean)
@@ -1271,13 +1239,13 @@ const getFilteredAds = async (req, res, next) => {
         totalPages: Math.ceil(totalDocs / limit),
       },
       absoluteValues: {
-        maxPriceSale: stats.maxPriceSale || 10000000,
-        maxPriceRent: stats.maxPriceRent || 15000,
-        maxSurface: stats.maxSurface || 2000,
+        maxPriceSale: stats.maxPriceSale,
+        maxPriceRent: stats.maxPriceRent,
+        maxSurface: stats.maxSurface,
       },
     });
   } catch (error) {
-    console.error("Error en getFilteredAds:", error);
+    console.error("❌ Error en getFilteredAds:", error);
     next(error);
   }
 };
@@ -1506,20 +1474,125 @@ const getAdDetails = async (req, res, next) => {
 const getActiveInventoryZones = async (req, res) => {
   try {
     const { department } = req.body;
+
+    // 1. Buscamos los anuncios y traemos el campo 'slug' de la zona referenciada
     const ads = await Ad.find({
       department,
       adStatus: { $in: ["Activo", "En preparación"] },
       showOnWeb: true,
       gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
-    }).populate("zone", "name");
+    }).populate("zone", "slug"); // 🔄 CAMBIO: Pedimos el slug, no el name
 
-    const activeNames = [
-      ...new Set(ads.flatMap((ad) => ad.zone.map((z) => z.name))),
+    // 2. Extraemos los slugs únicos
+    // Usamos z.slug en lugar de z.name
+    const activeSlugs = [
+      ...new Set(ads.flatMap((ad) => ad.zone.map((z) => z.slug))),
     ];
 
-    res.status(200).json({ success: true, data: activeNames });
+    // 3. Devolvemos la lista de slugs
+    res.status(200).json({ success: true, data: activeSlugs });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getFilterStats = async (req, res, next) => {
+  try {
+    const { department, zone } = req.body;
+
+    // 1. Identificación inicial
+    let targetDepartment =
+      department === "Patrimonial" ? "Patrimonio" : department;
+
+    // 2. Búsqueda de zonas para determinar el departamento real y obtener IDs
+    let zoneIds = [];
+    if (
+      zone &&
+      zone.toLowerCase() !== "madrid" &&
+      zone.toLowerCase() !== "espana"
+    ) {
+      const slugsArray = zone.split(",").map((s) => s.trim().toLowerCase());
+
+      // Buscamos en ambos departamentos posibles para evitar conflictos
+      const searchZonesIn =
+        targetDepartment === "Patrimonio"
+          ? ["Patrimonial"]
+          : ["Residencial", "Costa"];
+
+      const zoneConditions = slugsArray.map((slug) => {
+        let nameToSearch = slug.replace(/-/g, " ");
+        if (nameToSearch === "puerto santa maria")
+          nameToSearch = "puerto de santa maria";
+
+        const flexiblePattern = makeDiacriticRegex(nameToSearch);
+        return {
+          $or: [
+            { subzone: { $regex: new RegExp(`^${flexiblePattern}$`, "i") } },
+            { name: { $regex: new RegExp(`^${flexiblePattern}$`, "i") } },
+          ],
+        };
+      });
+
+      const matchingZones = await Zone.find({
+        zone: { $in: searchZonesIn },
+        $or: zoneConditions,
+      }).lean();
+
+      if (matchingZones.length > 0) {
+        zoneIds = matchingZones.map((z) => z._id);
+
+        // Si encontramos que la zona es de "Costa", actualizamos el departamento
+        const hasCostaZone = matchingZones.some((z) => z.zone === "Costa");
+        if (hasCostaZone && targetDepartment === "Residencial") {
+          targetDepartment = "Costa";
+        }
+      } else {
+        zoneIds = [new mongoose.Types.ObjectId()];
+      }
+    }
+
+    // 3. Filtro base para la agregación
+    const statsMatch = {
+      showOnWeb: true,
+      department: targetDepartment,
+      adStatus: { $in: ["Activo", "En preparación"] },
+      gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
+    };
+
+    if (zoneIds.length > 0) {
+      statsMatch.zone = { $in: zoneIds };
+    }
+
+    // 4. Ejecución de la agregación
+    const statsResult = await Ad.aggregate([
+      { $match: statsMatch },
+      {
+        $group: {
+          _id: null,
+          maxPriceSale: { $max: "$sale.saleValue" },
+          maxPriceRent: { $max: "$rent.rentValue" },
+          maxSurface: { $max: "$buildSurface" },
+        },
+      },
+    ]);
+
+    const stats = statsResult[0] || {
+      maxPriceSale: 10000000,
+      maxPriceRent: 15000,
+      maxSurface: 5000,
+    };
+
+    res.status(200).json({
+      success: true,
+      data: {
+        maxPriceSale: stats.maxPriceSale || 10000000,
+        maxPriceRent: stats.maxPriceRent || 15000,
+        maxSurface: stats.maxSurface || 5000,
+      },
+    });
+  } catch (error) {
+    console.error("Error en getFilterStats:", error);
+    next(error);
   }
 };
 
@@ -1675,5 +1748,6 @@ module.exports = {
   getHighlightAds,
   getAdDetails,
   getActiveInventoryZones,
+  getFilterStats,
   getSimilarAds,
 };
