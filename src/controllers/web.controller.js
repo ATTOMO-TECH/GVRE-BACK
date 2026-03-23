@@ -1065,9 +1065,6 @@ const getFilteredAds = async (req, res, next) => {
           : ["Residencial", "Costa"];
 
       // 💡 MAPA DE CIUDADES DE LA COSTA (Intercepta el botón "Ver Todos")
-
-      console.log(decodedZone);
-
       const citySubzones = {
         marbella: "Marbella",
         sotogrande: "Sotogrande",
@@ -1285,11 +1282,21 @@ const getFilteredAds = async (req, res, next) => {
 
 const getHighlightAds = async (req, res, next) => {
   try {
-    const ads = await Ad.find({ featuredOnMain: true })
+    const filter = {
+      featuredOnMain: true,
+      showOnWeb: true,
+      adStatus: { $in: ["Activo", "En preparación"] },
+      gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
+    };
+
+    const ads = await Ad.find(filter)
       .select(
-        "title zone slug adType sale rent adDirection images quality buildSurface plotSurface department",
+        "title zone slug adType sale rent adDirection images quality buildSurface plotSurface department adReference",
       )
-      .populate("zone", "name");
+      .populate("zone", "name")
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .lean();
 
     const formattedAds = ads.map((ad) => {
       const categoryMap = {
@@ -1300,48 +1307,60 @@ const getHighlightAds = async (req, res, next) => {
       };
 
       const category = categoryMap[ad.department] || "residencial";
-      const isSaleOperation = ad.adType.includes("Venta");
-      const isRentOperation = ad.adType.includes("Alquiler");
 
-      const sPrice =
-        isSaleOperation && ad.sale?.saleValue && ad.sale?.saleShowOnWeb === true
-          ? ad.sale.saleValue
-          : null;
-      const rPrice =
-        isRentOperation && ad.rent?.rentValue && ad.rent?.rentShowOnWeb === true
-          ? ad.rent.rentValue
-          : null;
-
+      // Lógica de precios y etiquetas activas
       const activeTags = [];
+      const sPrice =
+        ad.sale?.saleValue && ad.sale?.saleShowOnWeb ? ad.sale.saleValue : null;
+      const rPrice =
+        ad.rent?.rentValue && ad.rent?.rentShowOnWeb ? ad.rent.rentValue : null;
+
       if (sPrice) activeTags.push("Venta");
       if (rPrice) activeTags.push("Alquiler");
+
+      // Si no hay precios marcados para web, usamos el adType por defecto
+      const finalOperations = activeTags.length > 0 ? activeTags : ad.adType;
 
       return {
         id: ad._id.toString(),
         slug: ad.slug,
         title: ad.title,
+        ref: ad.adReference,
         zoneName: ad.zone[0]?.name || "",
         category,
         salePrice: sPrice,
         rentPrice: rPrice,
-        operation:
-          activeTags.length > 0
-            ? activeTags.join(" / ")
-            : ad.adType.join(" / "),
+        operation: finalOperations,
         location: ad.adDirection?.city || "Madrid",
         image: ad.images?.main || "",
+        // 🚀 SINCRONIZADO: Añadimos array de imágenes para el carrusel horizontal
+        images: [ad.images?.main, ...(ad.images?.others || [])]
+          .filter(Boolean)
+          .slice(0, 3),
         specs: {
           beds: ad.quality?.bedrooms || 0,
-          area: ad.buildSurface || ad.plotSurface || 0,
           bathrooms: ad.quality?.bathrooms || 0,
+          area: ad.buildSurface || 0,
+          plotArea: ad.plotSurface || 0,
+          garage: ad.quality?.parking || 0,
+          pool: ad.quality?.others?.swimmingPool
+            ? Number(ad.quality.indoorPool || 0) +
+                Number(ad.quality.outdoorPool || 0) || 1
+            : 0,
         },
-        tags: activeTags.length > 0 ? activeTags : ad.adType,
+        tags: [
+          ad.adBuildingType?.[0],
+          ad.quality?.reformed && "Reformado",
+          ...finalOperations,
+        ]
+          .filter(Boolean)
+          .slice(0, 4),
       };
     });
 
     res.status(200).json(formattedAds);
   } catch (error) {
-    console.error("Error en getHighlightAds:", error);
+    console.error("❌ Error en getHighlightAds:", error);
     next(error);
   }
 };
