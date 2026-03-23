@@ -1454,6 +1454,11 @@ const getAdDetails = async (req, res, next) => {
         city: ad.adDirection?.city,
         country: ad.adDirection?.country,
       },
+      profitability: ad.profitability,
+      profitabilityValue: ad.profitabilityValue,
+      ibi: ad.ibi,
+      trashFee: ad.trashFee,
+      communityExpenses: ad.communityExpenses,
       specs: {
         beds: ad.quality?.bedrooms || 0,
         baths: ad.quality?.bathrooms || 0,
