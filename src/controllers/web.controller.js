@@ -1056,14 +1056,7 @@ const getFilteredAds = async (req, res, next) => {
 
     if (zone && !["madrid", "espana"].includes(zone.toLowerCase())) {
       const zoneString = Array.isArray(zone) ? zone.join(",") : String(zone);
-
-      // 🔄 FIX 2: Decodificamos el string por si las comas vienen como "%2C"
-      const decodedZone = decodeURIComponent(zoneString);
-
-      // Ahora sí separamos por comas de forma segura
-      const slugsArray = decodedZone
-        .split(",")
-        .map((s) => s.trim().toLowerCase());
+      const decodedZone = decodeURIComponent(zoneString).trim().toLowerCase();
 
       // Definimos el ámbito de búsqueda
       const searchZonesIn =
@@ -1071,11 +1064,32 @@ const getFilteredAds = async (req, res, next) => {
           ? ["Patrimonial"]
           : ["Residencial", "Costa"];
 
-      // 🚀 Búsqueda exacta por SLUG (Mucho más eficiente)
-      const matchingZones = await Zone.find({
-        slug: { $in: slugsArray },
-        zone: { $in: searchZonesIn },
-      }).lean();
+      // 💡 MAPA DE CIUDADES DE LA COSTA (Intercepta el botón "Ver Todos")
+
+      console.log(decodedZone);
+
+      const citySubzones = {
+        marbella: "Marbella",
+        sotogrande: "Sotogrande",
+        "puerto santa maria": "Puerto de Santa María",
+      };
+
+      let matchingZones = [];
+
+      if (citySubzones[decodedZone]) {
+        // A) Es una CIUDAD de la Costa -> Traemos TODOS sus barrios de golpe
+        matchingZones = await Zone.find({
+          subzone: citySubzones[decodedZone],
+          zone: { $in: searchZonesIn },
+        }).lean();
+      } else {
+        // B) Es una búsqueda normal de BARRIOS -> Búsqueda exacta por SLUG
+        const slugsArray = decodedZone.split(",").map((s) => s.trim());
+        matchingZones = await Zone.find({
+          slug: { $in: slugsArray },
+          zone: { $in: searchZonesIn },
+        }).lean();
+      }
 
       if (matchingZones.length > 0) {
         zoneIds = matchingZones.map((z) => z._id);
@@ -1215,16 +1229,27 @@ const getFilteredAds = async (req, res, next) => {
         id: ad._id.toString(),
         slug: ad.slug,
         title: ad.title,
+        category: ad.department,
+        subzone: ad.zone?.[0]?.subzone || null,
         ref: ad.adReference,
         salePrice: ad.sale?.saleValue || null,
         rentPrice: ad.rent?.rentValue || null,
-        operation: activeTags.join(" / "),
+        operation: activeTags,
         location: ad.adDirection?.city || "Madrid",
         image: ad.images?.main || null,
+        images: [ad.images?.main, ...(ad.images?.others || [])]
+          .filter(Boolean)
+          .slice(0, 3),
         specs: {
           beds: ad.quality?.bedrooms || 0,
           bathrooms: ad.quality?.bathrooms || 0,
-          area: ad.buildSurface || ad.plotSurface || 0,
+          area: ad.buildSurface || 0,
+          plotArea: ad.plotSurface || 0,
+          garage: ad.quality?.parking || 0,
+          pool: ad.quality?.others?.swimmingPool
+            ? Number(ad.quality.indoorPool || 0) +
+                Number(ad.quality.outdoorPool || 0) || 1
+            : 0,
         },
         zoneName: ad.zone?.[0]?.name || "",
         tags: [
