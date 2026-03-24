@@ -1208,6 +1208,7 @@ const getFilteredAds = async (req, res, next) => {
       if (isOffMarket) {
         offMarketAds.push({
           id: ad._id.toString(),
+          ref: ad.adReference,
           slug: ad.slug,
           title: ad.title,
           location: ad.adDirection?.city || "Madrid",
