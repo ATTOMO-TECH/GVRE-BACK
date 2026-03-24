@@ -1043,6 +1043,12 @@ const getFilteredAds = async (req, res, next) => {
       reformed,
       toReform,
       sort,
+      // Atributos para Otros Activos / Rústicos
+      agricultural,
+      hunting,
+      forestry,
+      livestock,
+      recess,
     } = req.body;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -1098,8 +1104,9 @@ const getFilteredAds = async (req, res, next) => {
     }
 
     // 3. Filtro Principal
+    // 🚀 CORRECCIÓN: Usamos $and para evitar que filtros posteriores sobrescriban el $or de visibilidad
     const filter = {
-      $or: [{ showOnWeb: true }, { showOnWebOffMarket: true }],
+      $and: [{ $or: [{ showOnWeb: true }, { showOnWebOffMarket: true }] }],
       department: targetDepartment,
       adStatus: { $in: ["Activo", "En preparación"] },
       gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
@@ -1114,10 +1121,12 @@ const getFilteredAds = async (req, res, next) => {
       const priceField = isSale ? "sale.saleValue" : "rent.rentValue";
       if (maxPrice) filter[priceField] = { $lte: Number(maxPrice), $gt: 0 };
     } else if (maxPrice) {
-      filter.$or = [
-        { "sale.saleValue": { $lte: Number(maxPrice), $gt: 0 } },
-        { "rent.rentValue": { $lte: Number(maxPrice), $gt: 0 } },
-      ];
+      filter.$and.push({
+        $or: [
+          { "sale.saleValue": { $lte: Number(maxPrice), $gt: 0 } },
+          { "rent.rentValue": { $lte: Number(maxPrice), $gt: 0 } },
+        ],
+      });
     }
 
     // --- 5. ATRIBUTOS ---
@@ -1139,6 +1148,11 @@ const getFilteredAds = async (req, res, next) => {
       "quality.others.mixedBuilding": mixedBuilding,
       "quality.reformed": reformed,
       "quality.toReform": toReform,
+      "quality.others.agricultural": agricultural,
+      "quality.others.hunting": hunting,
+      "quality.others.forestry": forestry,
+      "quality.others.livestock": livestock,
+      "quality.others.recess": recess,
     };
 
     Object.entries(booleanFilters).forEach(([path, value]) => {
@@ -1203,7 +1217,20 @@ const getFilteredAds = async (req, res, next) => {
 
     // 8.1. Separar y formatear los anuncios según su tipo
     ads.forEach((ad) => {
-      const isOffMarket = ad.showOnWebOffMarket === true;
+      // 🚀 CORRECCIÓN: Para ser estrictos y evitar "fugas", obligamos a que showOnWeb sea falso/undefined para considerarlo OffMarket.
+      const isOffMarket =
+        ad.showOnWebOffMarket === true && ad.showOnWeb !== true;
+
+      // Mapeo de categoría para Frontend
+      let categorySlug = ad.department;
+      if (ad.department === "Campos Rústicos & Activos Singulares") {
+        categorySlug = "otros-activos-y-zonas";
+      } else if (
+        ad.department?.toLowerCase() === "patrimonial" ||
+        ad.department?.toLowerCase() === "patrimonio"
+      ) {
+        categorySlug = "patrimonio";
+      }
 
       if (isOffMarket) {
         offMarketAds.push({
@@ -1211,8 +1238,12 @@ const getFilteredAds = async (req, res, next) => {
           ref: ad.adReference,
           slug: ad.slug,
           title: ad.title,
-          location: ad.adDirection?.city || "Madrid",
-          category: ad.department,
+          location:
+            ad.adDirection?.city ||
+            (ad.department === "Campos Rústicos & Activos Singulares"
+              ? "España"
+              : "Madrid"),
+          category: categorySlug,
           isOffMarket: true,
           consultant: ad.consultant,
         });
@@ -1227,13 +1258,17 @@ const getFilteredAds = async (req, res, next) => {
           id: ad._id.toString(),
           slug: ad.slug,
           title: ad.title,
-          category: ad.department,
+          category: categorySlug,
           subzone: ad.zone?.[0]?.subzone || null,
           ref: ad.adReference,
           salePrice: ad.sale?.saleValue || null,
           rentPrice: ad.rent?.rentValue || null,
           operation: activeTags,
-          location: ad.adDirection?.city || "Madrid",
+          location:
+            ad.adDirection?.city ||
+            (ad.department === "Campos Rústicos & Activos Singulares"
+              ? "España"
+              : "Madrid"),
           image: ad.images?.main || null,
           isOffMarket: false,
           images: [ad.images?.main, ...(ad.images?.others || [])]
