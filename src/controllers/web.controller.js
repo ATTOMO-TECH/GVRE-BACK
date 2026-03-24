@@ -1214,6 +1214,7 @@ const getFilteredAds = async (req, res, next) => {
           location: ad.adDirection?.city || "Madrid",
           category: ad.department,
           isOffMarket: true,
+          consultant: ad.consultant,
         });
       } else {
         const activeTags = [];
