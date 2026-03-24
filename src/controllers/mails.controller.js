@@ -2426,9 +2426,92 @@ const unsubscribeEmails = async (req, res) => {
   }
 };
 
+const sendWebEmail = async (req, res) => {
+  const {
+    nombre,
+    email,
+    telefono,
+    mensaje,
+    adId,
+    adTitle,
+    adReference,
+    adConsultant,
+  } = req.body;
+
+  try {
+    // 1. DETERMINAR EL DESTINATARIO (To)
+    let recipientEmail = "info@gvre.es"; // Email por defecto (Fallback)
+    let consultantName = "Equipo GVRE";
+
+    if (adConsultant) {
+      const consultant = await Consultant.findById(adConsultant);
+      if (consultant && consultant.consultantEmail) {
+        recipientEmail = consultant.consultantEmail;
+        consultantName = consultant.fullName;
+      }
+    }
+
+    const transporter = nodemailer.createTransport({
+      SES: { ses: sesClient, aws: require("@aws-sdk/client-ses") },
+    });
+
+    // 2. LÓGICA DE LA SECCIÓN DEL ANUNCIO
+    const adSection = adId
+      ? `<div style="margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #2b363d;">
+           <p style="margin: 0; font-size: 12px; color: #999; text-transform: uppercase;">Inmueble de interés:</p>
+           <p style="margin: 5px 0 0 0; font-weight: bold;">${adTitle || "Sin título"}</p>
+           <p style="margin: 2px 0 0 0; font-size: 13px;">Ref: ${adReference || adId}</p>
+           <p style="margin: 10px 0 0 0; font-size: 11px; color: #666;">Asignado a: <strong>${consultantName}</strong></p>
+         </div>`
+      : `<div style="margin-top: 20px; padding: 15px; border: 1px dashed #ccc;">
+           <p style="margin: 0; font-style: italic; color: #666;">Consulta general (Sin inmueble específico)</p>
+         </div>`;
+
+    const mailOptions = {
+      from: `"Web GVRE" <info@gvre.es>`,
+      to: recipientEmail, // Dinámico según el consultor o fallback
+      replyTo: email,
+      subject: adId
+        ? `Petición Inmueble: ${adReference}`
+        : `Consulta Web: ${nombre}`,
+      html: `
+        <div style="font-family: Helvetica, sans-serif; color: #2b363d; max-width: 600px; border: 1px solid #eee; padding: 20px;">
+          <h2 style="font-weight: lighter; color: #2b363d;">Nueva solicitud recibida</h2>
+          <p style="color: #666; font-size: 14px;">Hola ${consultantName.split(" ")[0]}, tienes una nueva petición desde la web:</p>
+          <hr style="border: none; border-top: 1px solid #eee;" />
+          
+          <p><strong>Nombre:</strong> ${nombre}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Teléfono:</strong> ${telefono}</p>
+          <p><strong>Mensaje:</strong><br/> ${mensaje || "Sin mensaje"}</p>
+          
+          ${adSection}
+          
+          <p style="font-size: 10px; color: #999; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px;">
+            Enviado desde el formulario de: ${adId ? "Detalle de Activo" : "Off-Market / Contacto General"}
+          </p>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    res
+      .status(200)
+      .json({ success: true, message: "Email enviado a " + recipientEmail });
+  } catch (error) {
+    console.error("Error en sendWebEmail:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: "Error al procesar el envío del email",
+    });
+  }
+};
+
 module.exports = {
   sendAdsToContact,
   sendAdToContacts,
   sendEmailReservationToClient,
   unsubscribeEmails,
+  sendWebEmail,
 };
