@@ -28,8 +28,6 @@ const tagsRoutes = require("./routes/tag.routes");
 const blogRoutes = require("./routes/blog.routes");
 const { authValidator } = require("./middlewares/auth.validator");
 
-db.connect();
-
 // Settings
 const PORT = process.env.PORT || 3500;
 app.use((req, res, next) => {
@@ -120,8 +118,17 @@ app.use("/blogs", blogRoutes);
 app.use("/marketingCampaigns", isAuth, marketingCampaignsRoutes);
 app.use("/tags", isAuth, tagsRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Server listening on http://localhost:${PORT}`);
-});
+db.connect()
+  .then(() => {
+    // Solo si la conexión es exitosa, levantamos el servidor
+    app.listen(PORT, () => {
+      console.log(`✅ Servidor escuchando en http://localhost:${PORT}`);
+    });
+  })
+  .catch((error) => {
+    // Si falla, lo capturamos aquí para que Node no crashee de forma fea
+    console.error("❌ Deteniendo arranque: No hay base de datos.");
+    process.exit(1);
+  });
 
 module.exports = app;
