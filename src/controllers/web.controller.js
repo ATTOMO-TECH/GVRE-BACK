@@ -1067,7 +1067,7 @@ const getFilteredAds = async (req, res, next) => {
       const citySubzones = {
         marbella: "Marbella",
         sotogrande: "Sotogrande",
-        "puerto santa maria": "Puerto de Santa María",
+        "puerto de santa maria": "Puerto de Santa María",
       };
 
       let matchingZones = [];
@@ -1109,7 +1109,6 @@ const getFilteredAds = async (req, res, next) => {
       $and: [{ $or: [{ showOnWeb: true }, { showOnWebOffMarket: true }] }],
       department: targetDepartment,
       adStatus: { $in: ["Activo", "En preparación"] },
-      gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
     };
 
     if (zoneIds.length > 0) filter.zone = { $in: zoneIds };
@@ -1246,6 +1245,7 @@ const getFilteredAds = async (req, res, next) => {
           category: categorySlug,
           isOffMarket: true,
           consultant: ad.consultant,
+          gvOperationClose: ad.gvOperationClose || "",
         });
       } else {
         const activeTags = [];
@@ -1286,6 +1286,7 @@ const getFilteredAds = async (req, res, next) => {
               : 0,
           },
           zoneName: ad.zone?.[0]?.name || "",
+          gvOperationClose: ad.gvOperationClose || "",
           tags: [
             ad.adBuildingType?.[0],
             ad.quality?.reformed && "Reformado",
@@ -1354,12 +1355,11 @@ const getHighlightAds = async (req, res, next) => {
       featuredOnMain: true,
       showOnWeb: true,
       adStatus: { $in: ["Activo", "En preparación"] },
-      gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
     };
 
     const ads = await Ad.find(filter)
       .select(
-        "title zone slug adType sale rent adDirection images quality buildSurface plotSurface department adReference",
+        "title zone slug adType sale rent adDirection images quality buildSurface plotSurface department adReference gvOperationClose",
       )
       .populate("zone", "name")
       .sort({ createdAt: -1 })
@@ -1416,6 +1416,7 @@ const getHighlightAds = async (req, res, next) => {
                 Number(ad.quality.outdoorPool || 0) || 1
             : 0,
         },
+        gvOperationClose: ad.gvOperationClose || "",
         tags: [
           ad.adBuildingType?.[0],
           ad.quality?.reformed && "Reformado",
@@ -1445,7 +1446,6 @@ const getAdDetails = async (req, res, next) => {
       slug: slug,
       showOnWeb: true,
       adStatus: { $in: ["Activo", "En preparación"] },
-      gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
     })
       .populate("zone")
       .populate(
@@ -1574,6 +1574,7 @@ const getAdDetails = async (req, res, next) => {
         parkingSpots: ad.quality?.parking || 0,
       },
       consultant: ad.consultant || null,
+      gvOperationClose: ad.gvOperationClose || "",
       features: featuresList,
       images: gallery,
       mainImage: ad.images?.main || "",
@@ -1645,7 +1646,7 @@ const getFilterStats = async (req, res, next) => {
 
       const zoneConditions = slugsArray.map((slug) => {
         let nameToSearch = slug.replace(/-/g, " ");
-        if (nameToSearch === "puerto santa maria")
+        if (nameToSearch === "puerto de santa maria")
           nameToSearch = "puerto de santa maria";
 
         const flexiblePattern = makeDiacriticRegex(nameToSearch);
@@ -1680,7 +1681,6 @@ const getFilterStats = async (req, res, next) => {
       showOnWeb: true,
       department: targetDepartment,
       adStatus: { $in: ["Activo", "En preparación"] },
-      gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
     };
 
     if (zoneIds.length > 0) {
