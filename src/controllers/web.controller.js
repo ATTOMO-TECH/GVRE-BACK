@@ -1161,7 +1161,10 @@ const getFilteredAds = async (req, res, next) => {
     if (garage === "true") filter["quality.parking"] = { $gt: 0 };
 
     // --- 6. ORDENACIÓN ---
-    let sortQuery = { createdAt: -1 };
+    let sortQuery = ["rent", "alquiler"].includes(operation?.toLowerCase())
+      ? { "rent.rentValue": -1 }
+      : { "sale.saleValue": -1 };
+
     const sortOptions = {
       "creat-asc": { createdAt: -1 },
       "creat-des": { createdAt: 1 },
@@ -1172,6 +1175,7 @@ const getFilteredAds = async (req, res, next) => {
         ? { "rent.rentValue": -1 }
         : { "sale.saleValue": -1 },
     };
+
     if (sortOptions[sort]) sortQuery = sortOptions[sort];
 
     // --- 7. EJECUCIÓN PARALELA ---
