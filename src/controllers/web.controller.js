@@ -1537,9 +1537,8 @@ const getAdDetails = async (req, res, next) => {
       subzone: mainZone ? mainZone.subzone : null,
       zoneName: mainZone ? mainZone.name : null,
       operation: ad.adType,
-      description: ad.description?.web || "Sin descripción disponible.",
-      distribution:
-        ad.description?.distribution || "Sin distribución disponible",
+      description: ad.description?.web,
+      distribution: ad.description?.distribution,
       salePrice: salePrice,
       rentPrice: rentPrice,
       priceLabel: priceLabel,
