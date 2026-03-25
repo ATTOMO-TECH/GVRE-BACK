@@ -863,7 +863,6 @@ const adCreate = async (req, res, next) => {
       images,
     });
 
-    // Add initial CREATION entry to changesHistory (persisted)
     try {
       let consultantInfo = null;
       if (req.body.userId) {
@@ -873,9 +872,7 @@ const adCreate = async (req, res, next) => {
             "fullName",
           ).lean();
           if (c) consultantInfo = { _id: c._id, fullName: c.fullName };
-        } catch (e) {
-          // ignore resolution errors and leave consultantInfo null
-        }
+        } catch (e) {}
       }
 
       const creationEntry = {
@@ -899,44 +896,31 @@ const adCreate = async (req, res, next) => {
     // 🔌 INTEGRACIÓN ISR: REVALIDACIÓN AUTOMÁTICA
     // =====================================================================
 
-    // Definimos qué estados son visibles en la web
     const validStatuses = ["Activo", "En preparación"];
-
-    // Evaluamos si el anuncio debe verse:
     const isVisible =
       adCreated.showOnWeb && validStatuses.includes(adCreated.adStatus);
 
     if (isVisible) {
-      const revalidationPromises = [
-        // A. Home: Porque cambian los contadores
-        revalidateWeb("home-data"),
+      const tagsToRevalidate = new Set([
+        "home-data",
+        "ads-list",
+        "inventory-zones",
+        "filter-stats",
+      ]);
 
-        // B. Listado: Para que aparezca la nueva Card
-        revalidateWeb("ads-list"),
-
-        // C. MAPA: Para que la zona se active si era el primer activo
-        revalidateWeb("inventory-zones"),
-
-        // D. STATS: Porque el precio/superficie máximo pudo haber subido
-        revalidateWeb("filter-stats"),
-      ];
-
-      // D. Destacados: Solo si está marcado
       if (adCreated.featuredOnMain) {
-        revalidationPromises.push(revalidateWeb("featured-ads"));
+        tagsToRevalidate.add("featured-ads");
       }
 
-      // Ejecutamos todas las revalidaciones de forma segura
-      const results = await Promise.allSettled(revalidationPromises);
-
-      results.forEach((result, index) => {
-        if (result.status === "rejected") {
+      // Ejecutamos las revalidaciones secuencialmente
+      for (const tag of tagsToRevalidate) {
+        const success = await revalidateWeb(tag);
+        if (!success) {
           console.error(
-            `❌ Falló revalidación en creación [${index}]:`,
-            result.reason,
+            `❌ Falló revalidación en creación para el tag: ${tag}`,
           );
         }
-      });
+      }
     }
 
     return res.status(200).json(adCreated);
@@ -1129,7 +1113,6 @@ const adUpdate = async (req, res, next) => {
   try {
     const { id } = req.body;
 
-    // 1. Cargar estado ACTUAL (antes del cambio) para comparar
     const currentAd = await Ad.findById(id)
       .populate("owner", "fullName")
       .populate("consultant", "fullName")
@@ -1139,7 +1122,6 @@ const adUpdate = async (req, res, next) => {
       return res.status(404).json({ message: "Anuncio no encontrado" });
     }
 
-    // 2. Mapeo EXHAUSTIVO de campos
     const fieldsToUpdate = {};
     fieldsToUpdate.title = req.body.title;
     fieldsToUpdate.showOnWeb = req.body.showOnWeb;
@@ -1309,16 +1291,13 @@ const adUpdate = async (req, res, next) => {
       distribution: req.body.distribution,
     };
 
-    // 3. Lógica del Historial
     const historyEntries = [];
     let consultantInfo = null;
     if (req.body.userId) {
       try {
         const c = await Consultant.findById(req.body.userId, "fullName").lean();
         if (c) consultantInfo = { _id: c._id, fullName: c.fullName };
-      } catch (e) {
-        /* ignore */
-      }
+      } catch (e) {}
     }
     if (!consultantInfo && currentAd && currentAd.consultant) {
       consultantInfo =
@@ -1485,10 +1464,8 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
-    // 6. Update principal
     await Ad.findByIdAndUpdate(id, updateOps);
 
-    // 7. Regeneración de Slug y Populate
     const updatedAdDoc = await Ad.findById(id)
       .populate("consultant", "fullName")
       .populate("owner", "fullName");
@@ -1534,7 +1511,6 @@ const adUpdate = async (req, res, next) => {
       console.error("Error Sync Home:", syncError);
     }
 
-    // 8. Normalización y Revalidación
     const updatedAd = updatedAdDoc.toObject();
     if (typeof normalizeAdHistory === "function") {
       updatedAd.changesHistory = normalizeAdHistory(updatedAd);
@@ -1543,11 +1519,12 @@ const adUpdate = async (req, res, next) => {
     const validStatuses = ["Activo", "En preparación"];
     const isVisibleNow =
       updatedAd.showOnWeb && validStatuses.includes(updatedAd.adStatus);
-    const revalidationPromises = [];
 
     // =====================================================================
-    // 🗺️ LÓGICA DE REVALIDACIÓN DEL MAPA (inventory-zones)
+    // LÓGICA DE REVALIDACIÓN SECUENCIAL
     // =====================================================================
+    const tagsToRevalidate = new Set();
+
     const zoneChanged =
       JSON.stringify(currentAd.zone) !== JSON.stringify(req.body.zone);
     const statusChanged = currentAd.adStatus !== req.body.adStatus;
@@ -1563,41 +1540,42 @@ const adUpdate = async (req, res, next) => {
       operationCloseChanged ||
       departmentChanged
     ) {
-      revalidationPromises.push(revalidateWeb("inventory-zones"));
+      tagsToRevalidate.add("inventory-zones");
     }
 
-    // =====================================================================
-    // 📋 REVALIDACIONES DE LISTADO Y WEB
-    // =====================================================================
     if (
       isVisibleNow ||
       currentAd.showOnWeb !== req.body.showOnWeb ||
       currentAd.adStatus !== req.body.adStatus
     ) {
-      revalidationPromises.push(
-        revalidateWeb("home-data"),
-        revalidateWeb("ads-list"),
-        revalidateWeb("filter-stats"),
-      );
+      tagsToRevalidate.add("home-data");
+      tagsToRevalidate.add("ads-list");
+      tagsToRevalidate.add("filter-stats");
     }
+
     if (
       updatedAd.featuredOnMain ||
       currentAd.featuredOnMain !== req.body.featuredOnMain
     ) {
-      revalidationPromises.push(revalidateWeb("featured-ads"));
+      tagsToRevalidate.add("featured-ads");
     }
-    if (updatedAd.slug) {
-      revalidationPromises.push(revalidateWeb(`ad-${updatedAd.slug}`));
-      if (currentAd.slug && currentAd.slug !== updatedAd.slug)
-        revalidationPromises.push(revalidateWeb(`ad-${currentAd.slug}`));
-    }
-    const results = await Promise.allSettled(revalidationPromises);
 
-    results.forEach((result, index) => {
-      if (result.status === "rejected") {
-        console.error(`❌ Falló revalidación ${index}:`, result.reason);
+    if (updatedAd.slug) {
+      tagsToRevalidate.add(`ad-${updatedAd.slug}`);
+      if (currentAd.slug && currentAd.slug !== updatedAd.slug) {
+        tagsToRevalidate.add(`ad-${currentAd.slug}`);
       }
-    });
+    }
+
+    // Ejecutamos secuencialmente
+    for (const tag of tagsToRevalidate) {
+      const success = await revalidateWeb(tag);
+      if (!success) {
+        console.error(
+          `❌ Falló revalidación en actualización para el tag: ${tag}`,
+        );
+      }
+    }
 
     return res.status(200).json(updatedAd);
   } catch (err) {
