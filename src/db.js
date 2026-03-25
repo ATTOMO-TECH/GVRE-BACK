@@ -5,13 +5,20 @@ const DB_URL = process.env.MONGODB_URI;
 const connect = async () => {
   try {
     const db = await mongoose.connect(DB_URL, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
     });
+
     const { name, host } = db.connection;
-    console.log(`Connected to the database ${name} in host ${host}`);
+    console.log(`✅ Connected to the database ${name} in host ${host}`);
+
+    return db;
   } catch (err) {
-    console.log("Ha ocurrido un error conectandose a la base de datos.", err);
+    console.error(
+      "❌ Ha ocurrido un error conectándose a la base de datos:",
+      err,
+    );
+    throw err;
   }
 };
 
