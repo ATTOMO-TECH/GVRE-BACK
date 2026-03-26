@@ -132,6 +132,36 @@ const webHomeSchema = new Schema(
         description2: { type: String },
         commerSections: { type: [String] },
       },
+      residenciales: {
+        title: { type: String },
+        subtitle: { type: String },
+        image: { type: String },
+        cards: [
+          {
+            text: { type: String },
+          },
+        ],
+      },
+      patrimoniales: {
+        title: { type: String },
+        subtitle: { type: String },
+        image: { type: String },
+        cards: [
+          {
+            text: { type: String },
+          },
+        ],
+      },
+      transversales: {
+        title: { type: String },
+        subtitle: { type: String },
+        image: { type: String },
+        cards: [
+          {
+            text: { type: String },
+          },
+        ],
+      },
     },
   },
   {
