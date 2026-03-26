@@ -1220,7 +1220,6 @@ const getFilteredAds = async (req, res, next) => {
 
     // 8.1. Separar y formatear los anuncios según su tipo
     ads.forEach((ad) => {
-      // 🚀 CORRECCIÓN: Para ser estrictos y evitar "fugas", obligamos a que showOnWeb sea falso/undefined para considerarlo OffMarket.
       const isOffMarket =
         ad.showOnWebOffMarket === true && ad.showOnWeb !== true;
 
@@ -1235,29 +1234,56 @@ const getFilteredAds = async (req, res, next) => {
         categorySlug = "patrimonio";
       }
 
+      const activeTags = [];
+      if (ad.sale?.saleValue && ad.sale?.saleShowOnWeb)
+        activeTags.push("Venta");
+      if (ad.rent?.rentValue && ad.rent?.rentShowOnWeb)
+        activeTags.push("Alquiler");
+
       if (isOffMarket) {
         offMarketAds.push({
           id: ad._id.toString(),
-          ref: ad.adReference,
           slug: ad.slug,
           title: ad.title,
+          category: categorySlug,
+          subzone: ad.zone?.[0]?.subzone || null,
+          ref: ad.adReference,
+          salePrice: ad.sale?.saleValue || null,
+          saleShowOnWeb: ad.sale?.saleShowOnWeb,
+          rentPrice: ad.rent?.rentValue || null,
+          rentShowOnWeb: ad.rent?.rentShowOnWeb,
+          operation: activeTags,
           location:
             ad.adDirection?.city ||
             (ad.department === "Campos Rústicos & Activos Singulares"
               ? "España"
               : "Madrid"),
-          category: categorySlug,
+          specs: {
+            beds: ad.quality?.bedrooms || 0,
+            bathrooms: ad.quality?.bathrooms || 0,
+            area: ad.buildSurface || 0,
+            plotArea: ad.plotSurface || 0,
+            garage: ad.quality?.parking || 0,
+            pool: ad.quality?.others?.swimmingPool
+              ? Number(ad.quality.indoorPool || 0) +
+                  Number(ad.quality.outdoorPool || 0) || 1
+              : 0,
+          },
+          zoneName: ad.zone?.[0]?.name || "",
+          gvOperationClose: ad.gvOperationClose || "",
+          tags: [
+            ad.adBuildingType?.[0],
+            ad.quality?.reformed && "Reformado",
+            ad.profitability && "Rentabilidad",
+            ...activeTags,
+          ]
+            .filter(Boolean)
+            .slice(0, 4),
           isOffMarket: true,
           consultant: ad.consultant,
           gvOperationClose: ad.gvOperationClose || "",
         });
       } else {
-        const activeTags = [];
-        if (ad.sale?.saleValue && ad.sale?.saleShowOnWeb)
-          activeTags.push("Venta");
-        if (ad.rent?.rentValue && ad.rent?.rentShowOnWeb)
-          activeTags.push("Alquiler");
-
         normalAds.push({
           id: ad._id.toString(),
           slug: ad.slug,
@@ -1266,7 +1292,9 @@ const getFilteredAds = async (req, res, next) => {
           subzone: ad.zone?.[0]?.subzone || null,
           ref: ad.adReference,
           salePrice: ad.sale?.saleValue || null,
+          saleShowOnWeb: ad.sale?.saleShowOnWeb,
           rentPrice: ad.rent?.rentValue || null,
+          rentShowOnWeb: ad.rent?.rentShowOnWeb,
           operation: activeTags,
           location:
             ad.adDirection?.city ||
@@ -1405,7 +1433,6 @@ const getHighlightAds = async (req, res, next) => {
         operation: finalOperations,
         location: ad.adDirection?.city || "Madrid",
         image: ad.images?.main || "",
-        // 🚀 SINCRONIZADO: Añadimos array de imágenes para el carrusel horizontal
         images: [ad.images?.main, ...(ad.images?.others || [])]
           .filter(Boolean)
           .slice(0, 3),
