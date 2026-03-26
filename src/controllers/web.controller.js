@@ -1428,8 +1428,10 @@ const getHighlightAds = async (req, res, next) => {
         ref: ad.adReference,
         zoneName: ad.zone[0]?.name || "",
         category,
-        salePrice: sPrice,
-        rentPrice: rPrice,
+        salePrice: ad.sale?.saleValue || null,
+        saleShowOnWeb: ad.sale?.saleShowOnWeb,
+        rentPrice: ad.rent?.rentValue || null,
+        rentShowOnWeb: ad.rent?.rentShowOnWeb,
         operation: finalOperations,
         location: ad.adDirection?.city || "Madrid",
         image: ad.images?.main || "",
@@ -1860,11 +1862,19 @@ const getSimilarAds = async (req, res) => {
           slug: 1,
           department: 1,
           title: 1,
-          "sale.saleValue": 1,
-          "sale.saleShowOnWeb": 1,
           "images.main": 1,
           "adDirection.city": 1,
           zone: 1,
+          // 🚀 CAMPOS DE VENTA
+          "sale.saleValue": 1,
+          "sale.saleShowOnWeb": 1,
+          // 🚀 CAMPOS DE ALQUILER NUEVOS
+          "rent.rentValue": 1,
+          "rent.rentShowOnWeb": 1,
+          // 🚀 AÑADIMOS OTROS CAMPOS ÚTILES PARA LAS CARDS
+          adType: 1,
+          gvOperationClose: 1,
+          adReference: 1,
         },
       },
     ]);
@@ -1875,7 +1885,6 @@ const getSimilarAds = async (req, res) => {
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };
-
 module.exports = {
   webHomeGet,
   webHomeCreate,
