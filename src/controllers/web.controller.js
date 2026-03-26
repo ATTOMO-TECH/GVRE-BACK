@@ -109,7 +109,6 @@ const webHomeCreate = async (req, res, next) => {
     const newWebHome = new WebHome({
       mainTitle: req.body.mainTitle,
       mainSubtitle: req.body.mainSubtitle,
-      // CORRECCIÓN: Uso de getCdnUrl
       portraidImage: req.file ? getCdnUrl(req.file) : "",
     });
     const webHomeCreated = await newWebHome.save();
@@ -1885,6 +1884,104 @@ const getSimilarAds = async (req, res) => {
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };
+
+const updateServicesSection = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { title, subtitle, cardsText, key } = req.body;
+    const file = req.file;
+
+    if (
+      !key ||
+      !["residenciales", "patrimoniales", "transversales"].includes(key)
+    ) {
+      return res.status(400).json({
+        message:
+          "Falta la clave (key) válida de la sección a editar (residenciales, patrimoniales o transversales)",
+      });
+    }
+
+    const webHome = await WebHome.findById(id);
+    if (!webHome) {
+      return res.status(404).json({ message: "WebHome no encontrado" });
+    }
+
+    if (!webHome.services) webHome.services = {};
+    if (!webHome.services[key]) webHome.services[key] = { cards: [] };
+
+    if (title !== undefined) webHome.services[key].title = title;
+    if (subtitle !== undefined) webHome.services[key].subtitle = subtitle;
+
+    if (cardsText) {
+      let parsedCards = [];
+      try {
+        parsedCards =
+          typeof cardsText === "string" ? JSON.parse(cardsText) : cardsText;
+      } catch (e) {
+        return res.status(400).json({ message: "Formato de cards inválido" });
+      }
+
+      if (Array.isArray(parsedCards)) {
+        webHome.services[key].cards = parsedCards.map((text) => ({ text }));
+      }
+    }
+
+    if (file) {
+      const oldImageUrl = webHome.services[key].image;
+      if (oldImageUrl) {
+        try {
+          await deleteImage(oldImageUrl);
+        } catch (e) {
+          console.error(
+            "Aviso: S3 falló al borrar la imagen de servicios anterior",
+            e,
+          );
+        }
+      }
+      webHome.services[key].image = getCdnUrl(file);
+    }
+
+    webHome.markModified(`services.${key}`);
+    const updatedWebHome = await webHome.save();
+
+    await revalidateWeb("services");
+
+    return res.status(200).json(updatedWebHome);
+  } catch (err) {
+    console.error("Error en updateServicesSection:", err);
+    return next(err);
+  }
+};
+
+const getWebServicesPage = async (req, res, next) => {
+  try {
+    const webData = await WebHome.findOne();
+
+    if (!webData) {
+      return res.status(404).json({
+        success: false,
+        message: "No se encontraron los datos de la web.",
+      });
+    }
+    const servicesData = {
+      residenciales: webData.services.residenciales,
+      patrimoniales: webData.services.patrimoniales,
+      transversales: webData.services.transversales,
+    };
+
+    return res.status(200).json({
+      success: true,
+      data: servicesData,
+    });
+  } catch (error) {
+    console.error("Error en webServicesPage:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error interno del servidor al cargar los servicios.",
+    });
+  }
+};
+
 module.exports = {
   webHomeGet,
   webHomeCreate,
@@ -1906,7 +2003,9 @@ module.exports = {
   webDevelopmentServicesUpload,
   webInteriorismServicesUpload,
   webVideoSectionUpdate,
+  getWebServicesPage,
   getAdsByReference,
+  updateServicesSection,
   updateCategoriesSection,
   getFilteredAds,
   getHighlightAds,

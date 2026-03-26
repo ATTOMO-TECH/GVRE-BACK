@@ -29,6 +29,8 @@ const {
   getActiveInventoryZones,
   getSimilarAds,
   getFilterStats,
+  getWebServicesPage,
+  updateServicesSection,
 } = require("../controllers/web.controller");
 
 const router = express.Router();
@@ -159,6 +161,14 @@ router.put(
   "/home/categories-section/edit/:id",
   upload.single("image"),
   updateCategoriesSection,
+);
+
+// SERVICES
+router.get("/services/get", getWebServicesPage);
+router.put(
+  "/services/:id",
+  upload.single("image"), // O el nombre del campo que uses para el archivo
+  updateServicesSection,
 );
 
 //ACITVE ZONES
