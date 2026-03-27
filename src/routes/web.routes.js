@@ -31,6 +31,7 @@ const {
   getFilterStats,
   getWebServicesPage,
   updateServicesSection,
+  getWebConsultants,
 } = require("../controllers/web.controller");
 
 const router = express.Router();
@@ -171,7 +172,11 @@ router.put(
   updateServicesSection,
 );
 
-//ACITVE ZONES
+// WHO WE ARE
+
+router.get("/who-we-are", getWebConsultants);
+
+// ACITVE ZONES
 router.post("/active-inventory-zones", getActiveInventoryZones);
 
 // FILTERED STATS
