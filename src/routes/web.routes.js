@@ -33,6 +33,7 @@ const {
   updateServicesSection,
   getWebConsultants,
   getWebContactAndOfficeData,
+  searchByreference,
 } = require("../controllers/web.controller");
 
 const router = express.Router();
@@ -155,6 +156,10 @@ router.put(
 // NUEVA WEB:
 
 // ------------------------------------------------------------------
+
+// SEARCH
+
+router.post("/search-by-reference", searchByreference);
 
 // HOME
 router.put("/home/videosection/edit/:id", webVideoSectionUpdate);
