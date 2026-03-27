@@ -2001,6 +2001,32 @@ const getWebConsultants = async (req, res) => {
   }
 };
 
+const getWebContactAndOfficeData = async (req, res, next) => {
+  try {
+    const webData = await WebHome.findOne();
+
+    if (!webData) {
+      return res.status(404).json({
+        success: false,
+        message: "No se encontraron los datos de la web.",
+      });
+    }
+
+    const contactData = webData.talkWithUs || {};
+
+    return res.status(200).json({
+      success: true,
+      data: contactData,
+    });
+  } catch (error) {
+    console.error("Error en getWebContactAndOfficeData:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error interno del servidor al cargar los datos de contacto.",
+    });
+  }
+};
+
 module.exports = {
   webHomeGet,
   webHomeCreate,
@@ -2025,6 +2051,7 @@ module.exports = {
   getWebServicesPage,
   getAdsByReference,
   getWebConsultants,
+  getWebContactAndOfficeData,
   updateServicesSection,
   updateCategoriesSection,
   getFilteredAds,
