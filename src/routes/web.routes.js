@@ -32,6 +32,7 @@ const {
   getWebServicesPage,
   updateServicesSection,
   getWebConsultants,
+  getWebContactAndOfficeData,
 } = require("../controllers/web.controller");
 
 const router = express.Router();
@@ -173,8 +174,9 @@ router.put(
 );
 
 // WHO WE ARE
-
 router.get("/who-we-are", getWebConsultants);
+
+router.get("/contact-and-offices", getWebContactAndOfficeData);
 
 // ACITVE ZONES
 router.post("/active-inventory-zones", getActiveInventoryZones);
