@@ -77,6 +77,8 @@ const consultantCreate = async (req, res, next) => {
     });
     const consultantCreated = await newConsultant.save();
 
+    await revalidateWeb("team");
+
     return res.status(200).json(consultantCreated);
   } catch (err) {
     return next(err);
@@ -249,6 +251,8 @@ const consultantUpdate = async (req, res, next) => {
       updatedConsultant.consultantPassword = undefined;
     }
 
+    await revalidateWeb("team");
+
     return res.status(200).json(updatedConsultant);
   } catch (err) {
     return next(err);
@@ -346,6 +350,9 @@ const consultantDelete = async (req, res, next) => {
     }
 
     await Consultant.findByIdAndDelete(id);
+
+    await revalidateWeb("team");
+
     return res.status(200).json("Consultor borrado de la base de datos");
   } catch (error) {
     next(error);

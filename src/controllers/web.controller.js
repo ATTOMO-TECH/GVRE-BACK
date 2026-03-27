@@ -1,4 +1,4 @@
-const { deleteImage, getCdnUrl } = require("../middlewares/file.middleware"); // ¡CORRECCIÓN AQUÍ!
+const { deleteImage, getCdnUrl } = require("../middlewares/file.middleware");
 const Ad = require("../models/ad.model");
 const WebHome = require("../models/webHome.model");
 const Consultant = require("../models/consultant.model");
@@ -1982,6 +1982,25 @@ const getWebServicesPage = async (req, res, next) => {
   }
 };
 
+const getWebConsultants = async (req, res) => {
+  try {
+    const teamMembers = await Consultant.find({ showOnWeb: "Yes" }).select(
+      "_id fullName consultantEmail avatar",
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: teamMembers,
+    });
+  } catch (error) {
+    console.error("Error al obtener los consultores:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Hubo un error al obtener la información del equipo.",
+    });
+  }
+};
+
 module.exports = {
   webHomeGet,
   webHomeCreate,
@@ -2005,6 +2024,7 @@ module.exports = {
   webVideoSectionUpdate,
   getWebServicesPage,
   getAdsByReference,
+  getWebConsultants,
   updateServicesSection,
   updateCategoriesSection,
   getFilteredAds,
