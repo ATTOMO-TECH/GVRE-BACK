@@ -2027,6 +2027,57 @@ const getWebContactAndOfficeData = async (req, res, next) => {
   }
 };
 
+const searchByreference = async (req, res, next) => {
+  try {
+    const { reference } = req.body;
+
+    if (!reference) {
+      return res.status(400).json({ message: "La referencia es obligatoria" });
+    }
+
+    // Buscamos todos los activos que coincidan con la referencia
+    const ads = await Ad.find({
+      adReference: { $regex: new RegExp(`^${reference.trim()}$`, "i") },
+      adStatus: { $in: ["Activo", "En preparación"] },
+      $or: [{ showOnWeb: true }, { showOnWebOffMarket: true }],
+    }).populate("zone");
+
+    if (!ads || ads.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No se han encontrado resultados" });
+    }
+
+    // Mapeamos los resultados con datos extra para diferenciar en el dropdown
+    const propertiesData = ads.map((ad) => {
+      // Lógica de precios: Solo enviamos si están marcados para mostrar en web
+      const salePrice = ad.sale?.saleShowOnWeb ? ad.sale.saleValue : null;
+      const rentPrice = ad.rent?.rentShowOnWeb ? ad.rent.rentValue : null;
+
+      return {
+        slug: ad.slug,
+        title: ad.title,
+        location: ad.adDirection?.city || "madrid",
+        zoneName: ad.zone && ad.zone.length > 0 ? ad.zone[0].name : "",
+        category: ad.department,
+        // --- Nuevos datos relevantes ---
+        buildSurface: ad.buildSurface || 0, // Superficie construida
+        salePrice: salePrice,
+        rentPrice: rentPrice,
+        // Añadimos el tipo de inmueble (Piso, Oficina, etc) para ayudar a distinguir
+        propertyType:
+          ad.adBuildingType && ad.adBuildingType.length > 0
+            ? ad.adBuildingType[0]
+            : "",
+      };
+    });
+
+    return res.status(200).json({ success: true, data: propertiesData });
+  } catch (error) {
+    console.error("Error buscando por referencia:", error);
+    return res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
 module.exports = {
   webHomeGet,
   webHomeCreate,
@@ -2060,4 +2111,5 @@ module.exports = {
   getActiveInventoryZones,
   getFilterStats,
   getSimilarAds,
+  searchByreference,
 };
