@@ -60,6 +60,7 @@ app.use(
       "https://gvre-crm-front.netlify.app",
       "https://dev-gvre-crm-front.netlify.app",
       "https://dev-gvre-new-web.netlify.app",
+      "https://prod-gvre-new-web.netlify.app",
     ],
     credentials: true,
     optionsSuccessStatus: 200,
