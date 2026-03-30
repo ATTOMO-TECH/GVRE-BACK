@@ -1788,6 +1788,7 @@ const getSimilarAds = async (req, res) => {
           _id: { $ne: new mongoose.Types.ObjectId(id) },
           showOnWeb: true,
           adStatus: { $in: ["En preparación", "Activo"] },
+          gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
           department: currentAd.department,
           adType: { $in: currentAdTypes },
         },
@@ -1873,7 +1874,7 @@ const getSimilarAds = async (req, res) => {
           slug: 1,
           department: 1,
           title: 1,
-          "images.main": 1,
+          images: 1,
           "adDirection.city": 1,
           zone: 1,
           // 🚀 CAMPOS DE VENTA
@@ -1890,7 +1891,16 @@ const getSimilarAds = async (req, res) => {
       },
     ]);
 
-    res.status(200).json(similarAds);
+    const formattedAds = similarAds.map((ad) => {
+      return {
+        ...ad,
+        images: [ad.images?.main, ...(ad.images?.others || [])]
+          .filter(Boolean)
+          .slice(0, 3),
+      };
+    });
+
+    res.status(200).json(formattedAds);
   } catch (error) {
     console.error("Error fetching similar ads:", error);
     res.status(500).json({ message: "Error interno del servidor" });
