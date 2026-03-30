@@ -4,29 +4,38 @@ const { getCdnUrl, deleteImage } = require("../middlewares/file.middleware");
 
 // 1. Crear Post con Imagen
 const createBlog = async (req, res) => {
-  const data = req.body;
-  const blog = new Blog(data);
-
-  // Procesar tags si vienen como string desde el FormData
-  if (data.tags) {
-    try {
-      blog.tags = JSON.parse(data.tags);
-    } catch (e) {
-      blog.tags = data.tags.split(",").map((tag) => tag.trim());
-    }
-  }
-
-  if (req.file) {
-    blog.image = getCdnUrl(req.file);
-  }
-
   try {
+    // A. VALIDACIÓN TEMPRANA: Si no hay archivo, cortamos la ejecución
+    if (!req.file) {
+      return res.status(400).send({
+        msg: "La imagen de portada es obligatoria",
+      });
+    }
+
+    const data = { ...req.body };
+
+    // B. Procesar tags
+    if (data.tags) {
+      try {
+        data.tags = JSON.parse(data.tags);
+      } catch (e) {
+        data.tags = data.tags.split(",").map((tag) => tag.trim());
+      }
+    }
+
+    // C. Asignar la imagen a los datos ANTES de crear el modelo
+    // (Nota: si getCdnUrl fuera asíncrona, recuerda ponerle 'await')
+    data.image = getCdnUrl(req.file);
+
+    // D. Instanciar y guardar
+    const blog = new Blog(data);
     const blogStored = await blog.save();
 
-    await revalidateWeb("get-blogs"); // Mejor con await por si es asíncrona
+    await revalidateWeb("get-blogs");
 
     res.status(201).send({ msg: "Blog creado con éxito", blog: blogStored });
   } catch (error) {
+    console.error("Error real en el backend (Create):", error);
     res
       .status(500)
       .send({ msg: "Error al guardar en BD", error: error.message });
@@ -35,38 +44,43 @@ const createBlog = async (req, res) => {
 
 // 2. Actualizar Post (con cambio opcional de imagen)
 const updateBlog = async (req, res) => {
-  const { id } = req.params;
-  const updates = { ...req.body };
-
-  if (updates.tags) {
-    try {
-      updates.tags = JSON.parse(updates.tags);
-    } catch (e) {
-      updates.tags = updates.tags.split(",").map((tag) => tag.trim());
-    }
-  }
-
-  if (req.file) {
-    // CORRECCIÓN: Buscamos la imagen vieja y la borramos de AWS para no ocupar espacio
-    try {
-      const oldBlog = await Blog.findById(id);
-      if (oldBlog && oldBlog.image) {
-        await deleteImage(oldBlog.image);
-      }
-    } catch (e) {
-      console.error("Aviso: No se pudo borrar la imagen anterior de S3", e);
-    }
-
-    // CORRECCIÓN: Usamos la función centralizada
-    updates.image = getCdnUrl(req.file);
-  }
-
+  // A. MOVEMOS EL TRY AL PRINCIPIO para proteger todo el proceso
   try {
+    const { id } = req.params;
+    const updates = { ...req.body };
+
+    // B. Procesar tags
+    if (updates.tags) {
+      try {
+        updates.tags = JSON.parse(updates.tags);
+      } catch (e) {
+        updates.tags = updates.tags.split(",").map((tag) => tag.trim());
+      }
+    }
+
+    // C. Si viene una imagen nueva, procesamos el reemplazo
+    if (req.file) {
+      try {
+        const oldBlog = await Blog.findById(id);
+        if (oldBlog && oldBlog.image) {
+          await deleteImage(oldBlog.image);
+        }
+      } catch (e) {
+        console.error("Aviso: No se pudo borrar la imagen anterior de S3", e);
+      }
+
+      updates.image = getCdnUrl(req.file);
+    }
+
+    // D. Actualizar en la base de datos
     const blogUpdated = await Blog.findByIdAndUpdate(id, updates, {
       new: true,
+      runValidators: true,
     });
-    if (!blogUpdated)
+
+    if (!blogUpdated) {
       return res.status(404).send({ msg: "No se encontró el blog" });
+    }
 
     await revalidateWeb("get-blogs");
     await revalidateWeb(`blog-${blogUpdated.slug}`);
@@ -75,6 +89,7 @@ const updateBlog = async (req, res) => {
       .status(200)
       .send({ msg: "Actualizado correctamente", blog: blogUpdated });
   } catch (error) {
+    console.error("Error real en el backend (Update):", error);
     res.status(500).send({ msg: "Error al actualizar", error: error.message });
   }
 };
