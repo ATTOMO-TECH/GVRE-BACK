@@ -1,14 +1,17 @@
 /**
- * Llama al webhook de Next.js para purgar el caché.
- * @param {string} tag - La etiqueta a revalidar (ej: 'home-data', 'property-slug')
+ * Llama al webhook de Next.js para purgar el caché (soporta batching).
+ * @param {string|string[]} tags - Etiqueta o conjunto de etiquetas a revalidar (ej: 'home-data', ['ads-list', 'property-slug'])
  * @returns {Promise<boolean>} - Retorna true si tuvo éxito, false si falló.
  */
-const revalidateWeb = async (tag) => {
+const revalidateWeb = async (tags) => {
+  // 1. Normalizamos la entrada para trabajar siempre con un Array
+  const tagsArray = Array.isArray(tags) ? tags : [tags].filter(Boolean);
+
   if (process.env.ENABLE_REVALIDATION !== "true") {
     console.log(
-      `🟡 [Revalidate] Omitido (Next.js no conectado) para tag: '${tag}'`,
+      `🟡 [Revalidate] Omitido (Next.js no conectado) para tags: '${tagsArray.join(",")}'`,
     );
-    return true; // Fingimos que todo ha ido bien para no bloquear el backend
+    return true;
   }
 
   const frontendUrl = process.env.FRONTEND_URL;
@@ -22,19 +25,20 @@ const revalidateWeb = async (tag) => {
     return false;
   }
 
-  if (!tag) {
+  if (tagsArray.length === 0) {
     console.warn(
-      "⚠️ [Revalidate] Se intentó revalidar sin especificar un tag.",
+      "⚠️ [Revalidate] Se intentó revalidar sin especificar tags válidos.",
     );
     return false;
   }
 
   // 3. Construcción robusta de la URL
   const url = new URL("/api/revalidate", frontendUrl);
-  url.searchParams.append("tag", tag);
+  // Enviamos el array como un string separado por comas bajo el parámetro "tags"
+  url.searchParams.append("tags", tagsArray.join(","));
   url.searchParams.append("secret", secret);
 
-  // 4. Configuración de Timeout (15 segundos)
+  // 4. Configuración de Timeout (5 segundos sigue estando perfecto)
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000);
 
@@ -50,13 +54,19 @@ const revalidateWeb = async (tag) => {
         `Status ${response.status}: ${data.message || response.statusText}`,
       );
     }
-    console.log(`✅ [Revalidate] Correcto para el tag: '${tag}'`);
+    console.log(
+      `✅ [Revalidate] Correcto para los tags: '${tagsArray.join(",")}'`,
+    );
     return true;
   } catch (error) {
     if (error.name === "AbortError") {
-      console.error(`❌ [Revalidate] Timeout (5s) para el tag: '${tag}'`);
+      console.error(
+        `❌ [Revalidate] Timeout (5s) para los tags: '${tagsArray.join(",")}'`,
+      );
     } else {
-      console.error(`❌ [Revalidate] Error en '${tag}': ${error.message}`);
+      console.error(
+        `❌ [Revalidate] Error en '${tagsArray.join(",")}': ${error.message}`,
+      );
     }
     return false;
   } finally {
