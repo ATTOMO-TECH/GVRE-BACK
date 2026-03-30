@@ -1788,7 +1788,6 @@ const getSimilarAds = async (req, res) => {
           _id: { $ne: new mongoose.Types.ObjectId(id) },
           showOnWeb: true,
           adStatus: { $in: ["En preparación", "Activo"] },
-          gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
           department: currentAd.department,
           adType: { $in: currentAdTypes },
         },
