@@ -116,6 +116,9 @@ const webHomeCreate = async (req, res, next) => {
       portraidImage: req.file ? getCdnUrl(req.file) : "",
     });
     const webHomeCreated = await newWebHome.save();
+    revalidateWeb(["home-data"]).catch((err) =>
+      console.error("❌ Error revalidando home-data:", err),
+    );
     return res.status(200).json(webHomeCreated);
   } catch (err) {
     console.log(err);
@@ -146,6 +149,9 @@ const webHomeEdit = async (req, res, next) => {
       id,
       webHomeToUpdate,
       { new: true },
+    );
+    revalidateWeb(["home-data"]).catch((err) =>
+      console.error("❌ Error revalidando home-data:", err),
     );
     return res.status(200).json(updatedWebHome);
   } catch (err) {
@@ -280,7 +286,14 @@ const webVideoSectionUpdate = async (req, res, next) => {
     }
 
     const updatedWebHome = await webHome.save();
-    await revalidateWeb("home-data");
+
+    // 🚀 ACTUALIZADO: Batching y Fire & Forget
+    revalidateWeb(["home-data"]).catch((err) =>
+      console.error(
+        "❌ Falló revalidación en background (webVideoSectionUpdate):",
+        err,
+      ),
+    );
 
     return res.status(200).json(updatedWebHome);
   } catch (err) {
@@ -308,6 +321,9 @@ const webResidentialCategoryImageUpload = async (req, res, next) => {
         id,
         webHomeToUpdate,
         { new: true },
+      );
+      revalidateWeb(["home-data"]).catch((err) =>
+        console.error("❌ Error revalidando home-data:", err),
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -342,6 +358,9 @@ const webPatrimonialCategoryImageUpload = async (req, res, next) => {
         webHomeToUpdate,
         { new: true },
       );
+      revalidateWeb(["home-data"]).catch((err) =>
+        console.error("❌ Error revalidando home-data:", err),
+      );
       return res.status(200).json(updatedWebHome);
     } else {
       return res.status(400).json({
@@ -374,6 +393,9 @@ const webArtCategoryImageUpload = async (req, res, next) => {
         id,
         webHomeToUpdate,
         { new: true },
+      );
+      revalidateWeb(["home-data"]).catch((err) =>
+        console.error("❌ Error revalidando home-data:", err),
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -408,6 +430,9 @@ const webCatalogCategoryImageUpload = async (req, res, next) => {
         webHomeToUpdate,
         { new: true },
       );
+      revalidateWeb(["home-data"]).catch((err) =>
+        console.error("❌ Error revalidando home-data:", err),
+      );
       return res.status(200).json(updatedWebHome);
     } else {
       return res.status(400).json({
@@ -440,6 +465,9 @@ const webCoastCategoryImageUpload = async (req, res, next) => {
         id,
         webHomeToUpdate,
         { new: true },
+      );
+      revalidateWeb(["home-data"]).catch((err) =>
+        console.error("❌ Error revalidando home-data:", err),
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -474,6 +502,9 @@ const webRusticCategoryImageUpload = async (req, res, next) => {
         webHomeToUpdate,
         { new: true },
       );
+      revalidateWeb(["home-data"]).catch((err) =>
+        console.error("❌ Error revalidando home-data:", err),
+      );
       return res.status(200).json(updatedWebHome);
     } else {
       return res.status(400).json({
@@ -500,12 +531,15 @@ const webSingularCategoryImageUpload = async (req, res, next) => {
           console.error(e);
         }
       }
-      // CORRECCIÓN: Uso de getCdnUrl
+
       webHomeToUpdate.otherCategoriesImages.singular = getCdnUrl(req.file);
       const updatedWebHome = await WebHome.findByIdAndUpdate(
         id,
         webHomeToUpdate,
         { new: true },
+      );
+      revalidateWeb(["home-data"]).catch((err) =>
+        console.error("❌ Error revalidando home-data:", err),
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -546,6 +580,9 @@ const webInteriorismTextAndImageUpload = async (req, res, next) => {
         webHomeToUpdate,
         { new: true },
       );
+      revalidateWeb(["home-data"]).catch((err) =>
+        console.error("❌ Error revalidando home-data:", err),
+      );
       return res.status(200).json(updatedWebHome);
     } else {
       return res.status(400).json({
@@ -583,6 +620,9 @@ const webSellTextAndImageUpload = async (req, res, next) => {
         id,
         webHomeToUpdate,
         { new: true },
+      );
+      revalidateWeb(["home-data"]).catch((err) =>
+        console.error("❌ Error revalidando home-data:", err),
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -622,6 +662,9 @@ const webOfficeTextAndImageUpload = async (req, res, next) => {
         id,
         webHomeToUpdate,
         { new: true },
+      );
+      revalidateWeb(["home-data"]).catch((err) =>
+        console.error("❌ Error revalidando home-data:", err),
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -755,6 +798,11 @@ const webHomeTalkWithUs = async (req, res, next) => {
         webHomeToUpdate,
         { new: true },
       );
+
+      revalidateWeb(["contact-data", "home-data"]).catch((err) =>
+        console.error("❌ Error revalidando:", err),
+      );
+
       return res.status(200).json(updatedWebHome);
     } else {
       return res.status(400).json({
@@ -793,6 +841,9 @@ const webDevelopmentServicesUpload = async (req, res, next) => {
         webHomeToUpdate,
         { new: true },
       );
+      revalidateWeb(["home-data"]).catch((err) =>
+        console.error("❌ Error revalidando home-data:", err),
+      );
       return res.status(200).json(updatedWebHome);
     } else {
       return res.status(400).json({
@@ -821,6 +872,9 @@ const webInvestmentServicesUpload = async (req, res, next) => {
         id,
         webHomeToUpdate,
         { new: true },
+      );
+      revalidateWeb(["home-data"]).catch((err) =>
+        console.error("❌ Error revalidando home-data:", err),
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -857,6 +911,9 @@ const webAssetManagementServicesUpload = async (req, res, next) => {
         webHomeToUpdate,
         { new: true },
       );
+      revalidateWeb(["home-data"]).catch((err) =>
+        console.error("❌ Error revalidando home-data:", err),
+      );
       return res.status(200).json(updatedWebHome);
     } else {
       return res.status(400).json({
@@ -889,6 +946,9 @@ const webCommercializationServicesUpload = async (req, res, next) => {
         id,
         webHomeToUpdate,
         { new: true },
+      );
+      revalidateWeb(["home-data"]).catch((err) =>
+        console.error("❌ Error revalidando home-data:", err),
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -927,6 +987,9 @@ const webInteriorismServicesUpload = async (req, res, next) => {
         id,
         webHomeToUpdate,
         { new: true },
+      );
+      revalidateWeb(["home-data"]).catch((err) =>
+        console.error("❌ Error revalidando home-data:", err),
       );
       return res.status(200).json(updatedWebHome);
     } else {
@@ -1014,7 +1077,9 @@ const updateCategoriesSection = async (req, res, next) => {
 
     webHome.markModified("categoriesSection");
     const updatedWebHome = await webHome.save();
-
+    revalidateWeb(["home-data"]).catch((err) =>
+      console.error("❌ Error revalidando home-data:", err),
+    );
     return res.status(200).json(updatedWebHome);
   } catch (err) {
     console.error("Error en updateCategoriesSection:", err);
@@ -1965,7 +2030,10 @@ const updateServicesSection = async (req, res, next) => {
     webHome.markModified(`services.${key}`);
     const updatedWebHome = await webHome.save();
 
-    await revalidateWeb("services");
+    // 🚀 ACTUALIZADO: Batching y Fire & Forget
+    revalidateWeb(["services", "home-data"]).catch((err) =>
+      console.error("❌ Error revalidando:", err),
+    );
 
     return res.status(200).json(updatedWebHome);
   } catch (err) {

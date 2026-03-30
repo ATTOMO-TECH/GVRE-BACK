@@ -16,6 +16,10 @@ const sesClient = new SESClient({
   },
 });
 
+const transporter = nodemailer.createTransport({
+  SES: { ses: sesClient, aws: require("@aws-sdk/client-ses") },
+});
+
 // 1. FUNCIÓN AUXILIAR (El "cerebro" centralizado)
 const getFormattedValue = (value, ref) => {
   // Por si acaso llega un valor nulo o indefinido
@@ -2442,23 +2446,23 @@ const sendWebEmail = async (req, res) => {
   } = req.body;
 
   try {
-    // 1. DETERMINAR EL DESTINATARIO (To) PARA EL CONSULTOR
+    // 1. DETERMINAR EL DESTINATARIO
     let recipientEmail = "info@gvre.es";
     let consultantName = "Equipo GVRE";
 
     if (adConsultant) {
-      const consultant = await Consultant.findById(adConsultant);
-      if (consultant && consultant.consultantEmail) {
+      // 🚀 MEJORA 2: Usamos .lean() y seleccionamos solo los campos necesarios.
+      const consultant = await Consultant.findById(adConsultant)
+        .select("consultantEmail fullName")
+        .lean();
+
+      if (consultant?.consultantEmail) {
         recipientEmail = consultant.consultantEmail;
         consultantName = consultant.fullName;
       }
     }
 
-    const transporter = nodemailer.createTransport({
-      SES: { ses: sesClient, aws: require("@aws-sdk/client-ses") },
-    });
-
-    // 2. LÓGICA DE LA SECCIÓN DEL ANUNCIO (Para el consultor)
+    // 2. CONSTRUCCIÓN DE LAS SECCIONES (Lógica de negocio)
     const adSection = adId
       ? `<div style="margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #2b363d;">
            <p style="margin: 0; font-size: 12px; color: #999; text-transform: uppercase;">Inmueble de interés:</p>
@@ -2470,7 +2474,7 @@ const sendWebEmail = async (req, res) => {
            <p style="margin: 0; font-style: italic; color: #666;">Consulta general</p>
          </div>`;
 
-    // --- CORREO AL CONSULTOR ---
+    // --- PREPARACIÓN DE CORREO AL CONSULTOR ---
     const mailToConsultant = {
       from: `"Web GVRE" <info@gvre.es>`,
       to: recipientEmail,
@@ -2478,20 +2482,16 @@ const sendWebEmail = async (req, res) => {
       subject: adId
         ? `Petición Inmueble: ${adReference}`
         : `Consulta Web: ${nombre}`,
-      // 👇 HTML RESTAURADO
       html: `
         <div style="font-family: Helvetica, sans-serif; color: #2b363d; max-width: 600px; border: 1px solid #eee; padding: 20px;">
           <h2 style="font-weight: lighter; color: #2b363d;">Nueva solicitud recibida</h2>
           <p style="color: #666; font-size: 14px;">Hola ${consultantName.split(" ")[0]}, tienes una nueva petición desde la web:</p>
           <hr style="border: none; border-top: 1px solid #eee;" />
-          
           <p><strong>Nombre:</strong> ${nombre}</p>
           <p><strong>Email:</strong> ${email}</p>
           <p><strong>Teléfono:</strong> ${telefono || "No facilitado"}</p>
           <p><strong>Mensaje:</strong><br/> ${mensaje || "Sin mensaje"}</p>
-          
           ${adSection}
-          
           <p style="font-size: 10px; color: #999; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px;">
             Enviado desde el formulario de: ${adId ? "Detalle de Activo" : "Contacto General"}
           </p>
@@ -2499,43 +2499,36 @@ const sendWebEmail = async (req, res) => {
       `,
     };
 
-    await transporter.sendMail(mailToConsultant);
+    // 🚀 MEJORA 3: Gestión de promesas en paralelo
+    const emailPromises = [transporter.sendMail(mailToConsultant)];
 
-    // --- 👇 CORREO AL CLIENTE (SOLO SI ES RESERVA) 👇 ---
+    // --- CORREO AL CLIENTE (Si corresponde) ---
     if (isBooking && email && bookingDate && bookingTime) {
-      // Formateamos la fecha a formato español (DD/MM/YYYY) para que se vea más natural
       const [year, month, day] = bookingDate.split("-");
       const formattedDate = `${day}/${month}/${year}`;
 
       const mailToClient = {
-        from: `"GVRE Real Estate" <info@gvre.es>`, // Importante usar el dominio verificado en SES
-        to: email, // El email que ha introducido el usuario
+        from: `"GVRE Real Estate" <info@gvre.es>`,
+        to: email,
         subject: "Tu solicitud de cita con GVRE",
-        // 👇 HTML RESTAURADO
         html: `
           <div style="font-family: Helvetica, sans-serif; color: #2b363d; max-width: 600px; border: 1px solid #eee; padding: 30px;">
             <h2 style="font-weight: lighter; color: #2b363d; text-align: center;">Hemos recibido tu solicitud</h2>
-            
             <p style="font-size: 15px; line-height: 1.5;">Hola ${nombre},</p>
-            
             <p style="font-size: 15px; line-height: 1.5;">
               Hemos recibido correctamente tu solicitud de cita para visitar el inmueble <strong>${adReference || "solicitado"}</strong>.
             </p>
-            
             <div style="background-color: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #2b363d;">
               <p style="margin: 5px 0;"><strong>Día propuesto:</strong> ${formattedDate}</p>
               <p style="margin: 5px 0;"><strong>Hora propuesta:</strong> ${bookingTime}</p>
             </div>
-            
             <p style="font-size: 15px; line-height: 1.5;">
               En breve, el consultor/a encargado de este inmueble (${consultantName}) se pondrá en contacto contigo para <strong>confirmar definitivamente la cita</strong> o sugerir alternativas si no hubiera disponibilidad.
             </p>
-            
             <p style="font-size: 15px; line-height: 1.5; margin-top: 30px;">
               Un saludo,<br/>
               <strong>El equipo de GVRE</strong>
             </p>
-            
             <hr style="border: none; border-top: 1px solid #eee; margin-top: 40px;" />
             <p style="font-size: 11px; color: #999; text-align: center;">
               Este es un correo automático, por favor no respondas a esta dirección. Si tienes dudas, contáctanos en info@gvre.es.
@@ -2544,19 +2537,21 @@ const sendWebEmail = async (req, res) => {
         `,
       };
 
-      await transporter.sendMail(mailToClient);
+      emailPromises.push(transporter.sendMail(mailToClient));
     }
 
-    res.status(200).json({
+    await Promise.all(emailPromises);
+
+    return res.status(200).json({
       success: true,
       message: "Email procesado correctamente.",
     });
   } catch (error) {
     console.error("Error en sendWebEmail:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      error: error.message,
       message: "Error al procesar el envío del email",
+      error: error.message,
     });
   }
 };

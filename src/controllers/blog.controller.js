@@ -31,7 +31,10 @@ const createBlog = async (req, res) => {
     const blog = new Blog(data);
     const blogStored = await blog.save();
 
-    await revalidateWeb("get-blogs");
+    // 🚀 ACTUALIZADO: Fire & Forget con un array
+    revalidateWeb(["get-blogs"]).catch((err) =>
+      console.error("❌ Falló revalidación en background (createBlog):", err),
+    );
 
     res.status(201).send({ msg: "Blog creado con éxito", blog: blogStored });
   } catch (error) {
@@ -82,8 +85,9 @@ const updateBlog = async (req, res) => {
       return res.status(404).send({ msg: "No se encontró el blog" });
     }
 
-    await revalidateWeb("get-blogs");
-    await revalidateWeb(`blog-${blogUpdated.slug}`);
+    revalidateWeb(["get-blogs", `blog-${blogUpdated.slug}`]).catch((err) =>
+      console.error("❌ Falló revalidación en background (updateBlog):", err),
+    );
 
     res
       .status(200)
@@ -160,8 +164,9 @@ const deleteBlog = async (req, res) => {
     const blogDeleted = await Blog.findByIdAndDelete(id);
 
     if (blogDeleted) {
-      await revalidateWeb("get-blogs");
-      await revalidateWeb(`blog-${blogDeleted.slug}`);
+      revalidateWeb(["get-blogs", `blog-${blogDeleted.slug}`]).catch((err) =>
+        console.error("❌ Falló revalidación en background (deleteBlog):", err),
+      );
     }
 
     res.status(200).send({ msg: "Blog eliminado" });
