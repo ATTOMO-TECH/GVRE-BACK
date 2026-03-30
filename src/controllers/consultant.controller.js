@@ -2,6 +2,7 @@ const Consultant = require("./../models/consultant.model");
 const bcrypt = require("bcrypt");
 const { deleteImage, getCdnUrl } = require("../middlewares/file.middleware");
 const { isValidPassword, isValidEmail } = require("../auth/utils");
+const { revalidateWeb } = require("../utils/revalidateWeb"); // <-- Asegúrate de que esto esté aquí si no lo estaba
 
 const consultantGetAll = async (req, res, next) => {
   try {
@@ -77,7 +78,12 @@ const consultantCreate = async (req, res, next) => {
     });
     const consultantCreated = await newConsultant.save();
 
-    await revalidateWeb("team");
+    revalidateWeb(["team"]).catch((err) =>
+      console.error(
+        "❌ Falló revalidación en background (consultantCreate):",
+        err,
+      ),
+    );
 
     return res.status(200).json(consultantCreated);
   } catch (err) {
@@ -251,7 +257,12 @@ const consultantUpdate = async (req, res, next) => {
       updatedConsultant.consultantPassword = undefined;
     }
 
-    await revalidateWeb("team");
+    revalidateWeb(["team"]).catch((err) =>
+      console.error(
+        "❌ Falló revalidación en background (consultantUpdate):",
+        err,
+      ),
+    );
 
     return res.status(200).json(updatedConsultant);
   } catch (err) {
@@ -351,7 +362,12 @@ const consultantDelete = async (req, res, next) => {
 
     await Consultant.findByIdAndDelete(id);
 
-    await revalidateWeb("team");
+    revalidateWeb(["team"]).catch((err) =>
+      console.error(
+        "❌ Falló revalidación en background (consultantDelete):",
+        err,
+      ),
+    );
 
     return res.status(200).json("Consultor borrado de la base de datos");
   } catch (error) {

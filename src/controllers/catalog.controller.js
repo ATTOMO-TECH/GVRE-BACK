@@ -32,7 +32,12 @@ const catalogCreate = async (req, res, next) => {
 
     const catalogCreated = await newCatalog.save();
 
-    await revalidateWeb("catalogs-data");
+    revalidateWeb(["catalogs-data"]).catch((err) =>
+      console.error(
+        "❌ Falló revalidación en background (catalogCreate):",
+        err,
+      ),
+    );
 
     return res.status(200).json(catalogCreated);
   } catch (err) {
@@ -83,7 +88,9 @@ const catalogEdit = async (req, res, next) => {
       { new: true },
     );
 
-    await revalidateWeb("catalogs-data");
+    revalidateWeb(["catalogs-data"]).catch((err) =>
+      console.error("❌ Falló revalidación en background (catalogEdit):", err),
+    );
 
     return res.status(200).json(updatedCatalog);
   } catch (err) {
@@ -118,12 +125,19 @@ const catalogDelete = async (req, res, next) => {
     }
 
     const deleted = await Catalog.findByIdAndDelete(id);
-    if (deleted) response = "Catálogo borrado de la base de datos";
-    else
+
+    if (deleted) {
+      response = "Catálogo borrado de la base de datos";
+      revalidateWeb(["catalogs-data"]).catch((err) =>
+        console.error(
+          "❌ Falló revalidación en background (catalogDelete):",
+          err,
+        ),
+      );
+    } else {
       response =
         "No se ha podido encontrar este catálogo. ¿Estás seguro de que existe?";
-
-    if (deleted) await revalidateWeb("catalogs-data");
+    }
 
     return res.status(200).json(response);
   } catch (error) {
@@ -138,7 +152,12 @@ const uploadMainImageCatalogSection = async (req, res, next) => {
     });
     await newCatalogPage.save();
 
-    await revalidateWeb("catalogs-data");
+    revalidateWeb(["catalogs-data"]).catch((err) =>
+      console.error(
+        "❌ Falló revalidación en background (uploadMainImageCatalogSection):",
+        err,
+      ),
+    );
 
     return res
       .status(201)
@@ -177,7 +196,12 @@ const deleteImageCatalogSection = async (req, res, next) => {
     const deleted = await CatalogPage.findByIdAndDelete(id);
 
     if (deleted) {
-      await revalidateWeb("catalogs-data");
+      revalidateWeb(["catalogs-data"]).catch((err) =>
+        console.error(
+          "❌ Falló revalidación en background (deleteImageCatalogSection):",
+          err,
+        ),
+      );
       res.status(200).json({ message: "Deleted Successfully" });
     } else {
       res.status(404).json({ message: "Not found" });

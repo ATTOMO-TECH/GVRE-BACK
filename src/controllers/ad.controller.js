@@ -906,21 +906,18 @@ const adCreate = async (req, res, next) => {
         "ads-list",
         "inventory-zones",
         "filter-stats",
+        "similar-ads",
       ]);
 
       if (adCreated.featuredOnMain) {
         tagsToRevalidate.add("featured-ads");
       }
 
-      // Ejecutamos las revalidaciones secuencialmente
-      for (const tag of tagsToRevalidate) {
-        const success = await revalidateWeb(tag);
-        if (!success) {
-          console.error(
-            `❌ Falló revalidación en creación para el tag: ${tag}`,
-          );
-        }
-      }
+      // 🚀 ACTUALIZADO: Batching y Fire & Forget (No bloqueamos el backend)
+      const tagsArray = Array.from(tagsToRevalidate);
+      revalidateWeb(tagsArray).catch((err) =>
+        console.error("❌ Falló revalidación en background (creación):", err),
+      );
     }
 
     return res.status(200).json(adCreated);
@@ -1521,7 +1518,7 @@ const adUpdate = async (req, res, next) => {
       updatedAd.showOnWeb && validStatuses.includes(updatedAd.adStatus);
 
     // =====================================================================
-    // LÓGICA DE REVALIDACIÓN SECUENCIAL
+    // LÓGICA DE REVALIDACIÓN BATCHING
     // =====================================================================
     const tagsToRevalidate = new Set();
 
@@ -1551,6 +1548,7 @@ const adUpdate = async (req, res, next) => {
       tagsToRevalidate.add("home-data");
       tagsToRevalidate.add("ads-list");
       tagsToRevalidate.add("filter-stats");
+      tagsToRevalidate.add("similar-ads");
     }
 
     if (
@@ -1567,14 +1565,14 @@ const adUpdate = async (req, res, next) => {
       }
     }
 
-    // Ejecutamos secuencialmente
-    for (const tag of tagsToRevalidate) {
-      const success = await revalidateWeb(tag);
-      if (!success) {
+    const tagsArray = Array.from(tagsToRevalidate);
+    if (tagsArray.length > 0) {
+      revalidateWeb(tagsArray).catch((err) =>
         console.error(
-          `❌ Falló revalidación en actualización para el tag: ${tag}`,
-        );
-      }
+          "❌ Falló revalidación en background (actualización):",
+          err,
+        ),
+      );
     }
 
     return res.status(200).json(updatedAd);
@@ -1677,15 +1675,20 @@ const adDelete = async (req, res, next) => {
       adToDelete.showOnWeb && validStatuses.includes(adToDelete.adStatus);
 
     if (wasVisible) {
-      // Siempre limpiamos Home , listado y stats
-      await revalidateWeb("home-data");
-      await revalidateWeb("ads-list");
-      await revalidateWeb("filter-stats");
+      const tagsToRevalidate = [
+        "home-data",
+        "ads-list",
+        "filter-stats",
+        "similar-ads",
+      ];
 
-      // Si era destacado, limpiamos esa sección
       if (adToDelete.featuredOnMain) {
-        await revalidateWeb("featured-ads");
+        tagsToRevalidate.push("featured-ads");
       }
+
+      revalidateWeb(tagsToRevalidate).catch((err) =>
+        console.error("❌ Falló revalidación en background (borrado):", err),
+      );
     }
     // =====================================================================
 
