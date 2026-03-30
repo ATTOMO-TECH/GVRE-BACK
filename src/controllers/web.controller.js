@@ -11,7 +11,8 @@ const webHomeGet = async (req, res, next) => {
   try {
     const webDocs = await WebHome.find().populate({
       path: "videoSection.videos.adId",
-      select: "adStatus showOnWeb gvOperationClose adType sale rent",
+      select:
+        "adStatus showOnWeb gvOperationClose adType sale rent adDirection",
     });
 
     if (!webDocs || webDocs.length === 0) return res.status(200).json([]);
@@ -42,6 +43,9 @@ const webHomeGet = async (req, res, next) => {
       let labels = [];
       video.price.sale = isSaleValid ? ad.sale.saleValue : null;
       video.price.rent = isRentValid ? ad.rent.rentValue : null;
+      video.location = ad.adDirection?.city
+        ? ad.adDirection.city.trim().toLowerCase()
+        : "";
 
       if (video.price.sale) labels.push("Venta");
       if (video.price.rent) labels.push("Alquiler");
@@ -225,7 +229,7 @@ const webVideoSectionUpdate = async (req, res, next) => {
           _id: { $in: req.body.selectedAdIds },
           showOnWeb: true,
           adStatus: { $in: ["Activo", "En preparación"] },
-        }).select("title adReference adType sale rent images slug");
+        }).select("title adReference adType sale rent images slug adDirection");
 
         const newVideoCollection = req.body.selectedAdIds
           .map((adId) => {
@@ -264,6 +268,7 @@ const webVideoSectionUpdate = async (req, res, next) => {
               slug: ad.slug,
               adReference: ad.adReference,
               price: priceObj,
+              location: ad.adDirection?.city || "",
             };
           })
           .filter(Boolean);
@@ -1527,6 +1532,10 @@ const getAdDetails = async (req, res, next) => {
         ? Number(rawRepercussion)
         : null;
 
+    const fixedExpensesIncluded = Number(ad.expensesIncluded) || null;
+    const fixedMonthlyRent = Number(ad.monthlyRent) || null;
+    const fixedExpenses = Number(ad.expenses) || null;
+
     let gallery = [];
     if (ad.images?.main) gallery.push(ad.images.main);
     if (ad.images?.others && Array.isArray(ad.images.others)) {
@@ -1577,6 +1586,9 @@ const getAdDetails = async (req, res, next) => {
       period: period,
       saleRepercussionM2: saleRepercussionM2,
       saleRepercussionM2ShowOnWeb: saleRepercussionM2ShowOnWeb,
+      expenses: fixedExpenses,
+      expensesIncluded: fixedExpensesIncluded,
+      monthlyRent: fixedMonthlyRent,
       m2Terrace: m2Terrace,
       m2StorageSpace: m2StorageSpace,
       location: {
@@ -2048,11 +2060,13 @@ const searchByreference = async (req, res, next) => {
         .json({ message: "No se han encontrado resultados" });
     }
 
-    // Mapeamos los resultados con datos extra para diferenciar en el dropdown
     const propertiesData = ads.map((ad) => {
-      // Lógica de precios: Solo enviamos si están marcados para mostrar en web
       const salePrice = ad.sale?.saleShowOnWeb ? ad.sale.saleValue : null;
       const rentPrice = ad.rent?.rentShowOnWeb ? ad.rent.rentValue : null;
+
+      // 🚀 DETERMINAMOS SI ES OFF MARKET
+      const isOffMarket =
+        ad.showOnWebOffMarket === true && ad.showOnWeb !== true;
 
       return {
         slug: ad.slug,
@@ -2060,15 +2074,15 @@ const searchByreference = async (req, res, next) => {
         location: ad.adDirection?.city || "madrid",
         zoneName: ad.zone && ad.zone.length > 0 ? ad.zone[0].name : "",
         category: ad.department,
-        // --- Nuevos datos relevantes ---
-        buildSurface: ad.buildSurface || 0, // Superficie construida
+        buildSurface: ad.buildSurface || 0,
         salePrice: salePrice,
         rentPrice: rentPrice,
-        // Añadimos el tipo de inmueble (Piso, Oficina, etc) para ayudar a distinguir
         propertyType:
           ad.adBuildingType && ad.adBuildingType.length > 0
             ? ad.adBuildingType[0]
             : "",
+        isOffMarket: isOffMarket,
+        ref: ad.adReference,
       };
     });
 
@@ -2078,6 +2092,7 @@ const searchByreference = async (req, res, next) => {
     return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
+
 module.exports = {
   webHomeGet,
   webHomeCreate,
