@@ -157,6 +157,48 @@ const makeDiacriticRegex = (text) => {
     .replace(/n/gi, "[nñ]");
 };
 
+const getPropertyUrl = (ad) => {
+  const categoryMap = {
+    Residencial: "residencial",
+    Costa: "residencial",
+    Patrimonio: "patrimonio",
+    Otros: "otros-activos-y-zonas",
+  };
+
+  const categoryUrl = categoryMap[ad.department] || "residencial";
+
+  const formatSlug = (text) =>
+    text
+      ? text
+          .toLowerCase()
+          .trim()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/\s+/g, "-")
+      : "";
+
+  const citySlug = formatSlug(ad.adDirection?.city || "madrid");
+
+  // Obtenemos la zona (buscando en el nombre de la subzona o zona)
+  const zoneSegment = formatSlug(ad.adDirectionSelected || "");
+
+  // Operación: Si tiene valor de venta es venta, si no alquiler
+  const op = ad.sale && ad.sale.saleValue > 0 ? "venta" : "alquiler";
+
+  const slug = ad.slug || ad._id;
+
+  let segments = [];
+  if (categoryUrl === "otros-activos-y-zonas") {
+    segments = [categoryUrl, "inmuebles", op, slug];
+  } else {
+    segments = [categoryUrl, citySlug, "inmuebles", zoneSegment, op, slug];
+  }
+
+  console.log(ad.adDirection);
+
+  return `/${segments.filter(Boolean).join("/")}`;
+};
+
 module.exports = {
   getDate,
   getPasswordByEmail,
@@ -167,4 +209,5 @@ module.exports = {
   normalizeAdHistory,
   getTaggedEmail,
   makeDiacriticRegex,
+  getPropertyUrl,
 };
