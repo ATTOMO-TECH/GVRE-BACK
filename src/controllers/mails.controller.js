@@ -1,6 +1,10 @@
 const nodemailer = require("nodemailer");
 const mongoose = require("mongoose");
-const { getPasswordByEmail, getTaggedEmail } = require("../utils/utils");
+const {
+  getPasswordByEmail,
+  getTaggedEmail,
+  getPropertyUrl,
+} = require("../utils/utils");
 const Consultant = require("../models/consultant.model");
 const Contact = require("./../models/contact.model");
 
@@ -67,6 +71,7 @@ const sendAdsToContact = async (req, res) => {
       const part = pathFile.split("/");
       const primeraParte = part[3];
       const path = pathFile.substring(pathFile.indexOf(primeraParte));
+      const adUrl = `${process.env.FRONTEND_URL}${getPropertyUrl(ad)}`;
 
       return `${
         ad.adDirectionSelected !== undefined
@@ -120,11 +125,7 @@ const sendAdsToContact = async (req, res) => {
                         <td valign="top" style="border-collapse: collapse; vertical-align: top">
                           <h2 style="font-family: Helvetica; font-weight: bold; text-align: center">
                             <a
-                              href="${
-                                ad.department === "Residencial"
-                                  ? "https://gvre.es/residentialItem/" + ad._id
-                                  : "https://gvre.es/patrimonialItem/" + ad._id
-                              }"
+                              href=${adUrl}
                               style="text-decoration: none; font-size: 19px; color: rgb(43, 54, 61)"
                               target="_blank"
                               >
@@ -141,11 +142,7 @@ const sendAdsToContact = async (req, res) => {
                       <tr>
                         <td valign="top" style="border-collapse: collapse; vertical-align: top">
                            <a
-                           href="${
-                             ad.department === "Residencial"
-                               ? "https://gvre.es/residentialItem/" + ad._id
-                               : "https://gvre.es/patrimonialItem/" + ad._id
-                           }"
+                           href=${adUrl}
                            target="_blank"
                            >
                             <img
@@ -231,11 +228,7 @@ const sendAdsToContact = async (req, res) => {
                             >${ad.description.emailPDF}</p><span>&nbsp;</span
                             >
                             <a
-                              href="${
-                                ad.department === "Residencial"
-                                  ? "https://gvre.es/residentialItem/" + ad._id
-                                  : "https://gvre.es/patrimonialItem/" + ad._id
-                              }"
+                              href=${adUrl}
                               target="_blank"
                               data-saferedirecturl="https://www.google.com/url?q="
                               style=" text-align: center; text-decoration: none; color: inherit; cursor: pointer; font-weight: bold; padding: 8px; border: 1px solid rgb(43, 54, 61)"
@@ -968,6 +961,8 @@ const sendAdToContacts = async (req, res) => {
     updatedConsultant?.consultantEmailSignZones &&
     generateZonesHTML(updatedConsultant?.consultantEmailSignZones);
 
+  const adUrl = `${process.env.FRONTEND_URL}${getPropertyUrl(req.body.ad)}`;
+
   const baseMailOptions = {
     subject: `${req.body.subject}`,
     html: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -1323,14 +1318,7 @@ const sendAdToContacts = async (req, res) => {
                                             <td valign="top" style="border-collapse: collapse; vertical-align: top">
                                               <h2 style="font-family: Helvetica; font-weight: bold; text-align: center">
                                                 <a
-                                                  href="${
-                                                    req.body.ad.department ===
-                                                    "Residencial"
-                                                      ? "https://gvre.es/residentialItem/" +
-                                                        req.body.ad._id
-                                                      : "https://gvre.es/patrimonialItem/" +
-                                                        req.body.ad._id
-                                                  }"
+                                                  href=${adUrl}
                                                   style="text-decoration: none; font-size: 19px; color: rgb(43, 54, 61)"
                                                   target="_blank"
                                                   >
@@ -1350,14 +1338,7 @@ const sendAdToContacts = async (req, res) => {
                                           <tr>
                                             <td valign="top" style="border-collapse: collapse; vertical-align: top">
                                               <a
-                                              href="${
-                                                req.body.ad.department ===
-                                                "Residencial"
-                                                  ? "https://gvre.es/residentialItem/" +
-                                                    req.body.ad._id
-                                                  : "https://gvre.es/patrimonialItem/" +
-                                                    req.body.ad._id
-                                              }"
+                                              href=${adUrl}
                                               target="_blank"
                                               >
                                                 <img
@@ -1453,14 +1434,7 @@ const sendAdToContacts = async (req, res) => {
                                                 }</p><span>&nbsp;</span
                                                 >
                                                 <a
-                                                  href="${
-                                                    req.body.ad.department ===
-                                                    "Residencial"
-                                                      ? "https://gvre.es/residentialItem/" +
-                                                        req.body.ad._id
-                                                      : "https://gvre.es/patrimonialItem/" +
-                                                        req.body.ad._id
-                                                  }"
+                                                  href=${adUrl}
                                                   target="_blank"
                                                   data-saferedirecturl="https://www.google.com/url?q="
                                                   style="text-align: center; text-decoration: none; color: inherit; cursor: pointer; font-weight: bold; padding: 8px; border: 1px solid rgb(43, 54, 61)"
@@ -1870,23 +1844,38 @@ const sendAdToContacts = async (req, res) => {
 const generateZonesHTML = (zones) => {
   const createZoneHTML = (zone) => {
     if (!zone || !zone.name) return "";
-    let zoneSection;
-    if (
-      zone.zone === "Residencial" ||
-      zone.zone === "Nueva España - Hispanoamérica" ||
-      zone.zone === "Barrio Salamanca" ||
-      zone.zone === "La Moraleja" ||
-      zone.zone === "Somosaguas" ||
-      zone.zone === "Puerta de Hierro" ||
-      zone.zone === "Colonia Fuentelarreyna"
-    ) {
-      zoneSection = "residential";
+
+    let url = process.env.FRONTEND_URL;
+
+    // Función auxiliar para normalizar slugs (eliminar tildes, espacios por guiones, etc.)
+    const formatSlug = (text) =>
+      text
+        .toLowerCase()
+        .trim()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, "-");
+
+    // 1. MAPEADO DE RUTAS DINÁMICAS
+    if (zone.zone === "Residencial") {
+      // Ruta: /residencial/madrid/inmuebles/slug-de-zona
+      url += `/residencial/madrid/inmuebles/${zone.slug || ""}`;
     } else if (zone.zone === "Patrimonial") {
-      zoneSection = "patrimonial";
-    } else if (zone.zone === "Others") {
-      if (zone.name === "Activos singulares") zoneSection = "singular";
-      else if (zone.name === "Campo Rústico") zoneSection = "rustico";
-      else if (zone.name === "Costa") zoneSection = "costa";
+      // Ruta: /patrimonio/madrid/inmuebles/slug-de-zona
+      url += `/patrimonio/madrid/inmuebles/${zone.slug || ""}`;
+    } else if (zone.zone === "Campos Rústicos & Activos Singulares") {
+      // Ruta fija para otros activos
+      url += `/otros-activos-y-zonas/inmuebles`;
+    } else if (zone.zone === "Costa") {
+      /**
+       * Lógica para Costa:
+       * Si tiene subzone (Marbella, Sotogrande, etc.), la usamos como ciudad.
+       * Si no tiene, usamos "espana" por defecto.
+       */
+      const citySegment = zone.subzone ? formatSlug(zone.subzone) : "espana";
+      url += `/residencial/${citySegment}/inmuebles/${zone.slug || ""}`;
+    } else {
+      url += "/residencial/madrid/inmuebles";
     }
 
     return `<td style="width: 33.33%; vertical-align: top;">
@@ -1895,14 +1884,8 @@ const generateZonesHTML = (zones) => {
         <td style="padding: 0; margin: 0; width: 100%; height: 80px;">
           <table role="presentation" style="width: 100%; height: 100%; border-collapse: collapse;">
             <tr>
-              <td style="padding: 0; margin: 0; text-align: center; vertical-align: middle; width: 100%; height: 70px; background: url('${
-                zone.image
-              }') no-repeat center center; background-size: cover;">
-                <a href="${
-                  zone.zone === "Others"
-                    ? `https://gvre.es/${zoneSection}/1&page=1`
-                    : `https://gvre.es/${zoneSection}/1?zona=${zone.zoneId}&page=1`
-                }" style="text-decoration: none; display: block; width: 100%; height: 100%; text-align: center;">
+              <td style="padding: 0; margin: 0; text-align: center; vertical-align: middle; width: 100%; height: 70px; background: url('${zone.image}') no-repeat center center; background-size: cover;">
+                <a href=${url} style="text-decoration: none; display: block; width: 100%; height: 100%; text-align: center;">
                   <span style="display: inline-block; vertical-align: middle; height: 100%;"></span>
                   <span style="display: inline-block; background-color: white; padding: 1px 3px; font-size: 10px; color: #2a373d; opacity: 90%; vertical-align: middle;">
                     ${zone.name}
@@ -1919,26 +1902,20 @@ const generateZonesHTML = (zones) => {
 
   const priorityLevels = ["high", "medium", "low"];
   let html = "";
-
   priorityLevels.forEach((priority) => {
     const priorityZones = zones[priority];
     if (!priorityZones) return;
-
     let content = "";
     let count = 0;
-
     Object.keys(priorityZones).forEach((zoneKey) => {
       const zone = priorityZones[zoneKey];
       if (count % 3 === 0) {
-        if (count !== 0) {
-          content += "</tr>";
-        }
+        if (count !== 0) content += "</tr>";
         content += "<tr>";
       }
       content += createZoneHTML(zone);
       count++;
     });
-
     if (count % 3 !== 0) {
       while (count % 3 !== 0) {
         content += "<td></td>";
@@ -1946,10 +1923,8 @@ const generateZonesHTML = (zones) => {
       }
       content += "</tr>";
     }
-
     html += `<table role="presentation" style="width: 100%; border-collapse: collapse;">${content}</table>`;
   });
-
   return html;
 };
 
