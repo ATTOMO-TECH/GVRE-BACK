@@ -7,12 +7,15 @@ const { revalidateWeb } = require("../utils/revalidateWeb");
 const { default: mongoose } = require("mongoose");
 const { makeDiacriticRegex } = require("../utils/utils");
 
+// Asegúrate de tener importado el modelo Zone al principio de tu archivo si no lo tienes:
+// const Zone = require("../models/zone");
+
 const webHomeGet = async (req, res, next) => {
   try {
     const webDocs = await WebHome.find().populate({
       path: "videoSection.videos.adId",
       select:
-        "adStatus showOnWeb gvOperationClose adType sale rent adDirection",
+        "adStatus showOnWeb gvOperationClose adType sale rent adDirection department zone",
     });
 
     if (!webDocs || webDocs.length === 0) return res.status(200).json([]);
@@ -23,18 +26,15 @@ const webHomeGet = async (req, res, next) => {
     const validVideos = webHomeDoc.videoSection.videos.filter((video) => {
       const ad = video.adId;
       if (!ad) return false;
-
       const isVisible = ad.showOnWeb === true;
       const isActive = ["Activo", "En preparación"].includes(ad.adStatus);
       const isNotClosed = !ad.gvOperationClose || ad.gvOperationClose === "";
-
       if (!isVisible || !isActive || !isNotClosed) return false;
 
       const isSaleValid =
         ad.adType.includes("Venta") &&
         ad.sale?.saleValue &&
         ad.sale?.saleShowOnWeb === true;
-
       const isRentValid =
         ad.adType.includes("Alquiler") &&
         ad.rent?.rentValue &&
@@ -46,11 +46,9 @@ const webHomeGet = async (req, res, next) => {
       video.location = ad.adDirection?.city
         ? ad.adDirection.city.trim().toLowerCase()
         : "";
-
       if (video.price.sale) labels.push("Venta");
       if (video.price.rent) labels.push("Alquiler");
       video.price.label = labels.join(" / ");
-
       return true;
     });
 
@@ -60,30 +58,65 @@ const webHomeGet = async (req, res, next) => {
     }
 
     const webData = webHomeDoc.toObject();
-
     const activeFilter = {
       adStatus: { $in: ["Activo", "En preparación"] },
-      showOnWeb: true,
-      gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
+      $and: [{ $or: [{ showOnWeb: true }, { showOnWebOffMarket: true }] }],
     };
 
-    const cities = [
-      webData.categoriesSection?.location1?.title || "Madrid",
-      webData.categoriesSection?.location2?.title || "Marbella",
-      webData.categoriesSection?.location3?.title || "Sotogrande",
-      webData.categoriesSection?.location4?.title || "Puerto de Santa María",
-    ];
+    const loc2 = webData.categoriesSection?.location2?.title || "Marbella";
+    const loc3 = webData.categoriesSection?.location3?.title || "Sotogrande";
+    const loc4 =
+      webData.categoriesSection?.location4?.title || "Puerto de Santa María";
+
+    // Obtenemos las IDs de las zonas de costa para los contadores específicos
+    const [marbellaZones, sotograndeZones, puertoZones] = await Promise.all([
+      Zone.find({ subzone: { $regex: new RegExp(`^${loc2}$`, "i") } }).select(
+        "_id",
+      ),
+      Zone.find({ subzone: { $regex: new RegExp(`^${loc3}$`, "i") } }).select(
+        "_id",
+      ),
+      Zone.find({ subzone: { $regex: new RegExp(`^${loc4}$`, "i") } }).select(
+        "_id",
+      ),
+    ]);
 
     const counts = await Promise.all([
-      Ad.countDocuments({ ...activeFilter, department: "Residencial" }),
+      // 0. Residencial Web (Suma de Madrid + Costa)
+      Ad.countDocuments({
+        ...activeFilter,
+        department: { $in: ["Residencial", "Costa"] },
+      }),
+
+      // 1. Patrimonio
       Ad.countDocuments({ ...activeFilter, department: "Patrimonio" }),
-      Ad.countDocuments({ ...activeFilter, department: "Otros" }),
-      ...cities.map((city) =>
-        Ad.countDocuments({
-          ...activeFilter,
-          "adDirection.city": { $regex: new RegExp(`^${city}$`, "i") },
-        }),
-      ),
+
+      // 2. Otros Activos (Solo la categoría real que queda)
+      Ad.countDocuments({
+        ...activeFilter,
+        department: "Campos Rústicos & Activos Singulares",
+      }),
+
+      // 3. Location 1: Madrid (Usamos el departamento completo para incluir Alcobendas, etc. = 531)
+      Ad.countDocuments({ ...activeFilter, department: "Residencial" }),
+
+      // 4. Location 2: Marbella
+      Ad.countDocuments({
+        ...activeFilter,
+        zone: { $in: marbellaZones.map((z) => z._id) },
+      }),
+
+      // 5. Location 3: Sotogrande
+      Ad.countDocuments({
+        ...activeFilter,
+        zone: { $in: sotograndeZones.map((z) => z._id) },
+      }),
+
+      // 6. Location 4: Puerto de Santa María
+      Ad.countDocuments({
+        ...activeFilter,
+        zone: { $in: puertoZones.map((z) => z._id) },
+      }),
     ]);
 
     const sections = [
