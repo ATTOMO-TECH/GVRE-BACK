@@ -35,6 +35,13 @@ const requestsSchema = new Schema(
     toReform: { type: Boolean },
     smokeOutlet: { type: Boolean },
     profitability: { type: Boolean },
+    coworking: { type: Boolean },
+    exclusiveOfficeBuilding: { type: Boolean },
+    implanted: { type: Boolean },
+    seaViews: { type: Boolean },
+    golfCourseView: { type: Boolean },
+    fullHoursSecurity: { type: Boolean },
+    gatedCommunity: { type: Boolean },
     requestSalePrice: {
       salePriceMax: { type: Number, default: 0 },
       salePriceMin: { type: Number, default: 0 },

@@ -278,6 +278,34 @@ const requestGetAdsMatched = async (req, res, next) => {
       reformConditions.push({ "quality.toReform": true });
     }
 
+    if (request.coworking === true) {
+      andConditions.push({ "quality.others.coworking": true });
+    }
+
+    if (request.exclusiveOfficeBuilding === true) {
+      andConditions.push({ "quality.others.exclusiveOfficeBuilding": true });
+    }
+
+    if (request.implanted === true) {
+      andConditions.push({ "quality.others.implanted": true });
+    }
+
+    if (request.seaViews === true) {
+      andConditions.push({ "quality.others.seaViews": true });
+    }
+
+    if (request.golfCourseView === true) {
+      andConditions.push({ "quality.others.golfCourseView": true });
+    }
+
+    if (request.fullHoursSecurity === true) {
+      andConditions.push({ "quality.others.fullHoursSecurity": true });
+    }
+
+    if (request.gatedCommunity === true) {
+      andConditions.push({ "quality.others.gatedCommunity": true });
+    }
+
     if (reformConditions.length > 0) {
       andConditions.push({ $or: reformConditions });
     }
@@ -394,6 +422,34 @@ const requestGetNewMatched = async (req, res, next) => {
       reformConditions.push({ "quality.toReform": true });
     }
 
+    if (req.body.coworking === true) {
+      andConditions.push({ "quality.others.coworking": true });
+    }
+
+    if (req.body.exclusiveOfficeBuilding === true) {
+      andConditions.push({ "quality.others.exclusiveOfficeBuilding": true });
+    }
+
+    if (req.body.implanted === true) {
+      andConditions.push({ "quality.others.implanted": true });
+    }
+
+    if (req.body.seaViews === true) {
+      andConditions.push({ "quality.others.seaViews": true });
+    }
+
+    if (req.body.golfCourseView === true) {
+      andConditions.push({ "quality.others.golfCourseView": true });
+    }
+
+    if (req.body.fullHoursSecurity === true) {
+      andConditions.push({ "quality.others.fullHoursSecurity": true });
+    }
+
+    if (req.body.gatedCommunity === true) {
+      andConditions.push({ "quality.others.gatedCommunity": true });
+    }
+
     if (reformConditions.length > 0) {
       andConditions.push({ $or: reformConditions });
     }
@@ -466,6 +522,13 @@ const requestCreate = async (req, res, next) => {
       toReform: req.body.toReform,
       smokeOutlet: req.body.smokeOutlet,
       profitability: req.body.profitability,
+      coworking: req.body.coworking,
+      exclusiveOfficeBuilding: req.body.exclusiveOfficeBuilding,
+      implanted: req.body.implanted,
+      seaViews: req.body.seaViews,
+      golfCourseView: req.body.golfCourseView,
+      fullHoursSecurity: req.body.fullHoursSecurity,
+      gatedCommunity: req.body.gatedCommunity,
     });
 
     const requestCreated = await newRequest.save();
@@ -522,6 +585,13 @@ const requestUpdate = async (req, res, next) => {
     fieldsToUpdate.toReform = req.body.toReform;
     fieldsToUpdate.smokeOutlet = req.body.smokeOutlet;
     fieldsToUpdate.profitability = req.body.profitability;
+    fieldsToUpdate.coworking = req.body.coworking;
+    fieldsToUpdate.exclusiveOfficeBuilding = req.body.exclusiveOfficeBuilding;
+    fieldsToUpdate.implanted = req.body.implanted;
+    fieldsToUpdate.seaViews = req.body.seaViews;
+    fieldsToUpdate.golfCourseView = req.body.golfCourseView;
+    fieldsToUpdate.fullHoursSecurity = req.body.fullHoursSecurity;
+    fieldsToUpdate.gatedCommunity = req.body.gatedCommunity;
 
     const updatedRequest = await Request.findByIdAndUpdate(
       req.body.id,
