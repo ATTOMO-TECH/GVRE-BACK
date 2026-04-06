@@ -1328,9 +1328,9 @@ const getFilteredAds = async (req, res, next) => {
               : "Madrid"),
           image: ad.images?.main || null,
           isOffMarket: false,
-          images: [ad.images?.main, ...(ad.images?.others || [])]
-            .filter(Boolean)
-            .slice(0, 3),
+          images: [ad.images?.main, ...(ad.images?.others || [])].filter(
+            Boolean,
+          ),
           specs: {
             beds: ad.quality?.bedrooms || 0,
             bathrooms: ad.quality?.bathrooms || 0,
@@ -1460,9 +1460,7 @@ const getHighlightAds = async (req, res, next) => {
         operation: finalOperations,
         location: ad.adDirection?.city || "Madrid",
         image: ad.images?.main || "",
-        images: [ad.images?.main, ...(ad.images?.others || [])]
-          .filter(Boolean)
-          .slice(0, 3),
+        images: [ad.images?.main, ...(ad.images?.others || [])].filter(Boolean),
         specs: {
           beds: ad.quality?.bedrooms || 0,
           bathrooms: ad.quality?.bathrooms || 0,
@@ -1914,9 +1912,7 @@ const getSimilarAds = async (req, res) => {
     const formattedAds = similarAds.map((ad) => {
       return {
         ...ad,
-        images: [ad.images?.main, ...(ad.images?.others || [])]
-          .filter(Boolean)
-          .slice(0, 3),
+        images: [ad.images?.main, ...(ad.images?.others || [])].filter(Boolean),
       };
     });
 

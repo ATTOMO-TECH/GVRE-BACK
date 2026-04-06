@@ -572,6 +572,34 @@ const adGetMatchedRequests = async (req, res, next) => {
       query.where({ profitability: { $ne: true } });
     }
 
+    if (!ad.quality?.others?.coworking) {
+      query.where({ coworking: { $ne: true } });
+    }
+
+    if (!ad.quality?.others?.exclusiveOfficeBuilding) {
+      query.where({ exclusiveOfficeBuilding: { $ne: true } });
+    }
+
+    if (!ad.quality?.others?.implanted) {
+      query.where({ implanted: { $ne: true } });
+    }
+
+    if (!ad.quality?.others?.seaViews) {
+      query.where({ seaViews: { $ne: true } });
+    }
+
+    if (!ad.quality?.others?.golfCourseView) {
+      query.where({ golfCourseView: { $ne: true } });
+    }
+
+    if (!ad.quality?.others?.fullHoursSecurity) {
+      query.where({ fullHoursSecurity: { $ne: true } });
+    }
+
+    if (!ad.quality?.others?.gatedCommunity) {
+      query.where({ gatedCommunity: { $ne: true } });
+    }
+
     query.populate({
       path: "requestContact",
       select: "fullName company email contactComments notReceiveCommunications",
