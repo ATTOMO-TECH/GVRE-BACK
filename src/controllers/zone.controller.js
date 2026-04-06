@@ -120,6 +120,102 @@ const zoneDelete = async (req, res, next) => {
   }
 };
 
+const getGroupedZones = async (req, res, next) => {
+  try {
+    const zones = await Zone.find({ zone: { $ne: "Others" } })
+      .sort({ zone: 1, subzone: 1, name: 1 })
+      .lean();
+
+    // 1. Agrupamos en un objeto (es más rápido y eficiente para organizar los datos)
+    const groupedData = {};
+
+    zones.forEach((z) => {
+      const category = z.zone;
+      const subzone = z.subzone;
+
+      if (category === "Costa") {
+        if (!groupedData[category]) {
+          groupedData[category] = {};
+        }
+
+        const subzoneKey =
+          subzone && subzone.trim() !== "" ? subzone : "Otras áreas";
+
+        if (!groupedData[category][subzoneKey]) {
+          groupedData[category][subzoneKey] = [];
+        }
+
+        groupedData[category][subzoneKey].push(z);
+      } else {
+        if (!groupedData[category]) {
+          groupedData[category] = [];
+        }
+
+        groupedData[category].push(z);
+      }
+    });
+
+    // 2. Transformamos el objeto en un Array para la respuesta
+    const resultArray = Object.keys(groupedData).map((categoryName) => {
+      // Si es Costa, transformamos también sus subzonas en un array
+      if (categoryName === "Costa") {
+        const subzonesObj = groupedData[categoryName];
+
+        const subzonesArray = Object.keys(subzonesObj).map((subzoneName) => {
+          return {
+            subzone: subzoneName,
+            zones: subzonesObj[subzoneName],
+          };
+        });
+
+        return {
+          category: categoryName,
+          subzones: subzonesArray,
+        };
+      }
+
+      // Para el resto de categorías (Residencial, Patrimonial, etc.)
+      return {
+        category: categoryName,
+        zones: groupedData[categoryName],
+      };
+    });
+
+    // Devolvemos el array final
+    return res.status(200).json(resultArray);
+  } catch (err) {
+    console.error("Error agrupando zonas:", err);
+    return next(err);
+  }
+};
+
+const updateZoneDescription = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { zoneDescription } = req.body;
+
+    // findByIdAndUpdate busca por el _id y actualiza los campos que le pasemos
+    // { new: true } le dice a Mongoose que nos devuelva el objeto YA actualizado
+    const updatedZone = await Zone.findByIdAndUpdate(
+      id,
+      { zoneDescription },
+      { new: true },
+    );
+
+    if (!updatedZone) {
+      return res.status(404).json({ message: "No se ha encontrado la zona." });
+    }
+
+    return res.status(200).json({
+      message: "Descripción actualizada correctamente",
+      zone: updatedZone,
+    });
+  } catch (error) {
+    console.error("Error actualizando la descripción de la zona:", error);
+    return next(error);
+  }
+};
+
 module.exports = {
   zonesGetResidentials,
   zonesGetPatrimonials,
@@ -131,4 +227,6 @@ module.exports = {
   zoneCreate,
   zoneDelete,
   getAllZones,
+  getGroupedZones,
+  updateZoneDescription,
 };
