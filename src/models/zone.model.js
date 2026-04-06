@@ -13,6 +13,7 @@ const zoneSchema = new Schema(
     slug: { type: String, slug: "name", index: true },
     id: { type: String },
     status: { type: Boolean, default: false },
+    zoneDescription: { type: String },
   },
   {
     timestamps: true,
