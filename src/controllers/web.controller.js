@@ -1500,7 +1500,6 @@ const getAdDetails = async (req, res, next) => {
 
     const ad = await Ad.findOne({
       slug: slug,
-      showOnWeb: true,
       adStatus: { $in: ["Activo", "En preparación"] },
     })
       .populate("zone")
