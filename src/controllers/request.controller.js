@@ -180,7 +180,7 @@ const allRequestGetByIdConsultant = async (req, res, next) => {
 const requestGetAdsMatched = async (req, res, next) => {
   try {
     const { id } = req.params;
-    let request = await Request.findById(id);
+    let request = await Request.findById(id).populate("requestZone");
 
     if (!request) {
       return res.status(404).json({ message: "Solicitud no encontrada." });
@@ -317,6 +317,7 @@ const requestGetAdsMatched = async (req, res, next) => {
     // IMPORTANTE: Añadimos el .sort() para ordenar por los más recientes
     const ads = await Ad.find(finalQuery)
       .sort({ "sale.saleValue": -1, "rent.rentValue": -1 })
+      .populate("zone")
       .exec();
 
     return res.status(200).json(ads);
@@ -461,6 +462,7 @@ const requestGetNewMatched = async (req, res, next) => {
     // Mismo ordenamiento por precio de venta y de alquiler que en el otro controlador
     const ads = await Ad.find(finalQuery)
       .sort({ "sale.saleValue": -1, "rent.rentValue": -1 })
+      .populate("zone")
       .exec();
 
     return res.status(200).json(ads);

@@ -7,6 +7,7 @@ const Consultant = require("../models/consultant.model");
 const { normalizeAdHistory } = require("../utils/utils");
 const { revalidateWeb } = require("../utils/revalidateWeb");
 const WebHome = require("../models/webHome.model");
+const Zone = require("../models/zone.model");
 
 const repairAds = async (req, res, next) => {
   try {
@@ -600,10 +601,16 @@ const adGetMatchedRequests = async (req, res, next) => {
       query.where({ gatedCommunity: { $ne: true } });
     }
 
-    query.populate({
-      path: "requestContact",
-      select: "fullName company email contactComments notReceiveCommunications",
-    });
+    query.populate([
+      {
+        path: "requestContact",
+        select:
+          "fullName company email contactComments notReceiveCommunications",
+      },
+      {
+        path: "requestZone",
+      },
+    ]);
 
     query.sort({ createdAt: -1 });
 
@@ -616,7 +623,13 @@ const adGetMatchedRequests = async (req, res, next) => {
         const name = req.requestContact?.fullName || "";
         const company = req.requestContact?.company || "";
         const comment = req.requestComment || "";
-        return regex.test(name) || regex.test(company) || regex.test(comment);
+        const zoneNames = req.requestZone?.map((z) => z.name).join(" ") || "";
+        return (
+          regex.test(name) ||
+          regex.test(company) ||
+          regex.test(comment) ||
+          regex.test(zoneNames)
+        );
       });
     }
 
@@ -633,7 +646,7 @@ const adGetMatchedRequests = async (req, res, next) => {
 const adGetOne = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const ad = await Ad.findById(id);
+    const ad = await Ad.findById(id).populate("zone");
     return res.status(200).json(ad);
   } catch (err) {
     return next(err);
