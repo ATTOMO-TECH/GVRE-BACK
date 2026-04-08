@@ -179,24 +179,48 @@ const getPropertyUrl = (ad) => {
 
   const citySlug = formatSlug(ad.adDirection?.city || "madrid");
 
-  // Obtenemos la zona (buscando en el nombre de la subzona o zona)
+  const zoneSlug = ad.zone && ad.zone.length > 0 ? ad.zone[0].slug : "";
+
   const zoneSegment = formatSlug(ad.adDirectionSelected || "");
 
-  // Operación: Si tiene valor de venta es venta, si no alquiler
   const op = ad.sale && ad.sale.saleValue > 0 ? "venta" : "alquiler";
-
   const slug = ad.slug || ad._id;
 
   let segments = [];
+
   if (categoryUrl === "otros-activos-y-zonas") {
-    segments = [categoryUrl, "inmuebles", op, slug];
+    segments = [categoryUrl, "inmuebles", zoneSlug, op, slug];
   } else {
-    segments = [categoryUrl, citySlug, "inmuebles", zoneSegment, op, slug];
+    segments = [
+      categoryUrl,
+      citySlug,
+      "inmuebles",
+      zoneSlug,
+      zoneSegment,
+      op,
+      slug,
+    ];
   }
 
-  console.log(ad.adDirection);
-
   return `/${segments.filter(Boolean).join("/")}`;
+};
+
+const formattedNumber = (number, period, type) => {
+  if (number === undefined || number === null) return "Consultar";
+
+  const isCurrency = type === "currency";
+
+  const options = {
+    style: isCurrency ? "currency" : "decimal",
+    maximumFractionDigits: 0,
+    useGrouping: true,
+    ...(isCurrency && { currency: "EUR" }),
+  };
+
+  const formatted = new Intl.NumberFormat("es-ES", options).format(number);
+  return period && period.trim() !== ""
+    ? `${formatted}/${period.toUpperCase()}`
+    : formatted;
 };
 
 module.exports = {
@@ -210,4 +234,5 @@ module.exports = {
   getTaggedEmail,
   makeDiacriticRegex,
   getPropertyUrl,
+  formattedNumber,
 };

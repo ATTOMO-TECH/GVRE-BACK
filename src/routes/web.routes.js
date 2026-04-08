@@ -34,6 +34,7 @@ const {
   getWebConsultants,
   getWebContactAndOfficeData,
   searchByreference,
+  downloadAdPDF,
 } = require("../controllers/web.controller");
 
 const router = express.Router();
@@ -203,5 +204,7 @@ router.get("/highlight-ads", getHighlightAds);
 router.get("/ad-details/:slug", getAdDetails);
 
 router.get("/similar/:id", getSimilarAds);
+
+router.get("/download-pdf/:id", downloadAdPDF);
 
 module.exports = router;
