@@ -6,6 +6,7 @@ const Zone = require("../models/zone.model");
 const { revalidateWeb } = require("../utils/revalidateWeb");
 const { default: mongoose } = require("mongoose");
 const { makeDiacriticRegex } = require("../utils/utils");
+const pdfGenerator = require("../services/pdfGenerator");
 
 // Asegúrate de tener importado el modelo Zone al principio de tu archivo si no lo tienes:
 // const Zone = require("../models/zone");
@@ -154,7 +155,7 @@ const webHomeCreate = async (req, res, next) => {
     );
     return res.status(200).json(webHomeCreated);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return next(err);
   }
 };
@@ -188,7 +189,7 @@ const webHomeEdit = async (req, res, next) => {
     );
     return res.status(200).json(updatedWebHome);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return next(err);
   }
 };
@@ -245,7 +246,7 @@ const webHomeEdit = async (req, res, next) => {
 
 //     return res.status(200).json(updatedWebHome);
 //   } catch (err) {
-//     console.log(err);
+//     console.error(err);
 //     return next(err);
 //   }
 // };
@@ -366,7 +367,7 @@ const webResidentialCategoryImageUpload = async (req, res, next) => {
       });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return next(err);
   }
 };
@@ -402,7 +403,7 @@ const webPatrimonialCategoryImageUpload = async (req, res, next) => {
       });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return next(err);
   }
 };
@@ -438,7 +439,7 @@ const webArtCategoryImageUpload = async (req, res, next) => {
       });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return next(err);
   }
 };
@@ -474,7 +475,7 @@ const webCatalogCategoryImageUpload = async (req, res, next) => {
       });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return next(err);
   }
 };
@@ -510,7 +511,7 @@ const webCoastCategoryImageUpload = async (req, res, next) => {
       });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return next(err);
   }
 };
@@ -546,7 +547,7 @@ const webRusticCategoryImageUpload = async (req, res, next) => {
       });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return next(err);
   }
 };
@@ -582,7 +583,7 @@ const webSingularCategoryImageUpload = async (req, res, next) => {
       });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return next(err);
   }
 };
@@ -624,7 +625,7 @@ const webInteriorismTextAndImageUpload = async (req, res, next) => {
       });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return next(err);
   }
 };
@@ -665,7 +666,7 @@ const webSellTextAndImageUpload = async (req, res, next) => {
       });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return next(err);
   }
 };
@@ -707,7 +708,7 @@ const webOfficeTextAndImageUpload = async (req, res, next) => {
       });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return next(err);
   }
 };
@@ -808,7 +809,7 @@ const webDevelopmentServicesUpload = async (req, res, next) => {
       });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return next(err);
   }
 };
@@ -840,7 +841,7 @@ const webInvestmentServicesUpload = async (req, res, next) => {
       });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return next(err);
   }
 };
@@ -878,7 +879,7 @@ const webAssetManagementServicesUpload = async (req, res, next) => {
       });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return next(err);
   }
 };
@@ -914,7 +915,7 @@ const webCommercializationServicesUpload = async (req, res, next) => {
       });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return next(err);
   }
 };
@@ -955,7 +956,7 @@ const webInteriorismServicesUpload = async (req, res, next) => {
       });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return next(err);
   }
 };
@@ -1627,6 +1628,7 @@ const getAdDetails = async (req, res, next) => {
       trashFee: ad.trashFee,
       communityExpenses: ad.communityExpenses,
       specs: {
+        jobPositions: ad.quality?.jobPositions || 0,
         beds: ad.quality?.bedrooms || 0,
         baths: ad.quality?.bathrooms || 0,
         area: ad.buildSurface || 0,
@@ -2123,6 +2125,39 @@ const searchByreference = async (req, res, next) => {
   }
 };
 
+const downloadAdPDF = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const ad = await Ad.findById(id).populate("consultant").populate("zone");
+
+    if (!ad) {
+      return res.status(404).json({ message: "Inmueble no encontrado" });
+    }
+
+    let pdfBuffer;
+
+    if (ad.department === "Patrimonio") {
+      // Template de Patrimonio
+      pdfBuffer = await pdfGenerator.generatePatrimonioPDF(ad);
+    } else {
+      // Template de Residencial, y el resto de departamentos
+      pdfBuffer = await pdfGenerator.generateResidencialPDF(ad);
+    }
+
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename=Ficha-${ad.adReference}.pdf`,
+      "Content-Length": pdfBuffer.length,
+    });
+
+    return res.end(pdfBuffer);
+  } catch (error) {
+    console.error("Error en la generación del PDF:", error);
+    return res.status(500).json({ message: "Error interno al generar el PDF" });
+  }
+};
+
 module.exports = {
   webHomeGet,
   webHomeCreate,
@@ -2157,4 +2192,5 @@ module.exports = {
   getFilterStats,
   getSimilarAds,
   searchByreference,
+  downloadAdPDF,
 };
