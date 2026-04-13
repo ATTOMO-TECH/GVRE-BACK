@@ -2483,7 +2483,7 @@ const sendWebEmail = async (req, res) => {
       const formattedDate = `${day}/${month}/${year}`;
 
       const mailToClient = {
-        from: `"GVRE Real Estate" <info@gvre.es>`,
+        from: `"GV Real Estate" <info@gvre.es>`,
         to: email,
         subject: "Tu solicitud de cita con GVRE",
         html: `
@@ -2498,9 +2498,7 @@ const sendWebEmail = async (req, res) => {
               <p style="margin: 5px 0;"><strong>Hora propuesta:</strong> ${bookingTime}</p>
             </div>
             <p style="font-size: 15px; line-height: 1.5;">
-              En breve, el consultor/a encargado de este inmueble (${consultantName}) se pondrá en contacto contigo para <strong>confirmar definitivamente la cita</strong> o sugerir alternativas si no hubiera disponibilidad.
-            </p>
-            <p style="font-size: 15px; line-height: 1.5; margin-top: 30px;">
+              En breve, el consultor/a encargado de este inmueble (${consultantName}) se pondrá en contacto contigo para <strong>confirmar definitivamente la cita e indicarte la dirección exacta</strong>, o sugerir alternativas si no hubiera disponibilidad.            <p style="font-size: 15px; line-height: 1.5; margin-top: 30px;">
               Un saludo,<br/>
               <strong>El equipo de GVRE</strong>
             </p>
