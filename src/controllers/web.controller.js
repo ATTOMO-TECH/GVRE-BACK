@@ -60,7 +60,6 @@ const webHomeGet = async (req, res, next) => {
 
     const webData = webHomeDoc.toObject();
     const activeFilter = {
-      adStatus: { $in: ["Activo", "En preparación"] },
       $and: [{ $or: [{ showOnWeb: true }, { showOnWebOffMarket: true }] }],
     };
 
@@ -268,7 +267,6 @@ const webVideoSectionUpdate = async (req, res, next) => {
         const foundAds = await Ad.find({
           _id: { $in: req.body.selectedAdIds },
           showOnWeb: true,
-          adStatus: { $in: ["Activo", "En preparación"] },
         }).select("title adReference adType sale rent images slug adDirection");
 
         const newVideoCollection = req.body.selectedAdIds
@@ -969,7 +967,7 @@ const getAdsByReference = async (req, res, next) => {
 
     const ads = await Ad.find({
       adReference: { $regex: ref, $options: "i" },
-      adStatus: { $in: ["Activo", "En preparación"] },
+
       showOnWeb: { $in: true },
       gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
       "images.media": { $exists: true, $nin: ["", null] },
@@ -1134,7 +1132,6 @@ const getFilteredAds = async (req, res, next) => {
     const filter = {
       $and: [{ $or: [{ showOnWeb: true }, { showOnWebOffMarket: true }] }],
       department: targetDepartment,
-      adStatus: { $in: ["Activo", "En preparación"] },
     };
 
     if (zoneIds.length > 0) filter.zone = { $in: zoneIds };
@@ -1453,7 +1450,6 @@ const getHighlightAds = async (req, res, next) => {
     const filter = {
       featuredOnMain: true,
       showOnWeb: true,
-      adStatus: { $in: ["Activo", "En preparación"] },
     };
 
     const ads = await Ad.find(filter)
@@ -1543,7 +1539,6 @@ const getAdDetails = async (req, res, next) => {
     const ad = await Ad.findOne({
       slug: slug,
       consultant: { $ne: "623863e65752e4b62304306b" },
-      adStatus: { $in: ["Activo", "En preparación"] },
     })
       .populate("zone")
       .populate(
@@ -1710,7 +1705,7 @@ const getActiveInventoryZones = async (req, res) => {
     // 1. Buscamos los anuncios y traemos el campo 'slug' de la zona referenciada
     const ads = await Ad.find({
       department,
-      adStatus: { $in: ["Activo", "En preparación"] },
+
       showOnWeb: true,
       gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
     }).populate("zone", "slug"); // 🔄 CAMBIO: Pedimos el slug, no el name
@@ -1782,7 +1777,6 @@ const getFilterStats = async (req, res, next) => {
     const statsMatch = {
       showOnWeb: true,
       department: targetDepartment,
-      adStatus: { $in: ["Activo", "En preparación"] },
     };
 
     if (zoneIds.length > 0) {
@@ -2148,7 +2142,7 @@ const searchByreference = async (req, res, next) => {
     // Buscamos todos los activos que coincidan con la referencia
     const ads = await Ad.find({
       adReference: { $regex: new RegExp(`^${reference.trim()}$`, "i") },
-      adStatus: { $in: ["Activo", "En preparación"] },
+
       $or: [{ showOnWeb: true }, { showOnWebOffMarket: true }],
     }).populate("zone");
 
