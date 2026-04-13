@@ -1053,7 +1053,9 @@ const getFilteredAds = async (req, res, next) => {
       zone,
       operation,
       propertyType,
+      minPrice, // 🚀 Añadido
       maxPrice,
+      minSurface, // 🚀 Añadido
       maxSurface,
       pool,
       garage,
@@ -1069,7 +1071,6 @@ const getFilteredAds = async (req, res, next) => {
       reformed,
       toReform,
       sort,
-      // Atributos para Otros Activos / Rústicos
       agricultural,
       hunting,
       forestry,
@@ -1130,7 +1131,6 @@ const getFilteredAds = async (req, res, next) => {
     }
 
     // 3. Filtro Principal
-    // 🚀 CORRECCIÓN: Usamos $and para evitar que filtros posteriores sobrescriban el $or de visibilidad
     const filter = {
       $and: [{ $or: [{ showOnWeb: true }, { showOnWebOffMarket: true }] }],
       department: targetDepartment,
@@ -1140,25 +1140,72 @@ const getFilteredAds = async (req, res, next) => {
     if (zoneIds.length > 0) filter.zone = { $in: zoneIds };
 
     // --- 4. FILTROS DE OPERACIÓN Y PRECIO ---
-    if (operation) {
-      const isSale = ["sale", "venta"].includes(operation.toLowerCase());
-      filter.adType = { $in: [isSale ? "Venta" : "Alquiler"] };
-      const priceField = isSale ? "sale.saleValue" : "rent.rentValue";
-      if (maxPrice) filter[priceField] = { $lte: Number(maxPrice), $gt: 0 };
-    } else if (maxPrice) {
+    const selectedOps = operation
+      ? Array.isArray(operation)
+        ? operation
+        : operation.split(",")
+      : [];
+
+    const normalizedOps = selectedOps
+      .map((op) => {
+        const lowOp = op.toLowerCase();
+        if (["sale", "venta"].includes(lowOp)) return "Venta";
+        if (["rent", "alquiler"].includes(lowOp)) return "Alquiler";
+        return null;
+      })
+      .filter(Boolean);
+
+    // 🚀 Función auxiliar para construir la query de precio con mínimos y máximos
+    const buildPriceQuery = () => {
+      const q = { $gt: 0 };
+      if (minPrice) q.$gte = Number(minPrice);
+      if (maxPrice) q.$lte = Number(maxPrice);
+      return q;
+    };
+
+    if (normalizedOps.length > 0) {
+      if (normalizedOps.length === 1) {
+        filter.adType = { $in: normalizedOps };
+      }
+
+      // Evaluamos si existe un mínimo o un máximo
+      if (minPrice || maxPrice) {
+        const priceOrFilters = [];
+        if (normalizedOps.includes("Venta")) {
+          priceOrFilters.push({
+            "sale.saleValue": buildPriceQuery(),
+          });
+        }
+        if (normalizedOps.includes("Alquiler")) {
+          priceOrFilters.push({
+            "rent.rentValue": buildPriceQuery(),
+          });
+        }
+
+        if (priceOrFilters.length > 0) {
+          filter.$and.push({ $or: priceOrFilters });
+        }
+      }
+    } else if (minPrice || maxPrice) {
       filter.$and.push({
         $or: [
-          { "sale.saleValue": { $lte: Number(maxPrice), $gt: 0 } },
-          { "rent.rentValue": { $lte: Number(maxPrice), $gt: 0 } },
+          { "sale.saleValue": buildPriceQuery() },
+          { "rent.rentValue": buildPriceQuery() },
         ],
       });
     }
 
-    // --- 5. ATRIBUTOS ---
+    // --- 5. ATRIBUTOS Y SUPERFICIE ---
     if (propertyType && propertyType !== "Todos") {
       filter.adBuildingType = { $in: propertyType.split(",") };
     }
-    if (maxSurface) filter.buildSurface = { $lte: Number(maxSurface) };
+
+    // 🚀 Filtro Dual de Superficie
+    if (minSurface || maxSurface) {
+      filter.buildSurface = {};
+      if (minSurface) filter.buildSurface.$gte = Number(minSurface);
+      if (maxSurface) filter.buildSurface.$lte = Number(maxSurface);
+    }
 
     const booleanFilters = {
       "quality.others.swimmingPool": pool,
@@ -1187,19 +1234,19 @@ const getFilteredAds = async (req, res, next) => {
     if (garage === "true") filter["quality.parking"] = { $gt: 0 };
 
     // --- 6. ORDENACIÓN ---
-    let sortQuery = ["rent", "alquiler"].includes(operation?.toLowerCase())
-      ? { "rent.rentValue": -1 }
-      : { "sale.saleValue": -1 };
+    const isOnlyRent =
+      normalizedOps.length === 1 && normalizedOps.includes("Alquiler");
+
+    // Si es solo alquiler, usamos su campo. Si no hay selección o hay venta, usamos venta.
+    const sortField = isOnlyRent ? "rent.rentValue" : "sale.saleValue";
+
+    let sortQuery = { [sortField]: -1 };
 
     const sortOptions = {
       "creat-asc": { createdAt: -1 },
       "creat-des": { createdAt: 1 },
-      "price-asc": ["rent", "alquiler"].includes(operation?.toLowerCase())
-        ? { "rent.rentValue": 1 }
-        : { "sale.saleValue": 1 },
-      "price-desc": ["rent", "alquiler"].includes(operation?.toLowerCase())
-        ? { "rent.rentValue": -1 }
-        : { "sale.saleValue": -1 },
+      "price-asc": { [sortField]: 1 },
+      "price-desc": { [sortField]: -1 },
     };
 
     if (sortOptions[sort]) sortQuery = sortOptions[sort];
@@ -1240,16 +1287,14 @@ const getFilteredAds = async (req, res, next) => {
       maxSurface: 5000,
     };
 
-    // --- 8. FORMATEO DE RESPUESTA Y MEZCLA (1 Off-Market cada 6 Normales) ---
+    // --- 8. FORMATEO DE RESPUESTA Y MEZCLA ---
     const normalAds = [];
     const offMarketAds = [];
 
-    // 8.1. Separar y formatear los anuncios según su tipo
     ads.forEach((ad) => {
       const isOffMarket =
         ad.showOnWebOffMarket === true && ad.showOnWeb !== true;
 
-      // Mapeo de categoría para Frontend
       let categorySlug = ad.department;
       if (ad.department === "Campos Rústicos & Activos Singulares") {
         categorySlug = "otros-activos-y-zonas";
@@ -1357,13 +1402,11 @@ const getFilteredAds = async (req, res, next) => {
       }
     });
 
-    // 8.2. Ordenar aleatoriamente (shuffle) los anuncios Off-Market
     for (let i = offMarketAds.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [offMarketAds[i], offMarketAds[j]] = [offMarketAds[j], offMarketAds[i]];
     }
 
-    // 8.3. Intercalar: 6 Normales seguidos de 1 Off-Market
     const formattedAds = [];
     let normalIndex = 0;
     let offMarketIndex = 0;
@@ -1372,7 +1415,6 @@ const getFilteredAds = async (req, res, next) => {
       normalIndex < normalAds.length ||
       offMarketIndex < offMarketAds.length
     ) {
-      // Metemos hasta 6 normales manteniendo su orden de la BBDD
       let count = 0;
       while (count < 6 && normalIndex < normalAds.length) {
         formattedAds.push(normalAds[normalIndex]);
@@ -1380,7 +1422,6 @@ const getFilteredAds = async (req, res, next) => {
         count++;
       }
 
-      // Metemos 1 Off-Market aleatorio
       if (offMarketIndex < offMarketAds.length) {
         formattedAds.push(offMarketAds[offMarketIndex]);
         offMarketIndex++;
@@ -1691,11 +1732,9 @@ const getFilterStats = async (req, res, next) => {
   try {
     const { department, zone } = req.body;
 
-    // 1. Identificación inicial
     let targetDepartment =
       department === "Patrimonial" ? "Patrimonio" : department;
 
-    // 2. Búsqueda de zonas para determinar el departamento real y obtener IDs
     let zoneIds = [];
     if (
       zone &&
@@ -1704,7 +1743,6 @@ const getFilterStats = async (req, res, next) => {
     ) {
       const slugsArray = zone.split(",").map((s) => s.trim().toLowerCase());
 
-      // Buscamos en ambos departamentos posibles para evitar conflictos
       const searchZonesIn =
         targetDepartment === "Patrimonio"
           ? ["Patrimonial"]
@@ -1732,7 +1770,6 @@ const getFilterStats = async (req, res, next) => {
       if (matchingZones.length > 0) {
         zoneIds = matchingZones.map((z) => z._id);
 
-        // Si encontramos que la zona es de "Costa", actualizamos el departamento
         const hasCostaZone = matchingZones.some((z) => z.zone === "Costa");
         if (hasCostaZone && targetDepartment === "Residencial") {
           targetDepartment = "Costa";
@@ -1742,7 +1779,6 @@ const getFilterStats = async (req, res, next) => {
       }
     }
 
-    // 3. Filtro base para la agregación
     const statsMatch = {
       showOnWeb: true,
       department: targetDepartment,
@@ -1753,7 +1789,6 @@ const getFilterStats = async (req, res, next) => {
       statsMatch.zone = { $in: zoneIds };
     }
 
-    // 4. Ejecución de la agregación
     const statsResult = await Ad.aggregate([
       { $match: statsMatch },
       {
@@ -1762,22 +1797,53 @@ const getFilterStats = async (req, res, next) => {
           maxPriceSale: { $max: "$sale.saleValue" },
           maxPriceRent: { $max: "$rent.rentValue" },
           maxSurface: { $max: "$buildSurface" },
+          // 🚀 Mínimos ignorando nulos o ceros
+          minPriceSale: {
+            $min: {
+              $cond: [
+                { $gt: ["$sale.saleValue", 0] },
+                "$sale.saleValue",
+                9999999999,
+              ],
+            },
+          },
+          minPriceRent: {
+            $min: {
+              $cond: [
+                { $gt: ["$rent.rentValue", 0] },
+                "$rent.rentValue",
+                9999999999,
+              ],
+            },
+          },
+          minSurface: {
+            $min: {
+              $cond: [
+                { $gt: ["$buildSurface", 0] },
+                "$buildSurface",
+                9999999999,
+              ],
+            },
+          },
         },
       },
     ]);
 
-    const stats = statsResult[0] || {
-      maxPriceSale: 10000000,
-      maxPriceRent: 15000,
-      maxSurface: 5000,
-    };
+    const rawStats = statsResult[0] || {};
 
     res.status(200).json({
       success: true,
       data: {
-        maxPriceSale: stats.maxPriceSale || 10000000,
-        maxPriceRent: stats.maxPriceRent || 15000,
-        maxSurface: stats.maxSurface || 5000,
+        maxPriceSale: rawStats.maxPriceSale || 10000000,
+        maxPriceRent: rawStats.maxPriceRent || 15000,
+        maxSurface: rawStats.maxSurface || 5000,
+        // 🚀 Limpiamos 9999999999 por si acaso
+        minPriceSale:
+          rawStats.minPriceSale === 9999999999 ? 0 : rawStats.minPriceSale || 0,
+        minPriceRent:
+          rawStats.minPriceRent === 9999999999 ? 0 : rawStats.minPriceRent || 0,
+        minSurface:
+          rawStats.minSurface === 9999999999 ? 0 : rawStats.minSurface || 0,
       },
     });
   } catch (error) {
