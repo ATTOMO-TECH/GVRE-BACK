@@ -1314,6 +1314,7 @@ const getFilteredAds = async (req, res, next) => {
           slug: ad.slug,
           title: ad.title,
           category: categorySlug,
+          ad: ad.profitability && "En Rentabilidad",
           subzone: ad.zone?.[0]?.subzone || null,
           ref: ad.adReference,
           salePrice: ad.sale?.saleValue || null,
@@ -1342,7 +1343,6 @@ const getFilteredAds = async (req, res, next) => {
           tags: [
             ad.adBuildingType?.[0],
             ad.quality?.reformed && "Reformado",
-            ad.profitability && "Rentabilidad",
             ...activeTags,
           ]
             .filter(Boolean)
@@ -1357,6 +1357,7 @@ const getFilteredAds = async (req, res, next) => {
           slug: ad.slug,
           title: ad.title,
           category: categorySlug,
+          profitability: ad.profitability && "En Rentabilidad",
           subzone: ad.zone?.[0]?.subzone || null,
           ref: ad.adReference,
           salePrice: ad.sale?.saleValue || null,
@@ -1390,7 +1391,6 @@ const getFilteredAds = async (req, res, next) => {
           tags: [
             ad.adBuildingType?.[0],
             ad.quality?.reformed && "Reformado",
-            ad.profitability && "Rentabilidad",
             ...activeTags,
           ]
             .filter(Boolean)
@@ -1513,6 +1513,7 @@ const getHighlightAds = async (req, res, next) => {
         gvOperationClose: ad.gvOperationClose || "",
         tags: [
           ad.adBuildingType?.[0],
+          ad.profitability && "En Rentabilidad",
           ad.quality?.reformed && "Reformado",
           ...finalOperations,
         ]
@@ -1624,8 +1625,6 @@ const getAdDetails = async (req, res, next) => {
       ad.quality?.others?.centralHeating === true ||
       ad.quality?.others?.subfloorHeating === true;
     if (hasHeating) featuresList.heating = true;
-
-    console.log(ad);
 
     const propertyDetail = {
       id: ad._id,
@@ -1852,7 +1851,7 @@ const getFilterStats = async (req, res, next) => {
   }
 };
 
-const getSimilarAds = async (req, res) => {
+const getSimilarAds = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -1862,132 +1861,134 @@ const getSimilarAds = async (req, res) => {
       return res.status(404).json({ message: "Anuncio no encontrado" });
     }
 
+    // 1. Filtros base para traer los candidatos
+    const currentAdTypes = currentAd.adType || [];
+    const filter = {
+      _id: { $ne: id }, // Excluimos el anuncio actual
+      showOnWeb: true,
+      adStatus: { $in: ["En preparación", "Activo"] },
+      department: currentAd.department,
+      adType: { $in: currentAdTypes },
+    };
+
+    // 2. Buscamos en BBDD con un find normal y poblamos las zonas
+    const ads = await Ad.find(filter)
+      .select(
+        "title zone slug adType adBuildingType sale rent adDirection images quality buildSurface plotSurface department adReference gvOperationClose profitability",
+      )
+      .populate("zone", "name")
+      .lean();
+
+    // 3. Preparamos variables para la puntuación (Scoring)
     const basePrice = currentAd.sale?.saleValue || 0;
     const minPrice = basePrice * 0.8;
     const maxPrice = basePrice * 1.2;
 
-    const currentZones = currentAd.zone || [];
-    const currentAdTypes = currentAd.adType || [];
+    // Pasamos a string los IDs para compararlos fácilmente en JS
+    const currentZones = (currentAd.zone || []).map((z) => z.toString());
     const currentBuildingTypes = currentAd.adBuildingType || [];
 
-    const similarAds = await Ad.aggregate([
-      {
-        $match: {
-          _id: { $ne: new mongoose.Types.ObjectId(id) },
-          showOnWeb: true,
-          adStatus: { $in: ["En preparación", "Activo"] },
-          department: currentAd.department,
-          adType: { $in: currentAdTypes },
-        },
-      },
-      {
-        $addFields: {
-          zoneScore: {
-            $cond: [
-              {
-                $gt: [
-                  {
-                    $size: {
-                      $setIntersection: [
-                        { $ifNull: ["$zone", []] },
-                        currentZones,
-                      ],
-                    },
-                  },
-                  0,
-                ],
-              },
-              3,
-              0,
-            ],
-          },
-          buildingTypeScore: {
-            $cond: [
-              {
-                $gt: [
-                  {
-                    $size: {
-                      $setIntersection: [
-                        { $ifNull: ["$adBuildingType", []] },
-                        currentBuildingTypes,
-                      ],
-                    },
-                  },
-                  0,
-                ],
-              },
-              1,
-              0,
-            ],
-          },
-          priceScore: {
-            $cond: [
-              {
-                $and: [
-                  { $gte: ["$sale.saleValue", minPrice] },
-                  { $lte: ["$sale.saleValue", maxPrice] },
-                ],
-              },
-              1,
-              0,
-            ],
-          },
-        },
-      },
-      {
-        $addFields: {
-          totalScore: {
-            $add: ["$zoneScore", "$buildingTypeScore", "$priceScore"],
-          },
-        },
-      },
-      {
-        $sort: { totalScore: -1 },
-      },
-      {
-        $limit: 10,
-      },
-      {
-        $lookup: {
-          from: "zones",
-          localField: "zone",
-          foreignField: "_id",
-          as: "zone",
-        },
-      },
-      {
-        $project: {
-          _id: 1,
-          slug: 1,
-          department: 1,
-          title: 1,
-          images: 1,
-          "adDirection.city": 1,
-          zone: 1,
-          // 🚀 CAMPOS DE VENTA
-          "sale.saleValue": 1,
-          "sale.saleShowOnWeb": 1,
-          // 🚀 CAMPOS DE ALQUILER NUEVOS
-          "rent.rentValue": 1,
-          "rent.rentShowOnWeb": 1,
-          // 🚀 AÑADIMOS OTROS CAMPOS ÚTILES PARA LAS CARDS
-          adType: 1,
-          gvOperationClose: 1,
-          adReference: 1,
-        },
-      },
-    ]);
+    // 4. Calculamos la puntuación en JavaScript
+    const scoredAds = ads.map((ad) => {
+      let zoneScore = 0;
+      let buildingTypeScore = 0;
+      let priceScore = 0;
 
-    const formattedAds = similarAds.map((ad) => {
+      // Evaluar coincidencia de Zona (3 puntos)
+      const adZones = (ad.zone || []).map(
+        (z) => z._id?.toString() || z.toString(),
+      );
+      if (adZones.some((z) => currentZones.includes(z))) {
+        zoneScore = 3;
+      }
+
+      // Evaluar coincidencia de Tipo de Inmueble (1 punto)
+      const adBuildingTypes = ad.adBuildingType || [];
+      if (adBuildingTypes.some((bt) => currentBuildingTypes.includes(bt))) {
+        buildingTypeScore = 1;
+      }
+
+      // Evaluar coincidencia de Precio (+- 20%) (1 punto)
+      const adPrice = ad.sale?.saleValue || 0;
+      if (basePrice > 0 && adPrice >= minPrice && adPrice <= maxPrice) {
+        priceScore = 1;
+      }
+
+      const totalScore = zoneScore + buildingTypeScore + priceScore;
+
+      return { ...ad, totalScore };
+    });
+
+    // 5. Ordenamos por puntuación y nos quedamos con los 10 mejores
+    const topSimilarAds = scoredAds
+      .sort((a, b) => b.totalScore - a.totalScore)
+      .slice(0, 10);
+
+    // 6. Aplicamos EXACTAMENTE el mismo mapeo que en getHighlightAds
+    const formattedAds = topSimilarAds.map((ad) => {
+      const categoryMap = {
+        Residencial: "residencial",
+        Costa: "residencial",
+        Patrimonio: "patrimonio",
+        "Campos Rústicos & Activos Singulares": "otros-activos-y-zonas",
+      };
+
+      const category = categoryMap[ad.department] || "residencial";
+
+      // Lógica de precios y etiquetas activas
+      const activeTags = [];
+      const sPrice =
+        ad.sale?.saleValue && ad.sale?.saleShowOnWeb ? ad.sale.saleValue : null;
+      const rPrice =
+        ad.rent?.rentValue && ad.rent?.rentShowOnWeb ? ad.rent.rentValue : null;
+
+      if (sPrice) activeTags.push("Venta");
+      if (rPrice) activeTags.push("Alquiler");
+
+      // Si no hay precios marcados para web, usamos el adType por defecto
+      const finalOperations = activeTags.length > 0 ? activeTags : ad.adType;
+
       return {
-        ...ad,
+        id: ad._id.toString(),
+        slug: ad.slug,
+        title: ad.title,
+        ref: ad.adReference,
+        zoneName: ad.zone[0]?.name || "",
+        category,
+        profitability: ad.profitability && "En Rentabilidad",
+        salePrice: ad.sale?.saleValue || null,
+        saleShowOnWeb: ad.sale?.saleShowOnWeb,
+        rentPrice: ad.rent?.rentValue || null,
+        rentShowOnWeb: ad.rent?.rentShowOnWeb,
+        operation: finalOperations,
+        location: ad.adDirection?.city || "Madrid",
+        image: ad.images?.main || "",
         images: [ad.images?.main, ...(ad.images?.others || [])].filter(Boolean),
+        specs: {
+          beds: ad.quality?.bedrooms || 0,
+          bathrooms: ad.quality?.bathrooms || 0,
+          area: ad.buildSurface || 0,
+          plotArea: ad.plotSurface || 0,
+          garage: ad.quality?.parking || 0,
+          pool: ad.quality?.others?.swimmingPool
+            ? Number(ad.quality.indoorPool || 0) +
+                Number(ad.quality.outdoorPool || 0) || 1
+            : 0,
+        },
+        gvOperationClose: ad.gvOperationClose || "",
+        tags: [
+          ad.adBuildingType?.[0],
+          ad.quality?.reformed && "Reformado",
+          ...finalOperations,
+        ]
+          .filter(Boolean)
+          .slice(0, 4),
       };
     });
 
     res.status(200).json(formattedAds);
   } catch (error) {
-    console.error("Error fetching similar ads:", error);
+    console.error("❌ Error fetching similar ads:", error);
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };
