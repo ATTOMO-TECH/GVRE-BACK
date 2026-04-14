@@ -1625,6 +1625,8 @@ const getAdDetails = async (req, res, next) => {
       ad.quality?.others?.subfloorHeating === true;
     if (hasHeating) featuresList.heating = true;
 
+    console.log(ad);
+
     const propertyDetail = {
       id: ad._id,
       slug: ad.slug,
@@ -1663,6 +1665,7 @@ const getAdDetails = async (req, res, next) => {
       ibi: ad.ibi,
       trashFee: ad.trashFee,
       communityExpenses: ad.communityExpenses,
+
       specs: {
         jobPositions: ad.quality?.jobPositions || 0,
         beds: ad.quality?.bedrooms || 0,
@@ -1670,7 +1673,10 @@ const getAdDetails = async (req, res, next) => {
         area: ad.buildSurface || 0,
         plot: ad.plotSurface || 0,
         year: ad.buildingYear,
-        floor: ad.floor || "",
+        disponibility: ad.disponibility,
+        floor: ad.floor,
+        subway: ad.quality.subway || "",
+        bus: ad.quality.bus || "",
         numberOfPools:
           (ad.quality?.indoorPool || 0) + (ad.quality?.outdoorPool || 0),
         parkingSpots: ad.quality?.parking || 0,
