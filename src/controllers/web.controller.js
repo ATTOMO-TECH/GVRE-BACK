@@ -2149,7 +2149,6 @@ const searchByreference = async (req, res, next) => {
     // Buscamos todos los activos que coincidan con la referencia
     const ads = await Ad.find({
       adReference: { $regex: new RegExp(`^${reference.trim()}$`, "i") },
-
       $or: [{ showOnWeb: true }, { showOnWebOffMarket: true }],
     }).populate("zone");
 
@@ -2160,16 +2159,26 @@ const searchByreference = async (req, res, next) => {
     }
 
     const propertiesData = ads.map((ad) => {
+      // 1. Calculamos las etiquetas de operación activas (igual que en getFilteredAds)
+      const activeTags = [];
+      if (ad.sale?.saleValue && ad.sale?.saleShowOnWeb)
+        activeTags.push("Venta");
+      if (ad.rent?.rentValue && ad.rent?.rentShowOnWeb)
+        activeTags.push("Alquiler");
+
       const salePrice = ad.sale?.saleShowOnWeb ? ad.sale.saleValue : null;
       const rentPrice = ad.rent?.rentShowOnWeb ? ad.rent.rentValue : null;
 
-      // 🚀 DETERMINAMOS SI ES OFF MARKET
+      // DETERMINAMOS SI ES OFF MARKET
       const isOffMarket =
         ad.showOnWebOffMarket === true && ad.showOnWeb !== true;
 
       return {
         slug: ad.slug,
         title: ad.title,
+        image: ad.images?.main || null,
+        operation: activeTags,
+        gvOperationClose: ad.gvOperationClose || "",
         location: ad.adDirection?.city || "madrid",
         zoneName: ad.zone && ad.zone.length > 0 ? ad.zone[0].name : "",
         category: ad.department,
@@ -2191,7 +2200,6 @@ const searchByreference = async (req, res, next) => {
     return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
-
 const downloadAdPDF = async (req, res, next) => {
   try {
     const { id } = req.params;
