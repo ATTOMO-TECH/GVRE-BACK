@@ -2143,14 +2143,31 @@ const searchByreference = async (req, res, next) => {
     const { reference } = req.body;
 
     if (!reference) {
-      return res.status(400).json({ message: "La referencia es obligatoria" });
+      return res
+        .status(400)
+        .json({ message: "El término de búsqueda es obligatorio" });
     }
 
-    // Buscamos todos los activos que coincidan con la referencia
+    const searchTerm = reference.trim();
+
+    // 1. Escapamos caracteres especiales para que la búsqueda Regex sea segura
+    const safeTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    // 2. SOLO buscamos por Referencia o Título
+    const searchConditions = [
+      { adReference: { $regex: safeTerm, $options: "i" } },
+      { title: { $regex: safeTerm, $options: "i" } },
+    ];
+
+    // 3. Ejecutamos la búsqueda final
     const ads = await Ad.find({
-      adReference: { $regex: new RegExp(`^${reference.trim()}$`, "i") },
-      $or: [{ showOnWeb: true }, { showOnWebOffMarket: true }],
-    }).populate("zone");
+      $and: [
+        { $or: searchConditions },
+        { $or: [{ showOnWeb: true }, { showOnWebOffMarket: true }] },
+      ],
+    })
+      .populate("zone")
+      .limit(50);
 
     if (!ads || ads.length === 0) {
       return res
@@ -2158,8 +2175,8 @@ const searchByreference = async (req, res, next) => {
         .json({ message: "No se han encontrado resultados" });
     }
 
+    // 4. Mapeamos la respuesta
     const propertiesData = ads.map((ad) => {
-      // 1. Calculamos las etiquetas de operación activas (igual que en getFilteredAds)
       const activeTags = [];
       if (ad.sale?.saleValue && ad.sale?.saleShowOnWeb)
         activeTags.push("Venta");
@@ -2169,7 +2186,6 @@ const searchByreference = async (req, res, next) => {
       const salePrice = ad.sale?.saleShowOnWeb ? ad.sale.saleValue : null;
       const rentPrice = ad.rent?.rentShowOnWeb ? ad.rent.rentValue : null;
 
-      // DETERMINAMOS SI ES OFF MARKET
       const isOffMarket =
         ad.showOnWebOffMarket === true && ad.showOnWeb !== true;
 
@@ -2196,10 +2212,11 @@ const searchByreference = async (req, res, next) => {
 
     return res.status(200).json({ success: true, data: propertiesData });
   } catch (error) {
-    console.error("Error buscando por referencia:", error);
+    console.error("Error buscando por referencia/título:", error);
     return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
+
 const downloadAdPDF = async (req, res, next) => {
   try {
     const { id } = req.params;
