@@ -1051,9 +1051,9 @@ const getFilteredAds = async (req, res, next) => {
       zone,
       operation,
       propertyType,
-      minPrice, // 🚀 Añadido
+      minPrice,
       maxPrice,
-      minSurface, // 🚀 Añadido
+      minSurface,
       maxSurface,
       pool,
       garage,
@@ -1128,10 +1128,14 @@ const getFilteredAds = async (req, res, next) => {
       }
     }
 
-    // 3. Filtro Principal
+    // 3. Filtro Principal (Incluye Off Market y garantiza Activo)
     const filter = {
-      $and: [{ $or: [{ showOnWeb: true }, { showOnWebOffMarket: true }] }],
       department: targetDepartment,
+      $and: [
+        {
+          $or: [{ showOnWeb: true }, { showOnWebOffMarket: true }],
+        },
+      ],
     };
 
     if (zoneIds.length > 0) filter.zone = { $in: zoneIds };
@@ -1152,7 +1156,6 @@ const getFilteredAds = async (req, res, next) => {
       })
       .filter(Boolean);
 
-    // 🚀 Función auxiliar para construir la query de precio con mínimos y máximos
     const buildPriceQuery = () => {
       const q = { $gt: 0 };
       if (minPrice) q.$gte = Number(minPrice);
@@ -1165,18 +1168,13 @@ const getFilteredAds = async (req, res, next) => {
         filter.adType = { $in: normalizedOps };
       }
 
-      // Evaluamos si existe un mínimo o un máximo
       if (minPrice || maxPrice) {
         const priceOrFilters = [];
         if (normalizedOps.includes("Venta")) {
-          priceOrFilters.push({
-            "sale.saleValue": buildPriceQuery(),
-          });
+          priceOrFilters.push({ "sale.saleValue": buildPriceQuery() });
         }
         if (normalizedOps.includes("Alquiler")) {
-          priceOrFilters.push({
-            "rent.rentValue": buildPriceQuery(),
-          });
+          priceOrFilters.push({ "rent.rentValue": buildPriceQuery() });
         }
 
         if (priceOrFilters.length > 0) {
@@ -1197,7 +1195,6 @@ const getFilteredAds = async (req, res, next) => {
       filter.adBuildingType = { $in: propertyType.split(",") };
     }
 
-    // 🚀 Filtro Dual de Superficie
     if (minSurface || maxSurface) {
       filter.buildSurface = {};
       if (minSurface) filter.buildSurface.$gte = Number(minSurface);
@@ -1234,7 +1231,6 @@ const getFilteredAds = async (req, res, next) => {
     const isOnlyRent =
       normalizedOps.length === 1 && normalizedOps.includes("Alquiler");
 
-    // Si es solo alquiler, usamos su campo. Si no hay selección o hay venta, usamos venta.
     const sortField = isOnlyRent ? "rent.rentValue" : "sale.saleValue";
 
     let sortQuery = { [sortField]: -1 };
@@ -1248,15 +1244,16 @@ const getFilteredAds = async (req, res, next) => {
 
     if (sortOptions[sort]) sortQuery = sortOptions[sort];
 
-    // --- 7. EJECUCIÓN PARALELA ---
+    // --- 7. EJECUCIÓN PARALELA (Estadísticas incluyendo Off-Market) ---
+    const statsMatch = {
+      department: targetDepartment,
+      $or: [{ showOnWeb: true }, { showOnWebOffMarket: true }],
+    };
+
+    if (zoneIds.length > 0) statsMatch.zone = { $in: zoneIds };
+
     const statsQuery = Ad.aggregate([
-      {
-        $match: {
-          department: targetDepartment,
-          showOnWeb: true,
-          adStatus: "Activo",
-        },
-      },
+      { $match: statsMatch },
       {
         $group: {
           _id: null,
@@ -1710,10 +1707,8 @@ const getActiveInventoryZones = async (req, res) => {
     // 1. Buscamos los anuncios y traemos el campo 'slug' de la zona referenciada
     const ads = await Ad.find({
       department,
-
-      showOnWeb: true,
-      gvOperationClose: { $nin: ["Vendido", "Alquilado"] },
-    }).populate("zone", "slug"); // 🔄 CAMBIO: Pedimos el slug, no el name
+      $or: [{ showOnWeb: true }, { showOnWebOffMarket: true }],
+    }).populate("zone", "slug");
 
     // 2. Extraemos los slugs únicos
     // Usamos z.slug en lugar de z.name
@@ -1736,36 +1731,38 @@ const getFilterStats = async (req, res, next) => {
       department === "Patrimonial" ? "Patrimonio" : department;
 
     let zoneIds = [];
-    if (
-      zone &&
-      zone.toLowerCase() !== "madrid" &&
-      zone.toLowerCase() !== "espana"
-    ) {
-      const slugsArray = zone.split(",").map((s) => s.trim().toLowerCase());
+
+    // 🚀 1. LÓGICA DE ZONAS IDÉNTICA A getFilteredAds
+    if (zone && !["madrid", "espana"].includes(zone.toLowerCase())) {
+      const zoneString = Array.isArray(zone) ? zone.join(",") : String(zone);
+      const decodedZone = decodeURIComponent(zoneString).trim().toLowerCase();
+
+      const citySubzones = {
+        marbella: "Marbella",
+        sotogrande: "Sotogrande",
+        "puerto de santa maria": "Puerto de Santa María",
+      };
 
       const searchZonesIn =
         targetDepartment === "Patrimonio"
           ? ["Patrimonial"]
           : ["Residencial", "Costa"];
 
-      const zoneConditions = slugsArray.map((slug) => {
-        let nameToSearch = slug.replace(/-/g, " ");
-        if (nameToSearch === "puerto de santa maria")
-          nameToSearch = "puerto de santa maria";
+      let matchingZones = [];
 
-        const flexiblePattern = makeDiacriticRegex(nameToSearch);
-        return {
-          $or: [
-            { subzone: { $regex: new RegExp(`^${flexiblePattern}$`, "i") } },
-            { name: { $regex: new RegExp(`^${flexiblePattern}$`, "i") } },
-          ],
-        };
-      });
-
-      const matchingZones = await Zone.find({
-        zone: { $in: searchZonesIn },
-        $or: zoneConditions,
-      }).lean();
+      // ¿Es una ciudad entera (ej: "marbella") o son slugs (ej: "nueva-andalucia,milla-de-oro")?
+      if (citySubzones[decodedZone]) {
+        matchingZones = await Zone.find({
+          subzone: citySubzones[decodedZone],
+          zone: { $in: searchZonesIn },
+        }).lean();
+      } else {
+        const slugsArray = decodedZone.split(",").map((s) => s.trim());
+        matchingZones = await Zone.find({
+          slug: { $in: slugsArray },
+          zone: { $in: searchZonesIn },
+        }).lean();
+      }
 
       if (matchingZones.length > 0) {
         zoneIds = matchingZones.map((z) => z._id);
@@ -1780,7 +1777,7 @@ const getFilterStats = async (req, res, next) => {
     }
 
     const statsMatch = {
-      showOnWeb: true,
+      $or: [{ showOnWeb: true }, { showOnWebOffMarket: true }],
       department: targetDepartment,
     };
 
@@ -1788,6 +1785,7 @@ const getFilterStats = async (req, res, next) => {
       statsMatch.zone = { $in: zoneIds };
     }
 
+    // 🚀 3. TU AGREGACIÓN (Intacta, porque está perfecta)
     const statsResult = await Ad.aggregate([
       { $match: statsMatch },
       {
@@ -1796,7 +1794,6 @@ const getFilterStats = async (req, res, next) => {
           maxPriceSale: { $max: "$sale.saleValue" },
           maxPriceRent: { $max: "$rent.rentValue" },
           maxSurface: { $max: "$buildSurface" },
-          // 🚀 Mínimos ignorando nulos o ceros
           minPriceSale: {
             $min: {
               $cond: [
@@ -1836,7 +1833,6 @@ const getFilterStats = async (req, res, next) => {
         maxPriceSale: rawStats.maxPriceSale || 10000000,
         maxPriceRent: rawStats.maxPriceRent || 15000,
         maxSurface: rawStats.maxSurface || 5000,
-        // 🚀 Limpiamos 9999999999 por si acaso
         minPriceSale:
           rawStats.minPriceSale === 9999999999 ? 0 : rawStats.minPriceSale || 0,
         minPriceRent:
