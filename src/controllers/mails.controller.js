@@ -2405,8 +2405,41 @@ const unsubscribeEmails = async (req, res) => {
   }
 };
 
+// ──────────────────────────────────────────────────────────────────────────────
+// 1) Tabla de configuración por origen.
+//    Añadir un nuevo formulario = añadir una entrada aquí.
+// ──────────────────────────────────────────────────────────────────────────────
+const SOURCE_CONFIG = {
+  contact_general: {
+    label: "Contacto General (Web)",
+    subjectPrefix: "[WEB - CONTACTO]",
+    buildSubject: ({ nombre }) => `Consulta web de ${nombre}`,
+  },
+  ad_detail: {
+    label: "Ficha de Inmueble",
+    subjectPrefix: "[WEB - INMUEBLE]",
+    buildSubject: ({ adReference, nombre }) =>
+      `Petición Inmueble ${adReference || ""} - ${nombre}`,
+  },
+  off_market: {
+    label: "Solicitud Off Market",
+    subjectPrefix: "[WEB - OFF MARKET]",
+    buildSubject: ({ adReference, nombre }) =>
+      adReference
+        ? `Off Market ${adReference} - ${nombre}`
+        : `Solicitud Off Market - ${nombre}`,
+  },
+  booking: {
+    label: "Solicitud de Cita",
+    subjectPrefix: "[WEB - CITA]",
+    buildSubject: ({ adReference, nombre }) =>
+      `Solicitud de Cita ${adReference || ""} - ${nombre}`,
+  },
+};
+
 const sendWebEmail = async (req, res) => {
   const {
+    source,
     nombre,
     email,
     telefono,
@@ -2415,18 +2448,28 @@ const sendWebEmail = async (req, res) => {
     adTitle,
     adReference,
     adConsultant,
-    isBooking,
     bookingDate,
     bookingTime,
   } = req.body;
 
+  // Validación del origen
+  const config = SOURCE_CONFIG[source];
+  if (!config) {
+    return res.status(400).json({
+      success: false,
+      message: `Origen de formulario no válido: "${source}"`,
+    });
+  }
+
+  const isBooking = source === "booking";
+
   try {
-    // 1. DETERMINAR EL DESTINATARIO
-    let recipientEmail = "info@gvre.es";
+    // 1. DESTINATARIO
+    /* let recipientEmail = "info@gvre.es"; */
+    let recipientEmail = "miguel@attomo.digital";
     let consultantName = "Equipo GVRE";
 
     if (adConsultant) {
-      // 🚀 MEJORA 2: Usamos .lean() y seleccionamos solo los campos necesarios.
       const consultant = await Consultant.findById(adConsultant)
         .select("consultantEmail fullName")
         .lean();
@@ -2437,7 +2480,7 @@ const sendWebEmail = async (req, res) => {
       }
     }
 
-    // 2. CONSTRUCCIÓN DE LAS SECCIONES (Lógica de negocio)
+    // 2. SECCIÓN DEL INMUEBLE (si aplica)
     const adSection = adId
       ? `<div style="margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #2b363d;">
            <p style="margin: 0; font-size: 12px; color: #999; text-transform: uppercase;">Inmueble de interés:</p>
@@ -2446,38 +2489,45 @@ const sendWebEmail = async (req, res) => {
            <p style="margin: 10px 0 0 0; font-size: 11px; color: #666;">Asignado a: <strong>${consultantName}</strong></p>
          </div>`
       : `<div style="margin-top: 20px; padding: 15px; border: 1px dashed #ccc;">
-           <p style="margin: 0; font-style: italic; color: #666;">Consulta general</p>
+           <p style="margin: 0; font-style: italic; color: #666;">Consulta sin inmueble asociado</p>
          </div>`;
 
-    // --- PREPARACIÓN DE CORREO AL CONSULTOR ---
+    // 3. BANNER DE ORIGEN — bien visible arriba del correo
+    const sourceBanner = `
+      <div style="background-color:#2b363d; color:#fff; padding:10px 16px; font-size:12px; letter-spacing:1px; text-transform:uppercase; font-family:Helvetica,sans-serif;">
+        Origen: ${config.label}
+      </div>
+    `;
+
+    // 4. CORREO AL CONSULTOR
     const mailToConsultant = {
       from: `"Web GVRE" <info@gvre.es>`,
       to: recipientEmail,
       replyTo: email,
-      subject: adId
-        ? `Petición Inmueble: ${adReference}`
-        : `Consulta Web: ${nombre}`,
+      subject: `${config.subjectPrefix} ${config.buildSubject({ nombre, adReference })}`,
       html: `
-        <div style="font-family: Helvetica, sans-serif; color: #2b363d; max-width: 600px; border: 1px solid #eee; padding: 20px;">
-          <h2 style="font-weight: lighter; color: #2b363d;">Nueva solicitud recibida</h2>
-          <p style="color: #666; font-size: 14px;">Hola ${consultantName.split(" ")[0]}, tienes una nueva petición desde la web:</p>
-          <hr style="border: none; border-top: 1px solid #eee;" />
-          <p><strong>Nombre:</strong> ${nombre}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Teléfono:</strong> ${telefono || "No facilitado"}</p>
-          <p><strong>Mensaje:</strong><br/> ${mensaje || "Sin mensaje"}</p>
-          ${adSection}
-          <p style="font-size: 10px; color: #999; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px;">
-            Enviado desde el formulario de: ${adId ? "Detalle de Activo" : "Contacto General"}
-          </p>
+        <div style="font-family: Helvetica, sans-serif; color: #2b363d; max-width: 600px; border: 1px solid #eee;">
+          ${sourceBanner}
+          <div style="padding: 20px;">
+            <h2 style="font-weight: lighter; color: #2b363d;">Nueva solicitud recibida</h2>
+            <p style="color: #666; font-size: 14px;">Hola ${consultantName.split(" ")[0]}, tienes una nueva petición desde la web:</p>
+            <hr style="border: none; border-top: 1px solid #eee;" />
+            <p><strong>Nombre:</strong> ${nombre}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Teléfono:</strong> ${telefono || "No facilitado"}</p>
+            <p><strong>Mensaje:</strong><br/> ${mensaje || "Sin mensaje"}</p>
+            ${adSection}
+            <p style="font-size: 10px; color: #999; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px;">
+              Enviado desde: <strong>${config.label}</strong>
+            </p>
+          </div>
         </div>
       `,
     };
 
-    // 🚀 MEJORA 3: Gestión de promesas en paralelo
     const emailPromises = [transporter.sendMail(mailToConsultant)];
 
-    // --- CORREO AL CLIENTE (Si corresponde) ---
+    // 5. CORREO AL CLIENTE — solo para reservas
     if (isBooking && email && bookingDate && bookingTime) {
       const [year, month, day] = bookingDate.split("-");
       const formattedDate = `${day}/${month}/${year}`;
@@ -2498,7 +2548,9 @@ const sendWebEmail = async (req, res) => {
               <p style="margin: 5px 0;"><strong>Hora propuesta:</strong> ${bookingTime}</p>
             </div>
             <p style="font-size: 15px; line-height: 1.5;">
-              En breve, el consultor/a encargado de este inmueble (${consultantName}) se pondrá en contacto contigo para <strong>confirmar definitivamente la cita e indicarte la dirección exacta</strong>, o sugerir alternativas si no hubiera disponibilidad.            <p style="font-size: 15px; line-height: 1.5; margin-top: 30px;">
+              En breve, el consultor/a encargado de este inmueble (${consultantName}) se pondrá en contacto contigo para <strong>confirmar definitivamente la cita e indicarte la dirección exacta</strong>, o sugerir alternativas si no hubiera disponibilidad.
+            </p>
+            <p style="font-size: 15px; line-height: 1.5; margin-top: 30px;">
               Un saludo,<br/>
               <strong>El equipo de GVRE</strong>
             </p>
