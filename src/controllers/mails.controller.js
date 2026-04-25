@@ -2465,8 +2465,7 @@ const sendWebEmail = async (req, res) => {
 
   try {
     // 1. DESTINATARIO
-    /* let recipientEmail = "info@gvre.es"; */
-    let recipientEmail = "miguel@attomo.digital";
+    let recipientEmail = "info@gvre.es";
     let consultantName = "Equipo GVRE";
 
     if (adConsultant) {
