@@ -49,7 +49,7 @@ const fullIconMapping = {
   liftTruck: { label: "Montacargas", icon: "Montacargas.svg" },
   falseCeiling: { label: "Falso Techo", icon: "Falso_techo.svg" },
   raisedFloor: { label: "Suelo Técnico", icon: "Suelo_tecnico.svg" },
-  freeHeight: { label: "Altura Libre", icon: "Altura_Libre.svg" },
+  freeHeight: { label: "Altura Libre > 2.5m", icon: "Altura_Libre.svg" },
   smokeOutlet: { label: "Salida de Humos", icon: "Salida_de_humos.svg" },
   // Seguridad
   concierge: {
