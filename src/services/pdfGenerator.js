@@ -354,12 +354,8 @@ const generatePatrimonioPDF = async (ad) => {
     const surfacesList = (ad.surfacesBox || []).map((row) => ({
       floor: row.surfaceFloor || "-",
       use: row.surfaceUse || "-",
-      meters: row.metersAvailables
-        ? `${formattedNumber(row.metersAvailables, "", "decimal")} m²`
-        : "-",
-      price: row.metersPrice
-        ? `${formattedNumber(row.metersPrice, "", "decimal")} €/m²/mes`
-        : "-",
+      meters: row.metersAvailables ? row.metersAvailables : "-",
+      price: row.metersPrice ? row.metersPrice : "-",
       disponibility: row.surfaceDisponibility || "-",
     }));
 
