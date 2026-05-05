@@ -169,8 +169,12 @@ const requestGetByContact = async (req, res, next) => {
 const allRequestGetByIdConsultant = async (req, res, next) => {
   try {
     const { consultantId } = req.params;
-    const request = await Request.find({ requestConsultant: consultantId });
-    /* console.log('request',request); */
+    const request = await Request.find({
+      requestConsultant: consultantId,
+    }).populate({
+      path: "requestContact",
+      select: "fullName",
+    });
     return res.status(200).json(request);
   } catch (err) {
     return next(err);
