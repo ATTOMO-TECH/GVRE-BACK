@@ -1200,7 +1200,6 @@ const adUpdate = async (req, res, next) => {
       city: req.body.city,
       country: req.body.country,
     };
-
     fieldsToUpdate.surfacesBox = req.body.surfacesBox;
     fieldsToUpdate.sale = {
       saleValue: req.body.saleValue,
