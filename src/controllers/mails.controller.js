@@ -1847,7 +1847,7 @@ const generateZonesHTML = (zones) => {
 
     let url = process.env.FRONTEND_URL;
 
-    // Función auxiliar para normalizar slugs (eliminar tildes, espacios por guiones, etc.)
+    // Función auxiliar para normalizar slugs (solo como salvavidas)
     const formatSlug = (text) =>
       text
         .toLowerCase()
@@ -1856,26 +1856,22 @@ const generateZonesHTML = (zones) => {
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/\s+/g, "-");
 
+    // Recogemos los datos (usamos los guardados en BD, o los generamos si faltan)
+    const zoneSlug = zone.slug ? zone.slug : formatSlug(zone.name);
+    const zoneType = zone.zone ? zone.zone.trim() : "";
+
     // 1. MAPEADO DE RUTAS DINÁMICAS
-    if (zone.zone === "Residencial") {
-      // Ruta: /residencial/madrid/inmuebles/slug-de-zona
-      url += `/residencial/madrid/inmuebles/${zone.slug || ""}`;
-    } else if (zone.zone === "Patrimonial") {
-      // Ruta: /patrimonio/madrid/inmuebles/slug-de-zona
-      url += `/patrimonio/madrid/inmuebles/${zone.slug || ""}`;
-    } else if (zone.zone === "Campos Rústicos & Activos Singulares") {
-      // Ruta fija para otros activos
+    if (zoneType === "Residencial") {
+      url += `/residencial/madrid/inmuebles/${zoneSlug}`;
+    } else if (zoneType === "Patrimonial") {
+      url += `/patrimonio/madrid/inmuebles/${zoneSlug}`;
+    } else if (zoneType === "Campos Rústicos & Activos Singulares") {
       url += `/otros-activos-y-zonas/inmuebles`;
-    } else if (zone.zone === "Costa") {
-      /**
-       * Lógica para Costa:
-       * Si tiene subzone (Marbella, Sotogrande, etc.), la usamos como ciudad.
-       * Si no tiene, usamos "espana" por defecto.
-       */
+    } else if (zoneType === "Costa") {
       const citySegment = zone.subzone ? formatSlug(zone.subzone) : "espana";
-      url += `/residencial/${citySegment}/inmuebles/${zone.slug || ""}`;
+      url += `/residencial/${citySegment}/inmuebles/${zoneSlug}`;
     } else {
-      url += "/residencial/madrid/inmuebles";
+      url += `/residencial/madrid/inmuebles`;
     }
 
     return `<td style="width: 33.33%; vertical-align: top;">
@@ -1885,7 +1881,7 @@ const generateZonesHTML = (zones) => {
           <table role="presentation" style="width: 100%; height: 100%; border-collapse: collapse;">
             <tr>
               <td style="padding: 0; margin: 0; text-align: center; vertical-align: middle; width: 100%; height: 70px; background: url('${zone.image}') no-repeat center center; background-size: cover;">
-                <a href=${url} style="text-decoration: none; display: block; width: 100%; height: 100%; text-align: center;">
+                <a href="${url}" style="text-decoration: none; display: block; width: 100%; height: 100%; text-align: center;">
                   <span style="display: inline-block; vertical-align: middle; height: 100%;"></span>
                   <span style="display: inline-block; background-color: white; padding: 1px 3px; font-size: 10px; color: #2a373d; opacity: 90%; vertical-align: middle;">
                     ${zone.name}

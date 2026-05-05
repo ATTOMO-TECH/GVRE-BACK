@@ -75,6 +75,11 @@ const consultantCreate = async (req, res, next) => {
       consultantComments: req.body.comments,
       role: req.body.role,
       showOnWeb: req.body.showOnWeb,
+      consultantEmailSignZones: req.body.consultantEmailSignZones
+        ? typeof req.body.consultantEmailSignZones === "string"
+          ? JSON.parse(req.body.consultantEmailSignZones)
+          : req.body.consultantEmailSignZones
+        : {},
     });
     const consultantCreated = await newConsultant.save();
 
@@ -170,10 +175,20 @@ const consultantUpdate = async (req, res, next) => {
         }
         Object.keys(consultantEmailSignZones[priority]).forEach((zoneKey) => {
           const zoneData = consultantEmailSignZones[priority][zoneKey];
+
+          // Si el zoneData viene vacío (se ha borrado la zona en el front), limpiamos el objeto
+          if (!zoneData || Object.keys(zoneData).length === 0) {
+            fieldsToUpdate.consultantEmailSignZones[priority][zoneKey] = {};
+            return;
+          }
+
+          // MAPEO ACTUALIZADO CON TODOS LOS CAMPOS
           fieldsToUpdate.consultantEmailSignZones[priority][zoneKey] = {
             zoneId: zoneData.zoneId || zoneData._id,
             zone: zoneData.zone,
             name: zoneData.name,
+            slug: zoneData.slug || "", // <--- NUEVO: Se guarda el slug
+            subzone: zoneData.subzone || "", // <--- NUEVO: Se guarda la subzona (Sotogrande, Marbella, etc)
             image: zoneData.image || "",
           };
         });
