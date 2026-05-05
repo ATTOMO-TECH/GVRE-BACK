@@ -5,6 +5,8 @@ const Schema = mongoose.Schema;
 const ZoneSchema = new Schema({
   zoneId: { type: String },
   zone: { type: String },
+  slug: { type: String },
+  subzone: { type: String },
   name: { type: String },
   image: { type: String },
 });
