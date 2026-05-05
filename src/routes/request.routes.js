@@ -49,7 +49,7 @@ router.post("/matching/new", requestGetNewMatched);
 router.put("/edit", requestUpdate);
 router.put(
   "/editmanyconsultant/:currentConsultant",
-  requyestsUpdateManyConsultantByConsultantId
+  requyestsUpdateManyConsultantByConsultantId,
 );
 
 router.delete("/delete/:id", requestDelete);
