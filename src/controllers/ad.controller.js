@@ -885,6 +885,7 @@ const adCreate = async (req, res, next) => {
       department: req.body.department,
       webSubtitle: req.body.webSubtitle,
       buildSurface: req.body.buildSurface,
+      plotSurface: req.body.plotSurface,
       m2StorageSpace: req.body.m2StorageSpace,
       m2Terrace: req.body.m2Terrace,
       floor: req.body.floor,
