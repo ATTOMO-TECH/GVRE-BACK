@@ -228,6 +228,13 @@
               gap: 20px;
               margin-bottom: 20px;
             }
+
+            /* Oculta el contenedor de detalles si está vacío */
+            .details-grid:empty {
+              display: none !important;
+              margin: 0 !important;
+            }
+
             .detail-item {
               font-size: 10px;
               text-transform: uppercase;
@@ -412,6 +419,26 @@
             <div class="section-description">{{description}}</div>
           </div>
 
+          {{#if subway}}
+            <hr class="divider" />
+          {{else}}
+            {{#if bus}}
+              <hr class="divider" />
+            {{/if}}
+          {{/if}}
+
+          <div class="details-grid">{{#if subway}}<div class="detail-item"><img
+                  src="{{frontendUrl}}/icons/adQualities/Metro.svg"
+                  class="icon-svg"
+                />
+                METRO
+                {{subway}}</div>{{/if}}{{#if bus}}<div class="detail-item"><img
+                  src="{{frontendUrl}}/icons/adQualities/Bus.svg"
+                  class="icon-svg"
+                />
+                AUTOBÚS
+                {{bus}}</div>{{/if}}</div>
+
         </div>
 
         <div class="col-right">
@@ -437,18 +464,6 @@
                   />
                   {{bathrooms}}
                   BAÑOS</div>{{/if}}
-              {{#if subway}}<div class="detail-item"><img
-                    src="{{frontendUrl}}/icons/adQualities/Metro.svg"
-                    class="icon-svg"
-                  />
-                  METRO
-                  {{subway}}</div>{{/if}}
-              {{#if bus}}<div class="detail-item"><img
-                    src="{{frontendUrl}}/icons/adQualities/Bus.svg"
-                    class="icon-svg"
-                  />
-                  AUTOBÚS
-                  {{bus}}</div>{{/if}}
               {{#if rooms}}<div class="detail-item"><img
                     src="{{frontendUrl}}/icons/adQualities/Habitacion.svg"
                     class="icon-svg"
