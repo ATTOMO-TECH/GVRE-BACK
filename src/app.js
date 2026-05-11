@@ -26,6 +26,7 @@ const webRoutes = require("./routes/web.routes");
 const marketingCampaignsRoutes = require("./routes/marketingCampaing.routes");
 const tagsRoutes = require("./routes/tag.routes");
 const blogRoutes = require("./routes/blog.routes");
+const officeRoutes = require("./routes/office.routes");
 const { authValidator } = require("./middlewares/auth.validator");
 
 // Settings
@@ -103,6 +104,7 @@ app.use("/mails", mailsRoutes);
 app.use("/catalogs", catalogsRoutes);
 app.use("/web", webRoutes);
 app.use("/blogs", blogRoutes);
+app.use("/offices", officeRoutes);
 app.use("/marketingCampaigns", isAuth, marketingCampaignsRoutes);
 app.use("/tags", isAuth, tagsRoutes);
 
