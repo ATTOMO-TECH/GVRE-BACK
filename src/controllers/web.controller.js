@@ -3,6 +3,7 @@ const Ad = require("../models/ad.model");
 const WebHome = require("../models/webHome.model");
 const Consultant = require("../models/consultant.model");
 const Zone = require("../models/zone.model");
+const Office = require("../models/office.model");
 const { revalidateWeb } = require("../utils/revalidateWeb");
 const { default: mongoose } = require("mongoose");
 const { makeDiacriticRegex } = require("../utils/utils");
@@ -2110,7 +2111,10 @@ const getWebConsultants = async (req, res) => {
 
 const getWebContactAndOfficeData = async (req, res, next) => {
   try {
-    const webData = await WebHome.findOne();
+    const [webData, offices] = await Promise.all([
+      WebHome.findOne(),
+      Office.find({ active: true }).sort({ createdAt: -1 }),
+    ]);
 
     if (!webData) {
       return res.status(404).json({
@@ -2123,7 +2127,10 @@ const getWebContactAndOfficeData = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      data: contactData,
+      data: {
+        ...(contactData.toObject ? contactData.toObject() : contactData),
+        offices,
+      },
     });
   } catch (error) {
     console.error("Error en getWebContactAndOfficeData:", error);
@@ -2246,6 +2253,134 @@ const downloadAdPDF = async (req, res, next) => {
   }
 };
 
+// ------------------------------------------------------------------
+// OFFICES CRUD
+// ------------------------------------------------------------------
+
+const getAllOffices = async (req, res) => {
+  try {
+    const offices = await Office.find().sort({ createdAt: -1 });
+    return res.status(200).send(offices);
+  } catch (error) {
+    console.error("Error al obtener las oficinas:", error);
+    return res
+      .status(500)
+      .send({ msg: "Error al obtener las oficinas", error: error.message });
+  }
+};
+
+const createOffice = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res
+        .status(400)
+        .send({ msg: "La imagen de la oficina es obligatoria" });
+    }
+
+    const data = { ...req.body };
+    data.image = getCdnUrl(req.file);
+
+    const office = new Office(data);
+    const officeStored = await office.save();
+
+    revalidateWeb(["get-offices", "contact-and-offices"]).catch((err) =>
+      console.error(
+        "❌ Falló revalidación en background (createOffice):",
+        err,
+      ),
+    );
+
+    return res
+      .status(201)
+      .send({ msg: "Oficina creada con éxito", office: officeStored });
+  } catch (error) {
+    console.error("Error al crear la oficina:", error);
+    return res
+      .status(500)
+      .send({ msg: "Error al guardar la oficina", error: error.message });
+  }
+};
+
+const updateOffice = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = { ...req.body };
+
+    if (req.file) {
+      try {
+        const oldOffice = await Office.findById(id);
+        if (oldOffice && oldOffice.image) {
+          await deleteImage(oldOffice.image);
+        }
+      } catch (e) {
+        console.error("Aviso: No se pudo borrar la imagen anterior de S3", e);
+      }
+
+      updates.image = getCdnUrl(req.file);
+    }
+
+    const officeUpdated = await Office.findByIdAndUpdate(id, updates, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!officeUpdated) {
+      return res.status(404).send({ msg: "No se encontró la oficina" });
+    }
+
+    revalidateWeb(["get-offices", "contact-and-offices"]).catch((err) =>
+      console.error(
+        "❌ Falló revalidación en background (updateOffice):",
+        err,
+      ),
+    );
+
+    return res
+      .status(200)
+      .send({ msg: "Oficina actualizada", office: officeUpdated });
+  } catch (error) {
+    console.error("Error al actualizar la oficina:", error);
+    return res
+      .status(500)
+      .send({ msg: "Error al actualizar la oficina", error: error.message });
+  }
+};
+
+const deleteOffice = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const officeToDelete = await Office.findById(id);
+
+    if (!officeToDelete) {
+      return res.status(404).send({ msg: "No se encontró la oficina" });
+    }
+
+    if (officeToDelete.image) {
+      try {
+        await deleteImage(officeToDelete.image);
+      } catch (e) {
+        console.error("Aviso: No se pudo borrar la imagen de S3", e);
+      }
+    }
+
+    await Office.findByIdAndDelete(id);
+
+    revalidateWeb(["get-offices", "contact-and-offices"]).catch((err) =>
+      console.error(
+        "❌ Falló revalidación en background (deleteOffice):",
+        err,
+      ),
+    );
+
+    return res.status(200).send({ msg: "Oficina eliminada" });
+  } catch (error) {
+    console.error("Error al eliminar la oficina:", error);
+    return res
+      .status(500)
+      .send({ msg: "Error al eliminar la oficina", error: error.message });
+  }
+};
+
 module.exports = {
   webHomeGet,
   webHomeCreate,
@@ -2281,4 +2416,8 @@ module.exports = {
   getSimilarAds,
   searchByreference,
   downloadAdPDF,
+  getAllOffices,
+  createOffice,
+  updateOffice,
+  deleteOffice,
 };
