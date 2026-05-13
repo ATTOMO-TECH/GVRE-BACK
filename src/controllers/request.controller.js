@@ -273,13 +273,23 @@ const requestGetAdsMatched = async (req, res, next) => {
       andConditions.push({ profitability: true });
     }
 
-    // 'reformed' y 'toReform' sí pueden ser OR entre ellos si se marcan ambos
+    // 'reformed' y 'toReform':
+    //  - Si la petición tiene alguna marca, cruzan los anuncios con esa misma
+    //    marca o los anuncios sin marcas (regla: anuncios sin marcas aparecen
+    //    en todas las peticiones).
+    //  - Si la petición no tiene marcas, no se aplica filtro.
     const reformConditions = [];
     if (request.reformed === true) {
       reformConditions.push({ "quality.reformed": true });
     }
     if (request.toReform === true) {
       reformConditions.push({ "quality.toReform": true });
+    }
+    if (reformConditions.length > 0) {
+      reformConditions.push({
+        "quality.reformed": { $ne: true },
+        "quality.toReform": { $ne: true },
+      });
     }
 
     if (request.coworking === true) {

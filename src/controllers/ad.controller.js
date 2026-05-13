@@ -563,6 +563,24 @@ const adGetMatchedRequests = async (req, res, next) => {
       ]);
     }
 
+    // --- FILTRO DE REFORMADO / A REFORMAR ---
+    // Reglas de negocio:
+    //  - Si el anuncio tiene alguna marca (reformed o toReform), solo cruzan
+    //    peticiones sin marcas o con al menos una marca coincidente.
+    //  - Si el anuncio no tiene marcas, no se aplica filtro (aparece en todas
+    //    las peticiones).
+    const adReformed = ad.quality?.reformed === true;
+    const adToReform = ad.quality?.toReform === true;
+
+    if (adReformed || adToReform) {
+      const reformOr = [
+        { reformed: { $ne: true }, toReform: { $ne: true } },
+      ];
+      if (adReformed) reformOr.push({ reformed: true });
+      if (adToReform) reformOr.push({ toReform: true });
+      query.and([{ $or: reformOr }]);
+    }
+
     // --- RESTO DE FILTROS ---
 
     if (!ad.quality?.others?.smokeOutlet) {
