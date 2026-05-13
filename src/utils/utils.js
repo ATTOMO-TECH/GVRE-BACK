@@ -158,14 +158,17 @@ const makeDiacriticRegex = (text) => {
 };
 
 const getPropertyUrl = (ad) => {
+  // 1. MAPEADO DE CATEGORÍA (Igual que en tu front)
   const categoryMap = {
-    Residencial: "residencial",
-    Costa: "residencial",
-    Patrimonio: "patrimonio",
-    Otros: "otros-activos-y-zonas",
+    residencial: "residencial",
+    costa: "residencial",
+    patrimonio: "patrimonio",
+    "otros-activos-y-zonas": "otros-activos-y-zonas",
   };
 
-  const categoryUrl = categoryMap[ad.department] || "residencial";
+  // Convertimos a minúsculas por seguridad
+  const rawCat = (ad.department || ad.category || "residencial").toLowerCase();
+  const categoryUrl = categoryMap[rawCat] || "residencial";
 
   const formatSlug = (text) =>
     text
@@ -177,29 +180,28 @@ const getPropertyUrl = (ad) => {
           .replace(/\s+/g, "-")
       : "";
 
+  // 2. CIUDAD (Igual que en tu front)
   const citySlug = formatSlug(ad.adDirection?.city || "madrid");
 
+  // 3. ZONA
+  // En el back tienes los datos de la zona en el array ad.zone
   const zoneSlug = ad.zone && ad.zone.length > 0 ? ad.zone[0].slug : "";
 
-  const zoneSegment = formatSlug(ad.adDirectionSelected || "");
-
+  // 4. OPERACIÓN
   const op = ad.sale && ad.sale.saleValue > 0 ? "venta" : "alquiler";
+
+  // 5. SLUG DEL INMUEBLE
   const slug = ad.slug || ad._id;
 
+  // 6. CONSTRUCCIÓN DE LA RUTA (El corazón de tu lógica del front)
   let segments = [];
 
   if (categoryUrl === "otros-activos-y-zonas") {
-    segments = [categoryUrl, "inmuebles", zoneSlug, op, slug];
+    // 🚀 NUEVA LÓGICA DEL FRONT: Omitimos ciudad y zona para Otros Activos
+    segments = [categoryUrl, "inmuebles", op, slug];
   } else {
-    segments = [
-      categoryUrl,
-      citySlug,
-      "inmuebles",
-      zoneSlug,
-      zoneSegment,
-      op,
-      slug,
-    ];
+    // 🚀 LÓGICA ORIGINAL: Para Residencial y Patrimonio
+    segments = [categoryUrl, citySlug, "inmuebles", zoneSlug, op, slug];
   }
 
   return `/${segments.filter(Boolean).join("/")}`;
