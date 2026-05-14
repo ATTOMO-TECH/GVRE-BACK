@@ -1680,6 +1680,7 @@ const getAdDetails = async (req, res, next) => {
       },
       consultant: ad.consultant || null,
       gvOperationClose: ad.gvOperationClose || "",
+      adStatus: ad.adStatus,
       features: featuresList,
       images: gallery,
       mainImage: ad.images?.main || "",
@@ -2284,10 +2285,7 @@ const createOffice = async (req, res) => {
     const officeStored = await office.save();
 
     revalidateWeb(["get-offices", "contact-and-offices"]).catch((err) =>
-      console.error(
-        "❌ Falló revalidación en background (createOffice):",
-        err,
-      ),
+      console.error("❌ Falló revalidación en background (createOffice):", err),
     );
 
     return res
@@ -2329,10 +2327,7 @@ const updateOffice = async (req, res) => {
     }
 
     revalidateWeb(["get-offices", "contact-and-offices"]).catch((err) =>
-      console.error(
-        "❌ Falló revalidación en background (updateOffice):",
-        err,
-      ),
+      console.error("❌ Falló revalidación en background (updateOffice):", err),
     );
 
     return res
@@ -2366,10 +2361,7 @@ const deleteOffice = async (req, res) => {
     await Office.findByIdAndDelete(id);
 
     revalidateWeb(["get-offices", "contact-and-offices"]).catch((err) =>
-      console.error(
-        "❌ Falló revalidación en background (deleteOffice):",
-        err,
-      ),
+      console.error("❌ Falló revalidación en background (deleteOffice):", err),
     );
 
     return res.status(200).send({ msg: "Oficina eliminada" });
