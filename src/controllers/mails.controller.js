@@ -82,7 +82,6 @@ const sendAdsToContact = async (req, res) => {
       }
          <div style="max-width: 600px; margin: auto">
          <div
-          id="m_-4520741529468623966gmail-m_8445976314637867845listing-a0E3Y00001LXsawUAD"
           style="max-width: 600px; margin: auto"
         >
           <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-spacing: 0px">
@@ -125,7 +124,7 @@ const sendAdsToContact = async (req, res) => {
                         <td valign="top" style="border-collapse: collapse; vertical-align: top">
                           <h2 style="font-family: Helvetica; font-weight: bold; text-align: center">
                             <a
-                              href=${adUrl}
+                              href="${adUrl}"
                               style="text-decoration: none; font-size: 19px; color: rgb(43, 54, 61)"
                               target="_blank"
                               >
@@ -146,24 +145,22 @@ const sendAdsToContact = async (req, res) => {
                            target="_blank"
                            >
                             <img
-                              src=${
+                              src="${
                                 !!ad.images.main
                                   ? ad.images.main
                                   : "https://images.assetsdelivery.com/compings_v2/pavelstasevich/pavelstasevich1811/pavelstasevich181101031.jpg"
-                              }
+                              }"
                               width="600px"
                               alt="Imagen de anuncio"
                               style="display: block; font-size: 0px; margin: auto"
-                              class="CToWUd"
-                            />
+                                                          />
                           </a>
                         </td>
                       </tr>
                       <tr>
                         <td style="border-collapse: collapse; vertical-align: top; text-align: center">
                           <h2
-                            id="m_-4520741529468623966gmail-m_8445976314637867845price"
-                            style="padding: 10px 15px 10 15px; color: rgb(43, 54, 61); font-size: 22px"
+                            style="padding: 10px 15px 10px 15px; color: rgb(43, 54, 61); font-size: 22px;"
                           >
                             ${
                               ad.adType.includes("Venta") &&
@@ -228,7 +225,7 @@ const sendAdsToContact = async (req, res) => {
                             >${ad.description.emailPDF}</p><span>&nbsp;</span
                             >
                             <a
-                              href=${adUrl}
+                              href="${adUrl}"
                               target="_blank"
                               data-saferedirecturl="https://www.google.com/url?q="
                               style=" text-align: center; text-decoration: none; color: inherit; cursor: pointer; font-weight: bold; padding: 8px; border: 1px solid rgb(43, 54, 61)"
@@ -252,8 +249,7 @@ const sendAdsToContact = async (req, res) => {
                                     src="https://img.icons8.com/ios/25/000000/surface.png"
                                     alt="Superficie parcela"
                                     style="display: block; font-size: 0px; margin: 0px auto"
-                                    class="CToWUd"
-                                  />
+                                                                      />
                                 </th>`
                                   : ``
                               }
@@ -267,8 +263,7 @@ const sendAdsToContact = async (req, res) => {
                                     src="https://img.icons8.com/dotty/25/000000/structural.png"
                                     alt="Superficie construida"
                                     style="display: block; font-size: 0px; margin: 0px auto"
-                                    class="CToWUd"
-                                  />
+                                                                      />
                                 </th>`
                                   : ``
                               }
@@ -281,8 +276,7 @@ const sendAdsToContact = async (req, res) => {
                                     src="https://img.icons8.com/glyph-neue/25/000000/swimming-pool.png"
                                     alt="Piscinas exteriores"
                                     style="display: block; font-size: 0px; margin: 0px auto"
-                                    class="CToWUd"
-                                  />
+                                                                      />
                                 </th>`
                                   : ``
                               }
@@ -296,8 +290,7 @@ const sendAdsToContact = async (req, res) => {
                                     src="https://img.icons8.com/external-kiranshastry-lineal-kiranshastry/25/000000/external-bathtub-hygiene-kiranshastry-lineal-kiranshastry-2.png"
                                     alt="Baños"
                                     style="display: block; font-size: 0px; margin: 0px auto"
-                                    class="CToWUd"
-                                  />
+                                                                      />
                                 </th>`
                                   : ``
                               }
@@ -311,8 +304,7 @@ const sendAdsToContact = async (req, res) => {
                                     src="https://img.icons8.com/ios/25/000000/empty-bed.png"
                                     alt="Habitaciones"
                                     style="display: block; font-size: 0px; margin: 0px auto"
-                                    class="CToWUd"
-                                  />
+                                                                      />
                                 </th>`
                                   : ``
                               }
@@ -431,10 +423,14 @@ const sendAdsToContact = async (req, res) => {
   );
 
   const mailOptions = {
-    from: `<${req.body.consultant.consultantEmail}>`,
+    from: `"${req.body.consultant.fullName}" <${req.body.consultant.consultantEmail}>`,
     to: `${req.body.contact.email}`,
     subject: `${req.body.subject}`,
     bcc: bccWithTag,
+    headers: {
+      "List-Unsubscribe": `<${process.env.BACKEND_URL}/mails/unsubscribe/${req.body.contact._id}>`,
+      "X-Mailer": "GVRE-CRM",
+    },
     html: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
     <html
       xmlns="http://www.w3.org/1999/xhtml"
@@ -703,8 +699,7 @@ const sendAdsToContact = async (req, res) => {
                             hspace="0"
                             vspace="0"
                             style="display: block; font-size: 0px; max-width: 100%; height: auto"
-                            class="CToWUd"
-                          />
+                                                      />
                         </td>
                       </tr>
                       <tr>
@@ -799,8 +794,7 @@ const sendAdsToContact = async (req, res) => {
                                       border-bottom-left-radius: 50%;
                                       margin: 0 auto;
                                     "
-                                    class="CToWUd"
-                                  />
+                                                                      />
                                   <br />
                                   <b>${req.body.consultant.fullName}</b>
                                   <br />
@@ -900,8 +894,7 @@ const sendAdsToContact = async (req, res) => {
               margin: 0px;
               padding: 0px;
             "
-            class="CToWUd"
-          />
+                      />
         </div>
       </body>
     </html>`,
@@ -1233,8 +1226,7 @@ const sendAdToContacts = async (req, res) => {
                             hspace="0"
                             vspace="0"
                             style="display: block; font-size: 0px; max-width: 100%; height: auto"
-                            class="CToWUd"
-                          />
+                                                      />
                         </td>
                       </tr>
                       <tr>
@@ -1275,7 +1267,6 @@ const sendAdToContacts = async (req, res) => {
                           }
                           <div style="max-width: 600px; margin: auto">
                             <div
-                              id="m_-4520741529468623966gmail-m_8445976314637867845listing-a0E3Y00001LXsawUAD"
                               style="max-width: 600px; margin: auto"
                             >
                               <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-spacing: 0px">
@@ -1318,7 +1309,7 @@ const sendAdToContacts = async (req, res) => {
                                             <td valign="top" style="border-collapse: collapse; vertical-align: top">
                                               <h2 style="font-family: Helvetica; font-weight: bold; text-align: center">
                                                 <a
-                                                  href=${adUrl}
+                                                  href="${adUrl}"
                                                   style="text-decoration: none; font-size: 19px; color: rgb(43, 54, 61)"
                                                   target="_blank"
                                                   >
@@ -1338,30 +1329,28 @@ const sendAdToContacts = async (req, res) => {
                                           <tr>
                                             <td valign="top" style="border-collapse: collapse; vertical-align: top">
                                               <a
-                                              href=${adUrl}
+                                              href="${adUrl}"
                                               target="_blank"
                                               >
                                                 <img
-                                                  src=${
+                                                  src="${
                                                     !!req.body.ad.images.main
                                                       ? req.body.ad.images.main
                                                           .split(" ")
                                                           .join("%20")
                                                       : "https://images.assetsdelivery.com/compings_v2/pavelstasevich/pavelstasevich1811/pavelstasevich181101031.jpg"
-                                                  }
+                                                  }"
                                                   width="600px"
                                                   alt="Imagen de anuncio"
                                                   style="display: block; font-size: 0px; margin: auto"
-                                                  class="CToWUd"
-                                                />
+                                                                                                  />
                                               </a>
                                             </td>
                                           </tr>
                                           <tr>
                                             <td style="border-collapse: collapse; vertical-align: top; text-align: center;">
                                               <h2
-                                                id="m_-4520741529468623966gmail-m_8445976314637867845price"
-                                                style="padding: 10px 15px 10 15px; color: rgb(43, 54, 61); font-size: 22px text-align: center;"
+                                                style="padding: 10px 15px 10px 15px; color: rgb(43, 54, 61); font-size: 22px; text-align: center;"
                                               >
                                                 ${
                                                   req.body.ad.adType.includes(
@@ -1434,7 +1423,7 @@ const sendAdToContacts = async (req, res) => {
                                                 }</p><span>&nbsp;</span
                                                 >
                                                 <a
-                                                  href=${adUrl}
+                                                  href="${adUrl}"
                                                   target="_blank"
                                                   data-saferedirecturl="https://www.google.com/url?q="
                                                   style="text-align: center; text-decoration: none; color: inherit; cursor: pointer; font-weight: bold; padding: 8px; border: 1px solid rgb(43, 54, 61)"
@@ -1460,8 +1449,7 @@ const sendAdToContacts = async (req, res) => {
                                                         src="https://img.icons8.com/ios/25/000000/surface.png"
                                                         alt="Superficie parcela"
                                                         style="display: block; font-size: 0px; margin: 0px auto"
-                                                        class="CToWUd"
-                                                      />
+                                                                                                              />
                                                     </th>`
                                                       : ``
                                                   }
@@ -1477,8 +1465,7 @@ const sendAdToContacts = async (req, res) => {
                                                         src="https://img.icons8.com/dotty/25/000000/structural.png"
                                                         alt="Superficie construida"
                                                         style="display: block; font-size: 0px; margin: 0px auto"
-                                                        class="CToWUd"
-                                                      />
+                                                                                                              />
                                                     </th>`
                                                       : ``
                                                   }
@@ -1492,8 +1479,7 @@ const sendAdToContacts = async (req, res) => {
                                                         src="https://img.icons8.com/glyph-neue/25/000000/swimming-pool.png"
                                                         alt="Piscinas exteriores"
                                                         style="display: block; font-size: 0px; margin: 0px auto"
-                                                        class="CToWUd"
-                                                      />
+                                                                                                              />
                                                     </th>`
                                                       : ``
                                                   }
@@ -1509,8 +1495,7 @@ const sendAdToContacts = async (req, res) => {
                                                         src="https://img.icons8.com/external-kiranshastry-lineal-kiranshastry/25/000000/external-bathtub-hygiene-kiranshastry-lineal-kiranshastry-2.png"
                                                         alt="Baños"
                                                         style="display: block; font-size: 0px; margin: 0px auto"
-                                                        class="CToWUd"
-                                                      />
+                                                                                                              />
                                                     </th>`
                                                       : ``
                                                   }
@@ -1526,8 +1511,7 @@ const sendAdToContacts = async (req, res) => {
                                                         src="https://img.icons8.com/ios/25/000000/empty-bed.png"
                                                         alt="Habitaciones"
                                                         style="display: block; font-size: 0px; margin: 0px auto"
-                                                        class="CToWUd"
-                                                      />
+                                                                                                              />
                                                     </th>`
                                                       : ``
                                                   }
@@ -1693,8 +1677,7 @@ const sendAdToContacts = async (req, res) => {
                                       border-bottom-left-radius: 50%;
                                       margin: 0 auto;
                                     "
-                                    class="CToWUd"
-                                  />
+                                                                      />
                                   <br />
                                   <b>${req.body.consultant.fullName}</b>
                                   <br />
@@ -1790,8 +1773,7 @@ const sendAdToContacts = async (req, res) => {
               margin: 0px;
               padding: 0px;
             "
-            class="CToWUd"
-          />
+                      />
         </div>
       </body>
     </html>`,
@@ -1827,7 +1809,11 @@ const sendAdToContacts = async (req, res) => {
         unsubscribeLink,
       );
       const mailOptions = { ...baseMailOptions };
-      mailOptions.from = req.body.consultant.consultantEmail;
+      mailOptions.headers = {
+        "List-Unsubscribe": `<${process.env.BACKEND_URL}/mails/unsubscribe/${recipient.requestContact._id}>`,
+        "X-Mailer": "GVRE-CRM",
+      };
+      mailOptions.from = `"${req.body.consultant.fullName}" <${req.body.consultant.consultantEmail}>`;
       mailOptions.to = recipient.requestContact.email;
       mailOptions.bcc = bccWithTag;
       mailOptions.html = personalizedHtml;
@@ -2221,8 +2207,7 @@ const sendEmailReservationToClient = (req, res) => {
                                 hspace="0"
                                 vspace="0"
                                 style="display: block; font-size: 0px; max-width: 100%; height: auto"
-                                class="CToWUd"
-                              />
+                                                              />
                             </td>
                           </tr>
                           <tr>
@@ -2342,8 +2327,7 @@ const sendEmailReservationToClient = (req, res) => {
                   margin: 0px;
                   padding: 0px;
                 "
-                class="CToWUd"
-              />
+                              />
             </div>
           </body>
         </html>`,
