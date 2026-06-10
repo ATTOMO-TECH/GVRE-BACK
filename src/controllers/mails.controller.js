@@ -75,19 +75,19 @@ const sendAdsToContact = async (req, res) => {
 
       return `${
         ad.adDirectionSelected !== undefined
-          ? `<div style="max-width: 600px; margin: auto">
+          ? `<div style="max-width:600px; margin:auto">
               <strong>${ad.adDirectionSelected}:</strong>
             </div>`
           : ``
       }
-         <div style="max-width: 600px; margin: auto">
+         <div style="max-width:600px; margin:auto">
          <div
-          style="max-width: 600px; margin: auto"
+          style="max-width:600px; margin:auto"
         >
           <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-spacing: 0px">
             <tbody>
               <tr>
-                <td style="border-collapse: collapse; vertical-align: top">
+                <td style="border-collapse:collapse; vertical-align:top">
                   <table
                     border="0"
                     cellpadding="0"
@@ -99,16 +99,16 @@ const sendAdsToContact = async (req, res) => {
                     ${
                       ad.adComment
                         ? `<tr>
-                        <td valign="top" style="border-collapse: collapse; vertical-align: top">
+                        <td valign="top" style="border-collapse:collapse; vertical-align:top">
                           <span>&nbsp;</span>
                           <span>&nbsp;</span>  
                           <div
                             style="
-                            max-width: 600px;
-                            margin: auto;
-                            font-family: Helvetica;
+                            max-width:600px;
+                            margin:auto;
+                            font-family:Helvetica;
                             text-align: justify;
-                            color: rgb(43, 54, 61);
+                            color: #2b363d;
                             "
                           >
                             ${ad.adComment}
@@ -121,11 +121,11 @@ const sendAdsToContact = async (req, res) => {
                         : ``
                     }
                       <tr>
-                        <td valign="top" style="border-collapse: collapse; vertical-align: top">
-                          <h2 style="font-family: Helvetica; font-weight: bold; text-align: center">
+                        <td valign="top" style="border-collapse:collapse; vertical-align:top">
+                          <h2 style="font-family:Helvetica; font-weight: bold; text-align:center">
                             <a
                               href="${adUrl}"
-                              style="text-decoration: none; font-size: 19px; color: rgb(43, 54, 61)"
+                              style="text-decoration: none; font-size: 19px; color: #2b363d"
                               target="_blank"
                               >
                                 ${
@@ -139,7 +139,7 @@ const sendAdsToContact = async (req, res) => {
                         </td>
                       </tr>
                       <tr>
-                        <td valign="top" style="border-collapse: collapse; vertical-align: top">
+                        <td valign="top" style="border-collapse:collapse; vertical-align:top">
                            <a
                            href=${adUrl}
                            target="_blank"
@@ -152,15 +152,15 @@ const sendAdsToContact = async (req, res) => {
                               }"
                               width="600px"
                               alt="Imagen de anuncio"
-                              style="display: block; font-size: 0px; margin: auto"
+                              style="display:block; font-size: 0px; margin:auto"
                                                           />
                           </a>
                         </td>
                       </tr>
                       <tr>
-                        <td style="border-collapse: collapse; vertical-align: top; text-align: center">
+                        <td style="border-collapse:collapse; vertical-align:top; text-align:center">
                           <h2
-                            style="padding: 10px 15px 10px 15px; color: rgb(43, 54, 61); font-size: 22px;"
+                            style="padding: 10px 15px 10px 15px; color: #2b363d; font-size: 22px;"
                           >
                             ${
                               ad.adType.includes("Venta") &&
@@ -181,23 +181,23 @@ const sendAdsToContact = async (req, res) => {
                       <tr>
                         <td
                           style="
-                            border-collapse: collapse;
-                            vertical-align: top;
-                            text-align: center;
-                            color: rgb(43, 54, 61);
+                            border-collapse:collapse;
+                            vertical-align:top;
+                            text-align:center;
+                            color: #2b363d;
                           "
                         >
                           ref ${ad.adReference}<span>&nbsp;</span>
                         </td>
                       </tr>
                       <tr>
-                        <td style="border-collapse: collapse; vertical-align: top">
+                        <td style="border-collapse:collapse; vertical-align:top">
                           <div
                             style="
-                              max-width: 600px;
-                              margin: auto;
-                              font-family: Helvetica;
-                              text-align: left;
+                              max-width:600px;
+                              margin:auto;
+                              font-family:Helvetica;
+                              text-align:left;
                             "
                           >
                             &nbsp;<span>&nbsp;</span>
@@ -205,22 +205,22 @@ const sendAdsToContact = async (req, res) => {
                         </td>
                       </tr>
                       <tr>
-                        <td valign="top" style="border-collapse: collapse; vertical-align: top"; text-align: center;>
+                        <td valign="top" style="border-collapse:collapse; vertical-align:top"; text-align:center;>
                           <div
                             style="
                               
-                              max-width: 600px;
-                              margin: auto;
-                              font-family: Helvetica;
-                              text-align: center;
-                              color: rgb(43, 54, 61);
+                              max-width:600px;
+                              margin:auto;
+                              font-family:Helvetica;
+                              text-align:center;
+                              color: #2b363d;
                             "
                           >
                             <p
                               style="
-                              font-family: Helvetica;
-                              text-align: center;
-                              color: rgb(43, 54, 61);
+                              font-family:Helvetica;
+                              text-align:center;
+                              color: #2b363d;
                               "
                             >${ad.description.emailPDF}</p><span>&nbsp;</span
                             >
@@ -228,7 +228,7 @@ const sendAdsToContact = async (req, res) => {
                               href="${adUrl}"
                               target="_blank"
                               data-saferedirecturl="https://www.google.com/url?q="
-                              style=" text-align: center; text-decoration: none; color: inherit; cursor: pointer; font-weight: bold; padding: 8px; border: 1px solid rgb(43, 54, 61)"
+                              style=" text-align:center; text-decoration: none; color: inherit; cursor: pointer; font-weight: bold; padding: 8px; border: 1px solid #2b363d"
                               >Ver en web</a
                             >
                             <span>&nbsp;</span>
@@ -238,7 +238,7 @@ const sendAdsToContact = async (req, res) => {
                             <tbody>
                             <span>&nbsp;</span>
                             <span>&nbsp;</span>  
-                              <tr style="text-align: center">
+                              <tr style="text-align:center">
                               ${
                                 ad.plotSurface !== 0 &&
                                 ad.plotSurface !== 999999999
@@ -248,7 +248,7 @@ const sendAdsToContact = async (req, res) => {
                                     height="25px"
                                     src="https://img.icons8.com/ios/25/000000/surface.png"
                                     alt="Superficie parcela"
-                                    style="display: block; font-size: 0px; margin: 0px auto"
+                                    style="display:block; font-size: 0px; margin: 0px auto"
                                                                       />
                                 </th>`
                                   : ``
@@ -262,7 +262,7 @@ const sendAdsToContact = async (req, res) => {
                                     height="25px"
                                     src="https://img.icons8.com/dotty/25/000000/structural.png"
                                     alt="Superficie construida"
-                                    style="display: block; font-size: 0px; margin: 0px auto"
+                                    style="display:block; font-size: 0px; margin: 0px auto"
                                                                       />
                                 </th>`
                                   : ``
@@ -275,7 +275,7 @@ const sendAdsToContact = async (req, res) => {
                                     height="25px"
                                     src="https://img.icons8.com/glyph-neue/25/000000/swimming-pool.png"
                                     alt="Piscinas exteriores"
-                                    style="display: block; font-size: 0px; margin: 0px auto"
+                                    style="display:block; font-size: 0px; margin: 0px auto"
                                                                       />
                                 </th>`
                                   : ``
@@ -289,7 +289,7 @@ const sendAdsToContact = async (req, res) => {
                                     height="25px"
                                     src="https://img.icons8.com/external-kiranshastry-lineal-kiranshastry/25/000000/external-bathtub-hygiene-kiranshastry-lineal-kiranshastry-2.png"
                                     alt="Baños"
-                                    style="display: block; font-size: 0px; margin: 0px auto"
+                                    style="display:block; font-size: 0px; margin: 0px auto"
                                                                       />
                                 </th>`
                                   : ``
@@ -303,17 +303,17 @@ const sendAdsToContact = async (req, res) => {
                                     height="25px"
                                     src="https://img.icons8.com/ios/25/000000/empty-bed.png"
                                     alt="Habitaciones"
-                                    style="display: block; font-size: 0px; margin: 0px auto"
+                                    style="display:block; font-size: 0px; margin: 0px auto"
                                                                       />
                                 </th>`
                                   : ``
                               }
                               </tr>
-                              <tr style="text-align: center; color: rgb(43, 54, 61)">
+                              <tr style="text-align:center; color: #2b363d">
                               ${
                                 ad.plotSurface !== 0 &&
                                 ad.plotSurface !== 999999999
-                                  ? `<td style="border-collapse: collapse; vertical-align: top">
+                                  ? `<td style="border-collapse:collapse; vertical-align:top">
                                     ${maskTemplate(
                                       ad.plotSurface,
                                       "plotSurface",
@@ -324,7 +324,7 @@ const sendAdsToContact = async (req, res) => {
                               ${
                                 ad.buildSurface !== 0 &&
                                 ad.buildSurface !== 999999999
-                                  ? `<td style="border-collapse: collapse; vertical-align: top">
+                                  ? `<td style="border-collapse:collapse; vertical-align:top">
                                     ${maskTemplate(
                                       ad.buildSurface,
                                       "buildSurface",
@@ -334,7 +334,7 @@ const sendAdsToContact = async (req, res) => {
                               }
                               ${
                                 ad.quality.outdoorPool !== 0
-                                  ? `<td style="border-collapse: collapse; vertical-align: top">
+                                  ? `<td style="border-collapse:collapse; vertical-align:top">
                                     <p>${ad.quality.outdoorPool}</p>
                                   </td>`
                                   : ``
@@ -342,7 +342,7 @@ const sendAdsToContact = async (req, res) => {
                               ${
                                 ad.quality.bathrooms !== 0 &&
                                 ad.quality.bathrooms !== 999
-                                  ? `<td style="border-collapse: collapse; vertical-align: top">
+                                  ? `<td style="border-collapse:collapse; vertical-align:top">
                                     <p>${ad.quality.bathrooms}</p>
                                  </td>`
                                   : ``
@@ -350,7 +350,7 @@ const sendAdsToContact = async (req, res) => {
                               ${
                                 ad.quality.bedrooms !== 0 &&
                                 ad.quality.bedrooms !== 999
-                                  ? `<td style="border-collapse: collapse; vertical-align: top">
+                                  ? `<td style="border-collapse:collapse; vertical-align:top">
                                     <p>${ad.quality.bedrooms}</p>
                                   </td>`
                                   : ``
@@ -361,13 +361,13 @@ const sendAdsToContact = async (req, res) => {
                         </td>
                       </tr>
                       <tr>
-                        <td style="border-collapse: collapse; vertical-align: top">
+                        <td style="border-collapse:collapse; vertical-align:top">
                           <div
                             style="
-                              max-width: 600px;
-                              margin: auto;
-                              font-family: Helvetica;
-                              text-align: left;
+                              max-width:600px;
+                              margin:auto;
+                              font-family:Helvetica;
+                              text-align:left;
                             "
                           >
                             <br /><br />
@@ -379,7 +379,7 @@ const sendAdsToContact = async (req, res) => {
                                 border: none;
                                 max-width: 100%;
                                 height: 1px;
-                                background-color: rgb(221, 221, 221);
+                                background-color: #ddd;
                               "
                             />
                             <br />
@@ -526,7 +526,7 @@ const sendAdsToContact = async (req, res) => {
           table,
           tr,
           td {
-            border-collapse: collapse;
+            border-collapse:collapse;
           }
 
           body,
@@ -660,7 +660,7 @@ const sendAdsToContact = async (req, res) => {
                   align="center"
                   valign="top"
                   bgcolor="#ffffff"
-                  style="border-collapse: collapse; vertical-align: top; background-color: rgb(255, 255, 255)"
+                  style="border-collapse:collapse; vertical-align:top; background-color: rgb(255, 255, 255)"
                 >
                   <table
                     border="0"
@@ -671,8 +671,8 @@ const sendAdsToContact = async (req, res) => {
                   >
                     <tbody>
                       <tr>
-                        <td style="border-collapse: collapse; vertical-align: top">
-                          <div style="max-width: 600px; margin: auto; font-family: Helvetica; text-align: left">
+                        <td style="border-collapse:collapse; vertical-align:top">
+                          <div style="max-width:600px; margin:auto; font-family:Helvetica; text-align:left">
                             &nbsp;<br />&nbsp;
                           </div>
                         </td>
@@ -681,13 +681,13 @@ const sendAdsToContact = async (req, res) => {
                         <td
                           align="center"
                           style="
-                            border-collapse: collapse;
-                            vertical-align: top;
+                            border-collapse:collapse;
+                            vertical-align:top;
                             padding-left: 24px;
                             padding-right: 24px;
                             padding-top: 10px;
                             padding-bottom: 10px;
-                            background-color: rgb(43, 54, 61);
+                            background-color: #2b363d;
                           "
                         >
                           <img
@@ -698,7 +698,7 @@ const sendAdsToContact = async (req, res) => {
                             height="35"
                             hspace="0"
                             vspace="0"
-                            style="display: block; font-size: 0px; max-width: 100%; height: auto"
+                            style="display:block; font-size: 0px; max-width: 100%; height: auto"
                                                       />
                         </td>
                       </tr>
@@ -706,44 +706,44 @@ const sendAdsToContact = async (req, res) => {
                         <td
                           align="left"
                           style="
-                            border-collapse: collapse;
-                            vertical-align: top;
+                            border-collapse:collapse;
+                            vertical-align:top;
                             padding: 24px 24px 12px;
-                            color: rgb(34, 34, 34);
+                            color: #222;
                             background-color: rgb(255, 255, 255);
-                            font-family: Helvetica;
+                            font-family:Helvetica;
                             line-height: 1.5;
-                            text-align: left;
-                            outline: rgb(221, 221, 221) solid 1px;
+                            text-align:left;
+                            outline: #ddd solid 1px;
                           "
                         >
-                          <div style="max-width: 600px; margin: auto">
+                          <div style="max-width:600px; margin:auto">
                             ${req.body.messageP1}
                           </div>
-                          <div style="max-width: 600px; margin: auto"><br /></div>
-                          <div style="max-width: 600px; margin: auto">
+                          <div style="max-width:600px; margin:auto"><br /></div>
+                          <div style="max-width:600px; margin:auto">
                             ${req.body.messageP2}
                           </div>
-                          <div style="max-width: 600px; margin: auto"><br /></div>
-                          <div style="max-width: 600px; margin: auto">
+                          <div style="max-width:600px; margin:auto"><br /></div>
+                          <div style="max-width:600px; margin:auto">
                             ${req.body.messageP3}
                           </div>
-                          <div style="max-width: 600px; margin: auto"><br /></div>
+                          <div style="max-width:600px; margin:auto"><br /></div>
                           <span>&nbsp;</span>
                           <span>&nbsp;</span>
                           ${createAdsRows(req.body.ads)}
-                          <div style="max-width: 600px; margin: auto">
+                          <div style="max-width:600px; margin:auto">
                             ${req.body.messageGoodbyeP1}
                           </div>
-                          <div style="max-width: 600px; margin: auto"><br /></div>
-                          <div style="max-width: 600px; margin: auto">
+                          <div style="max-width:600px; margin:auto"><br /></div>
+                          <div style="max-width:600px; margin:auto">
                             ${req.body.messageGoodbyeP2}
                           </div>
                           <table cellpadding="0" cellspacing="0" border="0" style="border-spacing: 0px; width: 100%;">
                             <tbody style="width: 100%;">
                               <tr style="width: 100%;">
-                                <td style="border-collapse: collapse; vertical-align: top; width: 100%;">
-                                  <div style="max-width: 600px; margin: auto; font-family: Helvetica; text-align: left">
+                                <td style="border-collapse:collapse; vertical-align:top; width: 100%;">
+                                  <div style="max-width:600px; margin:auto; font-family:Helvetica; text-align:left">
                                     <br />
                                     <hr
                                       width="100%"
@@ -753,7 +753,7 @@ const sendAdsToContact = async (req, res) => {
                                         border: none;
                                         max-width: 100%;
                                         height: 1px;
-                                        background-color: rgb(221, 221, 221);
+                                        background-color: #ddd;
                                       "
                                     />
                                     <br />
@@ -764,13 +764,13 @@ const sendAdsToContact = async (req, res) => {
                                 <td
                                   align="center"
                                   style="
-                                    border-collapse: collapse;
-                                    vertical-align: top;
-                                    font-family: Helvetica;
+                                    border-collapse:collapse;
+                                    vertical-align:top;
+                                    font-family:Helvetica;
                                     font-size: 10.8px;
-                                    color: rgb(34, 34, 34);
+                                    color: #222;
                                     width: 100%;
-                                    text-align: center;
+                                    text-align:center;
                                   "
                                 >
                                   <img
@@ -786,7 +786,7 @@ const sendAdsToContact = async (req, res) => {
                                     hspace="0"
                                     vspace="0"
                                     style="
-                                      display: block;
+                                      display:block;
                                       font-size: 0px;
                                       border-top-left-radius: 50%;
                                       border-top-right-radius: 50%;
@@ -840,11 +840,11 @@ const sendAdsToContact = async (req, res) => {
                         <td
                           align="left"
                           style="
-                            border-collapse: collapse;
-                            vertical-align: top;
-                            font-family: Helvetica;
+                            border-collapse:collapse;
+                            vertical-align:top;
+                            font-family:Helvetica;
                             font-size: 8.399999618530273px;
-                            color: rgb(153, 153, 153);
+                            color: #999;
                             padding-left: 24px;
                             padding-right: 24px;
                           "
@@ -853,7 +853,7 @@ const sendAdsToContact = async (req, res) => {
                           >
                           <a 
                             href="${process.env.BACKEND_URL}/mails/unsubscribe/${req.body.contact._id}"
-                            style="color: rgb(153, 153, 153)"
+                            style="color: #999"
                             target="_blank"
                           >
                           Unsubscribe
@@ -874,7 +874,7 @@ const sendAdsToContact = async (req, res) => {
             height="1"
             border="0"
             style="
-              display: block;
+              display:block;
               font-size: 0px;
               font-family: MyriadPro-Regular;
               font-style: normal;
@@ -1053,7 +1053,7 @@ const sendAdToContacts = async (req, res) => {
           table,
           tr,
           td {
-            border-collapse: collapse;
+            border-collapse:collapse;
           }
 
           body,
@@ -1187,7 +1187,7 @@ const sendAdToContacts = async (req, res) => {
                   align="center"
                   valign="top"
                   bgcolor="#ffffff"
-                  style="border-collapse: collapse; vertical-align: top; background-color: rgb(255, 255, 255)"
+                  style="border-collapse:collapse; vertical-align:top; background-color: rgb(255, 255, 255)"
                 >
                   <table
                     border="0"
@@ -1198,8 +1198,8 @@ const sendAdToContacts = async (req, res) => {
                   >
                     <tbody>
                       <tr>
-                        <td style="border-collapse: collapse; vertical-align: top">
-                          <div style="max-width: 600px; margin: auto; font-family: Helvetica; text-align: left">
+                        <td style="border-collapse:collapse; vertical-align:top">
+                          <div style="max-width:600px; margin:auto; font-family:Helvetica; text-align:left">
                             &nbsp;<br />&nbsp;
                           </div>
                         </td>
@@ -1208,13 +1208,13 @@ const sendAdToContacts = async (req, res) => {
                         <td
                           align="center"
                           style="
-                            border-collapse: collapse;
-                            vertical-align: top;
+                            border-collapse:collapse;
+                            vertical-align:top;
                             padding-left: 24px;
                             padding-right: 24px;
                             padding-top: 10px;
                             padding-bottom: 10px;
-                            background-color: rgb(43, 54, 61);
+                            background-color: #2b363d;
                           "
                         >
                           <img
@@ -1225,7 +1225,7 @@ const sendAdToContacts = async (req, res) => {
                             height="35"
                             hspace="0"
                             vspace="0"
-                            style="display: block; font-size: 0px; max-width: 100%; height: auto"
+                            style="display:block; font-size: 0px; max-width: 100%; height: auto"
                                                       />
                         </td>
                       </tr>
@@ -1233,46 +1233,46 @@ const sendAdToContacts = async (req, res) => {
                         <td
                           align="left"
                           style="
-                            border-collapse: collapse;
-                            vertical-align: top;
+                            border-collapse:collapse;
+                            vertical-align:top;
                             padding: 24px 24px 12px;
-                            color: rgb(34, 34, 34);
+                            color: #222;
                             background-color: rgb(255, 255, 255);
-                            font-family: Helvetica;
+                            font-family:Helvetica;
                             line-height: 1.5;
-                            text-align: left;
-                            outline: rgb(221, 221, 221) solid 1px;
+                            text-align:left;
+                            outline: #ddd solid 1px;
                           "
                         >
-                          <div style="max-width: 600px; margin: auto">
+                          <div style="max-width:600px; margin:auto">
                             ${req.body.messageP1}
                           </div>
-                          <div style="max-width: 600px; margin: auto"><br /></div>
-                          <div style="max-width: 600px; margin: auto">
+                          <div style="max-width:600px; margin:auto"><br /></div>
+                          <div style="max-width:600px; margin:auto">
                             ${req.body.messageP2}
                           </div>
-                          <div style="max-width: 600px; margin: auto"><br /></div>
-                          <div style="max-width: 600px; margin: auto">
+                          <div style="max-width:600px; margin:auto"><br /></div>
+                          <div style="max-width:600px; margin:auto">
                             ${req.body.messageP3}
                           </div>
-                          <div style="max-width: 600px; margin: auto"><br /></div>
+                          <div style="max-width:600px; margin:auto"><br /></div>
                           <span>&nbsp;</span>
                           <span>&nbsp;</span>
                           ${
                             req.body.ad.adDirectionSelected !== undefined
-                              ? `<div style="max-width: 600px; margin: auto">
+                              ? `<div style="max-width:600px; margin:auto">
                                 <strong> ${req.body.ad.adDirectionSelected}:</strong>
                               </div>`
                               : ``
                           }
-                          <div style="max-width: 600px; margin: auto">
+                          <div style="max-width:600px; margin:auto">
                             <div
-                              style="max-width: 600px; margin: auto"
+                              style="max-width:600px; margin:auto"
                             >
                               <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-spacing: 0px">
                                 <tbody>
                                   <tr>
-                                    <td style="border-collapse: collapse; vertical-align: top">
+                                    <td style="border-collapse:collapse; vertical-align:top">
                                       <table
                                         border="0"
                                         cellpadding="0"
@@ -1284,16 +1284,16 @@ const sendAdToContacts = async (req, res) => {
                                         ${
                                           req.body.ad.adComment
                                             ? `<tr>
-                                              <td valign="top" style="border-collapse: collapse; vertical-align: top">
+                                              <td valign="top" style="border-collapse:collapse; vertical-align:top">
                                                 <span>&nbsp;</span>
                                                 <span>&nbsp;</span>
                                                 <div
                                                   style="
-                                                  max-width: 600px;
-                                                  margin: auto;
-                                                  font-family: Helvetica;
+                                                  max-width:600px;
+                                                  margin:auto;
+                                                  font-family:Helvetica;
                                                   text-align: justify;
-                                                  color: rgb(43, 54, 61);
+                                                  color: #2b363d;
                                                   "
                                                 >
                                                   ${req.body.ad.adComment}
@@ -1306,11 +1306,11 @@ const sendAdToContacts = async (req, res) => {
                                             : ``
                                         }
                                           <tr>
-                                            <td valign="top" style="border-collapse: collapse; vertical-align: top">
-                                              <h2 style="font-family: Helvetica; font-weight: bold; text-align: center">
+                                            <td valign="top" style="border-collapse:collapse; vertical-align:top">
+                                              <h2 style="font-family:Helvetica; font-weight: bold; text-align:center">
                                                 <a
                                                   href="${adUrl}"
-                                                  style="text-decoration: none; font-size: 19px; color: rgb(43, 54, 61)"
+                                                  style="text-decoration: none; font-size: 19px; color: #2b363d"
                                                   target="_blank"
                                                   >
                                                     ${
@@ -1327,7 +1327,7 @@ const sendAdToContacts = async (req, res) => {
                                             </td>
                                           </tr>
                                           <tr>
-                                            <td valign="top" style="border-collapse: collapse; vertical-align: top">
+                                            <td valign="top" style="border-collapse:collapse; vertical-align:top">
                                               <a
                                               href="${adUrl}"
                                               target="_blank"
@@ -1342,15 +1342,15 @@ const sendAdToContacts = async (req, res) => {
                                                   }"
                                                   width="600px"
                                                   alt="Imagen de anuncio"
-                                                  style="display: block; font-size: 0px; margin: auto"
+                                                  style="display:block; font-size: 0px; margin:auto"
                                                                                                   />
                                               </a>
                                             </td>
                                           </tr>
                                           <tr>
-                                            <td style="border-collapse: collapse; vertical-align: top; text-align: center;">
+                                            <td style="border-collapse:collapse; vertical-align:top; text-align:center;">
                                               <h2
-                                                style="padding: 10px 15px 10px 15px; color: rgb(43, 54, 61); font-size: 22px; text-align: center;"
+                                                style="padding: 10px 15px 10px 15px; color: #2b363d; font-size: 22px; text-align:center;"
                                               >
                                                 ${
                                                   req.body.ad.adType.includes(
@@ -1373,10 +1373,10 @@ const sendAdToContacts = async (req, res) => {
                                           <tr>
                                             <td
                                               style="
-                                                border-collapse: collapse;
-                                                vertical-align: top;
-                                                text-align: center;
-                                                color: rgb(43, 54, 61);
+                                                border-collapse:collapse;
+                                                vertical-align:top;
+                                                text-align:center;
+                                                color: #2b363d;
                                               "
                                             >
                                               ref ${
@@ -1385,13 +1385,13 @@ const sendAdToContacts = async (req, res) => {
                                             </td>
                                           </tr>
                                           <tr>
-                                            <td style="border-collapse: collapse; vertical-align: top">
+                                            <td style="border-collapse:collapse; vertical-align:top">
                                               <div
                                                 style="
-                                                  max-width: 600px;
-                                                  margin: auto;
-                                                  font-family: Helvetica;
-                                                  text-align: left;
+                                                  max-width:600px;
+                                                  margin:auto;
+                                                  font-family:Helvetica;
+                                                  text-align:left;
                                                 "
                                               >
                                                 &nbsp;<span>&nbsp;</span>
@@ -1399,22 +1399,22 @@ const sendAdToContacts = async (req, res) => {
                                             </td>
                                           </tr>
                                           <tr>
-                                            <td valign="top" style="border-collapse: collapse; vertical-align: top"; text-align: center>
+                                            <td valign="top" style="border-collapse:collapse; vertical-align:top"; text-align:center>
                                               <div
                                                 style="
 
-                                                  max-width: 600px;
-                                                  margin: auto;
-                                                  font-family: Helvetica;
-                                                  text-align: center;
-                                                  color: rgb(43, 54, 61);
+                                                  max-width:600px;
+                                                  margin:auto;
+                                                  font-family:Helvetica;
+                                                  text-align:center;
+                                                  color: #2b363d;
                                                 "
                                               >
                                                 <p
                                                   style="
-                                                    font-family: Helvetica;
-                                                    text-align: center;
-                                                    color: rgb(43, 54, 61);
+                                                    font-family:Helvetica;
+                                                    text-align:center;
+                                                    color: #2b363d;
                                                     
                                                   "
                                                 >${
@@ -1426,7 +1426,7 @@ const sendAdToContacts = async (req, res) => {
                                                   href="${adUrl}"
                                                   target="_blank"
                                                   data-saferedirecturl="https://www.google.com/url?q="
-                                                  style="text-align: center; text-decoration: none; color: inherit; cursor: pointer; font-weight: bold; padding: 8px; border: 1px solid rgb(43, 54, 61)"
+                                                  style="text-align:center; text-decoration: none; color: inherit; cursor: pointer; font-weight: bold; padding: 8px; border: 1px solid #2b363d"
                                                   >Ver en web</a
                                                 >
                                                 <span>&nbsp;</span>
@@ -1436,7 +1436,7 @@ const sendAdToContacts = async (req, res) => {
                                                 <tbody>
                                                 <span>&nbsp;</span>
                                                 <span>&nbsp;</span>
-                                                  <tr style="text-align: center">
+                                                  <tr style="text-align:center">
                                                   ${
                                                     req.body.ad.plotSurface !==
                                                       0 &&
@@ -1448,7 +1448,7 @@ const sendAdToContacts = async (req, res) => {
                                                         height="25px"
                                                         src="https://img.icons8.com/ios/25/000000/surface.png"
                                                         alt="Superficie parcela"
-                                                        style="display: block; font-size: 0px; margin: 0px auto"
+                                                        style="display:block; font-size: 0px; margin: 0px auto"
                                                                                                               />
                                                     </th>`
                                                       : ``
@@ -1464,7 +1464,7 @@ const sendAdToContacts = async (req, res) => {
                                                         height="25px"
                                                         src="https://img.icons8.com/dotty/25/000000/structural.png"
                                                         alt="Superficie construida"
-                                                        style="display: block; font-size: 0px; margin: 0px auto"
+                                                        style="display:block; font-size: 0px; margin: 0px auto"
                                                                                                               />
                                                     </th>`
                                                       : ``
@@ -1478,7 +1478,7 @@ const sendAdToContacts = async (req, res) => {
                                                         height="25px"
                                                         src="https://img.icons8.com/glyph-neue/25/000000/swimming-pool.png"
                                                         alt="Piscinas exteriores"
-                                                        style="display: block; font-size: 0px; margin: 0px auto"
+                                                        style="display:block; font-size: 0px; margin: 0px auto"
                                                                                                               />
                                                     </th>`
                                                       : ``
@@ -1494,7 +1494,7 @@ const sendAdToContacts = async (req, res) => {
                                                         height="25px"
                                                         src="https://img.icons8.com/external-kiranshastry-lineal-kiranshastry/25/000000/external-bathtub-hygiene-kiranshastry-lineal-kiranshastry-2.png"
                                                         alt="Baños"
-                                                        style="display: block; font-size: 0px; margin: 0px auto"
+                                                        style="display:block; font-size: 0px; margin: 0px auto"
                                                                                                               />
                                                     </th>`
                                                       : ``
@@ -1510,20 +1510,20 @@ const sendAdToContacts = async (req, res) => {
                                                         height="25px"
                                                         src="https://img.icons8.com/ios/25/000000/empty-bed.png"
                                                         alt="Habitaciones"
-                                                        style="display: block; font-size: 0px; margin: 0px auto"
+                                                        style="display:block; font-size: 0px; margin: 0px auto"
                                                                                                               />
                                                     </th>`
                                                       : ``
                                                   }
                                                   </tr>
-                                                  <tr style="text-align: center; color: rgb(43, 54, 61)">
+                                                  <tr style="text-align:center; color: #2b363d">
                                                     ${
                                                       req.body.ad
                                                         .plotSurface !== 0 &&
                                                       req.body.ad
                                                         .plotSurface !==
                                                         999999999
-                                                        ? `<td style="border-collapse: collapse; vertical-align: top">
+                                                        ? `<td style="border-collapse:collapse; vertical-align:top">
                                                           ${maskTemplate(
                                                             req.body.ad
                                                               .plotSurface,
@@ -1538,7 +1538,7 @@ const sendAdToContacts = async (req, res) => {
                                                       req.body.ad
                                                         .buildSurface !==
                                                         999999999
-                                                        ? `<td style="border-collapse: collapse; vertical-align: top">
+                                                        ? `<td style="border-collapse:collapse; vertical-align:top">
                                                           ${maskTemplate(
                                                             req.body.ad
                                                               .buildSurface,
@@ -1550,7 +1550,7 @@ const sendAdToContacts = async (req, res) => {
                                                     ${
                                                       req.body.ad.quality
                                                         .outdoorPool !== 0
-                                                        ? `<td style="border-collapse: collapse; vertical-align: top">
+                                                        ? `<td style="border-collapse:collapse; vertical-align:top">
                                                           <p>${req.body.ad.quality.outdoorPool}</p>
                                                         </td>`
                                                         : ``
@@ -1560,7 +1560,7 @@ const sendAdToContacts = async (req, res) => {
                                                         .bathrooms !== 0 &&
                                                       req.body.ad.quality
                                                         .bathrooms !== 999
-                                                        ? `<td style="border-collapse: collapse; vertical-align: top">
+                                                        ? `<td style="border-collapse:collapse; vertical-align:top">
                                                           <p>${req.body.ad.quality.bathrooms}</p>
                                                        </td>`
                                                         : ``
@@ -1570,7 +1570,7 @@ const sendAdToContacts = async (req, res) => {
                                                         .bedrooms !== 0 &&
                                                       req.body.ad.quality
                                                         .bedrooms !== 999
-                                                        ? `<td style="border-collapse: collapse; vertical-align: top">
+                                                        ? `<td style="border-collapse:collapse; vertical-align:top">
                                                           <p>${req.body.ad.quality.bedrooms}</p>
                                                         </td>`
                                                         : ``
@@ -1581,13 +1581,13 @@ const sendAdToContacts = async (req, res) => {
                                             </td>
                                           </tr>
                                           <tr>
-                                            <td style="border-collapse: collapse; vertical-align: top">
+                                            <td style="border-collapse:collapse; vertical-align:top">
                                               <div
                                                 style="
-                                                  max-width: 600px;
-                                                  margin: auto;
-                                                  font-family: Helvetica;
-                                                  text-align: left;
+                                                  max-width:600px;
+                                                  margin:auto;
+                                                  font-family:Helvetica;
+                                                  text-align:left;
                                                 "
                                               >
                                                 <br /><br />
@@ -1599,7 +1599,7 @@ const sendAdToContacts = async (req, res) => {
                                                     border: none;
                                                     max-width: 100%;
                                                     height: 1px;
-                                                    background-color: rgb(221, 221, 221);
+                                                    background-color: #ddd;
                                                   "
                                                 />
                                                 <br />
@@ -1615,18 +1615,18 @@ const sendAdToContacts = async (req, res) => {
                             </div>
                           </div>
 
-                          <div style="max-width: 600px; margin: auto">
+                          <div style="max-width:600px; margin:auto">
                             ${req.body.messageGoodbyeP1}
                           </div>
-                          <div style="max-width: 600px; margin: auto"><br /></div>
-                          <div style="max-width: 600px; margin: auto">
+                          <div style="max-width:600px; margin:auto"><br /></div>
+                          <div style="max-width:600px; margin:auto">
                             ${req.body.messageGoodbyeP2}
                           </div>
                           <table cellpadding="0" cellspacing="0" border="0" style="border-spacing: 0px; width: 100%;">
                             <tbody style="width: 100%;">
                               <tr style="width: 100%;">
-                                <td style="border-collapse: collapse; vertical-align: top; width: 100%;">
-                                  <div style="max-width: 600px; margin: auto; font-family: Helvetica; text-align: left">
+                                <td style="border-collapse:collapse; vertical-align:top; width: 100%;">
+                                  <div style="max-width:600px; margin:auto; font-family:Helvetica; text-align:left">
                                     <br />
                                     <hr
                                       width="100%"
@@ -1636,7 +1636,7 @@ const sendAdToContacts = async (req, res) => {
                                         border: none;
                                         max-width: 100%;
                                         height: 1px;
-                                        background-color: rgb(221, 221, 221);
+                                        background-color: #ddd;
                                       "
                                     />
                                     <br />
@@ -1647,13 +1647,13 @@ const sendAdToContacts = async (req, res) => {
                                 <td
                                   align="center"
                                   style="
-                                    border-collapse: collapse;
-                                    vertical-align: top;
-                                    font-family: Helvetica;
+                                    border-collapse:collapse;
+                                    vertical-align:top;
+                                    font-family:Helvetica;
                                     font-size: 10.8px;
-                                    color: rgb(34, 34, 34);
+                                    color: #222;
                                     width: 100%;
-                                    text-align: center;
+                                    text-align:center;
                                   "
                                 >
                                   <img
@@ -1669,7 +1669,7 @@ const sendAdToContacts = async (req, res) => {
                                     hspace="0"
                                     vspace="0"
                                     style="
-                                      display: block;
+                                      display:block;
                                       font-size: 0px;
                                       border-top-left-radius: 50%;
                                       border-top-right-radius: 50%;
@@ -1724,17 +1724,17 @@ const sendAdToContacts = async (req, res) => {
                         <td
                           align="left"
                           style="
-                            border-collapse: collapse;
-                            vertical-align: top;
-                            font-family: Helvetica;
+                            border-collapse:collapse;
+                            vertical-align:top;
+                            font-family:Helvetica;
                             font-size: 8.399999618530273px;
-                            color: rgb(153, 153, 153);
+                            color: #999;
                             padding-left: 24px;
                             padding-right: 24px;
                           "
                         >
                           <br />Don't want to receive this type of email?<span>&nbsp;</span
-                          > <a href="{{unsubscribeLink}}" style="color: rgb(153, 153, 153)" target="_blank">
+                          > <a href="{{unsubscribeLink}}" style="color: #999" target="_blank">
   Unsubscribe
 </a>
                           ><span>&nbsp;</span>&nbsp;<br />&nbsp;
@@ -1753,7 +1753,7 @@ const sendAdToContacts = async (req, res) => {
             height="1"
             border="0"
             style="
-              display: block;
+              display:block;
               font-size: 0px;
               font-family: MyriadPro-Regular;
               font-style: normal;
@@ -1860,14 +1860,14 @@ const generateZonesHTML = (zones) => {
       url += `/residencial/madrid/inmuebles`;
     }
 
-    return `<td style="width: 33.33%; vertical-align: top;">
+    return `<td style="width: 33.33%; vertical-align:top;">
     <table role="presentation" style="margin: 0 auto; border: 1px solid #ccc; border-radius: 3px; width: 100%; height: 70px; overflow: hidden; font-family: Helvetica, Arial, sans-serif;">
       <tr>
         <td style="padding: 0; margin: 0; width: 100%; height: 80px;">
-          <table role="presentation" style="width: 100%; height: 100%; border-collapse: collapse;">
+          <table role="presentation" style="width: 100%; height: 100%; border-collapse:collapse;">
             <tr>
-              <td style="padding: 0; margin: 0; text-align: center; vertical-align: middle; width: 100%; height: 70px; background: url('${zone.image}') no-repeat center center; background-size: cover;">
-                <a href="${url}" style="text-decoration: none; display: block; width: 100%; height: 100%; text-align: center;">
+              <td style="padding: 0; margin: 0; text-align:center; vertical-align: middle; width: 100%; height: 70px; background: url('${zone.image}') no-repeat center center; background-size: cover;">
+                <a href="${url}" style="text-decoration: none; display:block; width: 100%; height: 100%; text-align:center;">
                   <span style="display: inline-block; vertical-align: middle; height: 100%;"></span>
                   <span style="display: inline-block; background-color: white; padding: 1px 3px; font-size: 10px; color: #2a373d; opacity: 90%; vertical-align: middle;">
                     ${zone.name}
@@ -1905,7 +1905,7 @@ const generateZonesHTML = (zones) => {
       }
       content += "</tr>";
     }
-    html += `<table role="presentation" style="width: 100%; border-collapse: collapse;">${content}</table>`;
+    html += `<table role="presentation" style="width: 100%; border-collapse:collapse;">${content}</table>`;
   });
   return html;
 };
@@ -2036,7 +2036,7 @@ const sendEmailReservationToClient = (req, res) => {
               table,
               tr,
               td {
-                border-collapse: collapse;
+                border-collapse:collapse;
               }
     
               body,
@@ -2170,7 +2170,7 @@ const sendEmailReservationToClient = (req, res) => {
                       align="center"
                       valign="top"
                       bgcolor="#ffffff"
-                      style="border-collapse: collapse; vertical-align: top; background-color: rgb(255, 255, 255)"
+                      style="border-collapse:collapse; vertical-align:top; background-color: rgb(255, 255, 255)"
                     >
                       <table
                         border="0"
@@ -2181,8 +2181,8 @@ const sendEmailReservationToClient = (req, res) => {
                       >
                         <tbody>
                           <tr>
-                            <td style="border-collapse: collapse; vertical-align: top">
-                              <div style="max-width: 600px; margin: auto; font-family: Helvetica; text-align: left">
+                            <td style="border-collapse:collapse; vertical-align:top">
+                              <div style="max-width:600px; margin:auto; font-family:Helvetica; text-align:left">
                                 &nbsp;<br />&nbsp;
                               </div>
                             </td>
@@ -2191,11 +2191,11 @@ const sendEmailReservationToClient = (req, res) => {
                             <td
                               align="center"
                               style="
-                                border-collapse: collapse;
-                                vertical-align: top;
+                                border-collapse:collapse;
+                                vertical-align:top;
                                 padding-left: 24px;
                                 padding-right: 24px;
-                                background-color: rgb(43, 54, 61);
+                                background-color: #2b363d;
                               "
                             >
                               <img
@@ -2206,7 +2206,7 @@ const sendEmailReservationToClient = (req, res) => {
                                 height="50"
                                 hspace="0"
                                 vspace="0"
-                                style="display: block; font-size: 0px; max-width: 100%; height: auto"
+                                style="display:block; font-size: 0px; max-width: 100%; height: auto"
                                                               />
                             </td>
                           </tr>
@@ -2214,20 +2214,20 @@ const sendEmailReservationToClient = (req, res) => {
                             <td
                               align="left"
                               style="
-                                border-collapse: collapse;
-                                vertical-align: top;
+                                border-collapse:collapse;
+                                vertical-align:top;
                                 padding: 24px 24px 12px;
-                                color: rgb(34, 34, 34);
+                                color: #222;
                                 background-color: rgb(255, 255, 255);
-                                font-family: Helvetica;
+                                font-family:Helvetica;
                                 line-height: 1.5;
-                                text-align: left;
-                                outline: rgb(221, 221, 221) solid 1px;
+                                text-align:left;
+                                outline: #ddd solid 1px;
                               "
                             >
                               
-                              <div style="max-width: 600px; margin: auto"><br /></div>
-                              <div style="max-width: 600px; margin: auto">
+                              <div style="max-width:600px; margin:auto"><br /></div>
+                              <div style="max-width:600px; margin:auto">
                                 <p>
                                 Hola, <br />
                                 </p>
@@ -2249,8 +2249,8 @@ const sendEmailReservationToClient = (req, res) => {
                               <table cellpadding="0" cellspacing="0" border="0" style="border-spacing: 0px; width: 777.15625px">
                                 <tbody>
                                   <tr>
-                                    <td style="border-collapse: collapse; vertical-align: top">
-                                      <div style="max-width: 600px; margin: auto; font-family: Helvetica; text-align: left">
+                                    <td style="border-collapse:collapse; vertical-align:top">
+                                      <div style="max-width:600px; margin:auto; font-family:Helvetica; text-align:left">
                                         <br />
                                         <hr
                                           width="100%"
@@ -2260,7 +2260,7 @@ const sendEmailReservationToClient = (req, res) => {
                                             border: none;
                                             max-width: 100%;
                                             height: 1px;
-                                            background-color: rgb(221, 221, 221);
+                                            background-color: #ddd;
                                           "
                                         />
                                         <br />
@@ -2271,11 +2271,11 @@ const sendEmailReservationToClient = (req, res) => {
                                     <td
                                       align="center"
                                       style="
-                                        border-collapse: collapse;
-                                        vertical-align: top;
-                                        font-family: Helvetica;
+                                        border-collapse:collapse;
+                                        vertical-align:top;
+                                        font-family:Helvetica;
                                         font-size: 10.800000190734863px;
-                                        color: rgb(34, 34, 34);
+                                        color: #222;
                                       "
                                     >
                                         <br />
@@ -2307,7 +2307,7 @@ const sendEmailReservationToClient = (req, res) => {
                 height="1"
                 border="0"
                 style="
-                  display: block;
+                  display:block;
                   font-size: 0px;
                   font-family: MyriadPro-Regular;
                   font-style: normal;
@@ -2351,7 +2351,7 @@ const unsubscribeEmails = async (req, res) => {
       return res.status(400).send(`
         <html>
           <head><title>Enlace no válido</title></head>
-          <body style="font-family: Helvetica, sans-serif; text-align: center; margin-top: 80px">
+          <body style="font-family: Helvetica, sans-serif; text-align:center; margin-top: 80px">
             <h2>Enlace incorrecto</h2>
             <p>Este enlace de desuscripción está corrupto o no es válido.</p>
           </body>
@@ -2373,7 +2373,7 @@ const unsubscribeEmails = async (req, res) => {
     res.send(`
       <html>
         <head><title>Unsubscribe</title></head>
-        <body style="font-family: Helvetica, sans-serif; text-align: center; margin-top: 80px">
+        <body style="font-family: Helvetica, sans-serif; text-align:center; margin-top: 80px">
           <h2>Has sido dado de baja correctamente</h2>
           <p>No recibirás más comunicaciones de este tipo.</p>
         </body>
@@ -2485,7 +2485,7 @@ const sendWebEmail = async (req, res) => {
       replyTo: email,
       subject: `${config.subjectPrefix} ${config.buildSubject({ nombre, adReference })}`,
       html: `
-        <div style="font-family: Helvetica, sans-serif; color: #2b363d; max-width: 600px; border: 1px solid #eee;">
+        <div style="font-family: Helvetica, sans-serif; color: #2b363d; max-width:600px; border: 1px solid #eee;">
           ${sourceBanner}
           <div style="padding: 20px;">
             <h2 style="font-weight: lighter; color: #2b363d;">Nueva solicitud recibida</h2>
@@ -2516,8 +2516,8 @@ const sendWebEmail = async (req, res) => {
         to: email,
         subject: "Tu solicitud de cita con GVRE",
         html: `
-          <div style="font-family: Helvetica, sans-serif; color: #2b363d; max-width: 600px; border: 1px solid #eee; padding: 30px;">
-            <h2 style="font-weight: lighter; color: #2b363d; text-align: center;">Hemos recibido tu solicitud</h2>
+          <div style="font-family: Helvetica, sans-serif; color: #2b363d; max-width:600px; border: 1px solid #eee; padding: 30px;">
+            <h2 style="font-weight: lighter; color: #2b363d; text-align:center;">Hemos recibido tu solicitud</h2>
             <p style="font-size: 15px; line-height: 1.5;">Hola ${nombre},</p>
             <p style="font-size: 15px; line-height: 1.5;">
               Hemos recibido correctamente tu solicitud de cita para visitar el inmueble <strong>${adReference || "solicitado"}</strong>.
@@ -2534,7 +2534,7 @@ const sendWebEmail = async (req, res) => {
               <strong>El equipo de GVRE</strong>
             </p>
             <hr style="border: none; border-top: 1px solid #eee; margin-top: 40px;" />
-            <p style="font-size: 11px; color: #999; text-align: center;">
+            <p style="font-size: 11px; color: #999; text-align:center;">
               Este es un correo automático, por favor no respondas a esta dirección. Si tienes dudas, contáctanos en info@gvre.es.
             </p>
           </div>
