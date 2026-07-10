@@ -436,6 +436,12 @@ const requestGetNewMatched = async (req, res, next) => {
     if (req.body.toReform === true) {
       reformConditions.push({ "quality.toReform": true });
     }
+    if (reformConditions.length > 0) {
+      reformConditions.push({
+        "quality.reformed": { $ne: true },
+        "quality.toReform": { $ne: true },
+      });
+    }
 
     if (req.body.coworking === true) {
       andConditions.push({ "quality.others.coworking": true });
