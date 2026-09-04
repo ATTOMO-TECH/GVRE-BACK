@@ -2250,7 +2250,11 @@ const downloadAdPDF = async (req, res, next) => {
     return res.end(pdfBuffer);
   } catch (error) {
     console.error("Error en la generación del PDF:", error);
-    return res.status(500).json({ message: "Error interno al generar el PDF" });
+    return res.status(error.statusCode || 500).json({
+      message: error.statusCode
+        ? error.message
+        : "Error interno al generar el PDF",
+    });
   }
 };
 
