@@ -1265,14 +1265,48 @@ const getFilteredAds = async (req, res, next) => {
       },
     ]);
 
+    // Al ordenar por precio, los anuncios SIN importe (campo ausente, nulo o 0)
+    // deben quedar siempre al final. Mongo los colocaría los primeros en orden
+    // ascendente, así que marcamos cuáles tienen importe y ordenamos por esa
+    // marca antes que por el precio. Da igual si el precio se publica o no en
+    // la web: lo que manda es el importe guardado, también en los off-market.
+    const priceDirection = sortQuery[sortField];
+    const isPriceSort = priceDirection !== undefined;
+
+    const adsQuery = isPriceSort
+      ? Ad.aggregate([
+          { $match: filter },
+          {
+            $addFields: {
+              hasPriceValue: { $cond: [{ $gt: [`$${sortField}`, 0] }, 1, 0] },
+            },
+          },
+          // El _id desempata: sin él, los anuncios que empatan (todos los que
+          // no tienen precio) podrían cambiar de orden entre página y página
+          {
+            $sort: {
+              hasPriceValue: -1,
+              [sortField]: priceDirection,
+              _id: 1,
+            },
+          },
+          { $skip: skip },
+          { $limit: parseInt(limit) },
+          // Quitamos la marca para devolver exactamente los mismos campos
+          { $project: { hasPriceValue: 0 } },
+        ])
+          .allowDiskUse(true)
+          .then((docs) => Ad.populate(docs, { path: "zone", select: "name" }))
+      : Ad.find(filter)
+          .populate("zone", "name")
+          .sort(sortQuery)
+          .skip(skip)
+          .limit(parseInt(limit))
+          .lean();
+
     const [totalDocs, ads, statsResult] = await Promise.all([
       Ad.countDocuments(filter),
-      Ad.find(filter)
-        .populate("zone", "name")
-        .sort(sortQuery)
-        .skip(skip)
-        .limit(parseInt(limit))
-        .lean(),
+      adsQuery,
       statsQuery,
     ]);
 
@@ -1282,9 +1316,10 @@ const getFilteredAds = async (req, res, next) => {
       maxSurface: 5000,
     };
 
-    // --- 8. FORMATEO DE RESPUESTA Y MEZCLA ---
-    const normalAds = [];
-    const offMarketAds = [];
+    // --- 8. FORMATEO DE RESPUESTA ---
+    // El orden lo fija la consulta a Mongo (sortQuery). Aquí sólo se da formato,
+    // sin reordenar: los off-market quedan donde les corresponda por precio.
+    const formattedAds = [];
 
     ads.forEach((ad) => {
       const isOffMarket =
@@ -1307,7 +1342,7 @@ const getFilteredAds = async (req, res, next) => {
         activeTags.push("Alquiler");
 
       if (isOffMarket) {
-        offMarketAds.push({
+        formattedAds.push({
           id: ad._id.toString(),
           slug: ad.slug,
           title: ad.title,
@@ -1350,7 +1385,7 @@ const getFilteredAds = async (req, res, next) => {
           gvOperationClose: ad.gvOperationClose || "",
         });
       } else {
-        normalAds.push({
+        formattedAds.push({
           id: ad._id.toString(),
           slug: ad.slug,
           title: ad.title,
@@ -1396,32 +1431,6 @@ const getFilteredAds = async (req, res, next) => {
         });
       }
     });
-
-    for (let i = offMarketAds.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [offMarketAds[i], offMarketAds[j]] = [offMarketAds[j], offMarketAds[i]];
-    }
-
-    const formattedAds = [];
-    let normalIndex = 0;
-    let offMarketIndex = 0;
-
-    while (
-      normalIndex < normalAds.length ||
-      offMarketIndex < offMarketAds.length
-    ) {
-      let count = 0;
-      while (count < 6 && normalIndex < normalAds.length) {
-        formattedAds.push(normalAds[normalIndex]);
-        normalIndex++;
-        count++;
-      }
-
-      if (offMarketIndex < offMarketAds.length) {
-        formattedAds.push(offMarketAds[offMarketIndex]);
-        offMarketIndex++;
-      }
-    }
 
     res.status(200).json({
       data: formattedAds,
