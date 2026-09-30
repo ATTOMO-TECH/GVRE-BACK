@@ -1229,21 +1229,32 @@ const getFilteredAds = async (req, res, next) => {
     if (garage === "true") filter["quality.parking"] = { $gt: 0 };
 
     // --- 6. ORDENACIÓN ---
+    // Precios que se miran según la operación elegida. Con venta y alquiler a
+    // la vez (o sin elegir ninguna), cada anuncio se ordena por el precio que
+    // realmente tenga: el de venta si lo tiene y, si no, el de alquiler. Antes
+    // se ordenaba todo por precio de venta, así que los anuncios que sólo
+    // estaban en alquiler no tenían ningún importe por el que ordenarse y
+    // salían en un orden arbitrario.
+    const isOnlySale =
+      normalizedOps.length === 1 && normalizedOps.includes("Venta");
     const isOnlyRent =
       normalizedOps.length === 1 && normalizedOps.includes("Alquiler");
 
-    const sortField = isOnlyRent ? "rent.rentValue" : "sale.saleValue";
+    const priceFields = isOnlyRent
+      ? ["rent.rentValue"]
+      : isOnlySale
+        ? ["sale.saleValue"]
+        : ["sale.saleValue", "rent.rentValue"];
 
-    let sortQuery = { [sortField]: -1 };
-
-    const sortOptions = {
+    const dateSortOptions = {
       "creat-asc": { createdAt: -1 },
       "creat-des": { createdAt: 1 },
-      "price-asc": { [sortField]: 1 },
-      "price-desc": { [sortField]: -1 },
     };
 
-    if (sortOptions[sort]) sortQuery = sortOptions[sort];
+    // Si no se pide orden por fecha, manda el precio (descendente por defecto)
+    const dateSortQuery = dateSortOptions[sort] || null;
+    const isPriceSort = dateSortQuery === null;
+    const priceDirection = sort === "price-asc" ? 1 : -1;
 
     // --- 7. EJECUCIÓN PARALELA (Estadísticas incluyendo Off-Market) ---
     const statsMatch = {
@@ -1265,14 +1276,60 @@ const getFilteredAds = async (req, res, next) => {
       },
     ]);
 
+    // Al ordenar por precio, los anuncios SIN importe (campo ausente, nulo o 0)
+    // deben quedar siempre al final. Mongo los colocaría los primeros en orden
+    // ascendente, así que marcamos cuáles tienen importe y ordenamos por esa
+    // marca antes que por el precio. Da igual si el precio se publica o no en
+    // la web: lo que manda es el importe guardado, también en los off-market.
+    // Precio por el que se ordena cada anuncio: el primero de los campos
+    // aplicables que tenga importe. Con una sola operación es directo; con las
+    // dos, se usa el de venta y se cae al de alquiler si no hay venta.
+    const sortPriceExpr =
+      priceFields.length === 1
+        ? `$${priceFields[0]}`
+        : {
+            $cond: [
+              { $gt: [`$${priceFields[0]}`, 0] },
+              `$${priceFields[0]}`,
+              `$${priceFields[1]}`,
+            ],
+          };
+
+    const adsQuery = isPriceSort
+      ? Ad.aggregate([
+          { $match: filter },
+          { $addFields: { sortPrice: sortPriceExpr } },
+          {
+            $addFields: {
+              hasPriceValue: { $cond: [{ $gt: ["$sortPrice", 0] }, 1, 0] },
+            },
+          },
+          // El _id desempata: sin él, los anuncios que empatan (todos los que
+          // no tienen precio) podrían cambiar de orden entre página y página
+          {
+            $sort: {
+              hasPriceValue: -1,
+              sortPrice: priceDirection,
+              _id: 1,
+            },
+          },
+          { $skip: skip },
+          { $limit: parseInt(limit) },
+          // Quitamos los auxiliares para devolver exactamente los mismos campos
+          { $project: { sortPrice: 0, hasPriceValue: 0 } },
+        ])
+          .allowDiskUse(true)
+          .then((docs) => Ad.populate(docs, { path: "zone", select: "name" }))
+      : Ad.find(filter)
+          .populate("zone", "name")
+          .sort(dateSortQuery)
+          .skip(skip)
+          .limit(parseInt(limit))
+          .lean();
+
     const [totalDocs, ads, statsResult] = await Promise.all([
       Ad.countDocuments(filter),
-      Ad.find(filter)
-        .populate("zone", "name")
-        .sort(sortQuery)
-        .skip(skip)
-        .limit(parseInt(limit))
-        .lean(),
+      adsQuery,
       statsQuery,
     ]);
 
@@ -1282,9 +1339,10 @@ const getFilteredAds = async (req, res, next) => {
       maxSurface: 5000,
     };
 
-    // --- 8. FORMATEO DE RESPUESTA Y MEZCLA ---
-    const normalAds = [];
-    const offMarketAds = [];
+    // --- 8. FORMATEO DE RESPUESTA ---
+    // El orden lo fija la consulta a Mongo. Aquí sólo se da formato,
+    // sin reordenar: los off-market quedan donde les corresponda por precio.
+    const formattedAds = [];
 
     ads.forEach((ad) => {
       const isOffMarket =
@@ -1307,7 +1365,7 @@ const getFilteredAds = async (req, res, next) => {
         activeTags.push("Alquiler");
 
       if (isOffMarket) {
-        offMarketAds.push({
+        formattedAds.push({
           id: ad._id.toString(),
           slug: ad.slug,
           title: ad.title,
@@ -1350,7 +1408,7 @@ const getFilteredAds = async (req, res, next) => {
           gvOperationClose: ad.gvOperationClose || "",
         });
       } else {
-        normalAds.push({
+        formattedAds.push({
           id: ad._id.toString(),
           slug: ad.slug,
           title: ad.title,
@@ -1396,32 +1454,6 @@ const getFilteredAds = async (req, res, next) => {
         });
       }
     });
-
-    for (let i = offMarketAds.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [offMarketAds[i], offMarketAds[j]] = [offMarketAds[j], offMarketAds[i]];
-    }
-
-    const formattedAds = [];
-    let normalIndex = 0;
-    let offMarketIndex = 0;
-
-    while (
-      normalIndex < normalAds.length ||
-      offMarketIndex < offMarketAds.length
-    ) {
-      let count = 0;
-      while (count < 6 && normalIndex < normalAds.length) {
-        formattedAds.push(normalAds[normalIndex]);
-        normalIndex++;
-        count++;
-      }
-
-      if (offMarketIndex < offMarketAds.length) {
-        formattedAds.push(offMarketAds[offMarketIndex]);
-        offMarketIndex++;
-      }
-    }
 
     res.status(200).json({
       data: formattedAds,
