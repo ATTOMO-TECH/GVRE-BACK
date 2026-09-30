@@ -39,12 +39,20 @@ const getFormattedValue = (value, ref) => {
 
   // Formateo de números válidos
   if (isPrice) {
-    // Para precios: separador de miles con espacio
-    const formattedNum = value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    // Para precios: sin decimales (evita arrastrar errores de coma flotante,
+    // p. ej. 30000.079999999998) y separador de miles con espacio
+    const formattedNum = Math.round(Number(value))
+      .toString()
+      .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
     return `${formattedNum} ${ref === "sale" ? "€" : "€/mes"}`;
   } else {
-    // Para superficies: separador de miles con punto
-    const formattedNum = value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    // Para superficies: máximo 2 decimales (con coma) y separador de miles con punto
+    const [intPart, decPart] = (Math.round(Number(value) * 100) / 100)
+      .toString()
+      .split(".");
+    const formattedNum =
+      intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".") +
+      (decPart ? `,${decPart}` : "");
     return `${formattedNum} m<sup>2</sup>`;
   }
 };
