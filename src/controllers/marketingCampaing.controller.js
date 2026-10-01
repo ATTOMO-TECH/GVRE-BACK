@@ -1,17 +1,16 @@
 const { deleteImage } = require("../middlewares/file.middleware");
 const MarketingCampaign = require("../models/marketingCampaing.model");
 const Contact = require("../models/contact.model");
+const CampaignSend = require("../models/campaignSend.model");
 
 const marketingCampaignsGetAll = async (req, res, next) => {
   try {
+    // contactList no se devuelve: el CRM no lo usa en los listados y puede
+    // contener miles de contactos por campaña
     const marketingCampaings = await MarketingCampaign.find()
+      .select("-contactList")
       .sort({ createdAt: -1 })
-      .populate({ path: "consultant", select: "fullName" })
-      .populate({
-        path: "contactList",
-        select:
-          "fullName email contactMobileNumber contactPhoneNumber contactDirection",
-      });
+      .populate({ path: "consultant", select: "fullName" });
     return res.status(200).json(marketingCampaings);
   } catch (err) {
     return next(err);
@@ -137,80 +136,17 @@ const marketingCampaignUpdate = async (req, res, next) => {
   }
 };
 
-const marketingCampaignSendEmail = async (req, res, next) => {
+const marketingCampaignSendStatus = async (req, res, next) => {
   try {
-    const { sendMail } = req;
-    if (sendMail === "ok") {
-      const { campaign, contacts } = req.body;
-      let editCampaign = {};
-      let editContact = {};
+    const { idSend } = req.params;
+    const campaignSend =
+      await CampaignSend.findById(idSend).select("-sentContacts");
 
-      const marketingCampaign = await MarketingCampaign.findById(campaign._id);
-
-      if (marketingCampaign !== null) {
-        let filterContact = [];
-
-        if (marketingCampaign.contactList.length === 0) {
-          filterContact = contacts.map((contact) => contact._id);
-        } else {
-          const contactsId = contacts.map((c) => c._id);
-          const listString = marketingCampaign.contactList.map((objId) =>
-            objId.toString(),
-          );
-          filterContact = contactsId.filter(
-            (value) => !listString.includes(value),
-          );
-        }
-
-        const newContactList =
-          marketingCampaign.contactList.concat(filterContact);
-        marketingCampaign.contactList = newContactList;
-
-        const campaignUpdated = await MarketingCampaign.findByIdAndUpdate(
-          campaign._id,
-          marketingCampaign,
-          { new: true },
-        );
-        editCampaign = campaignUpdated;
-
-        // CORRECCIÓN: Usamos Promise.all para esperar a que todos los updates terminen
-        await Promise.all(
-          contacts.map(async (contact) => {
-            const contactDB = await Contact.findById(contact._id);
-            if (contactDB !== null) {
-              const updateContact = contactDB;
-
-              if (updateContact.marketingCampaings === undefined) {
-                updateContact.marketingCampaings = [];
-              }
-
-              const contactsCampaignsString =
-                updateContact.marketingCampaings.map((objId) =>
-                  objId.toString(),
-                );
-              const filterCampaigns = [campaign._id].filter(
-                (value) => !contactsCampaignsString.includes(value),
-              );
-
-              updateContact.marketingCampaings =
-                updateContact.marketingCampaings.concat(filterCampaigns);
-
-              editContact = await Contact.findByIdAndUpdate(
-                contact._id,
-                updateContact,
-                { new: true },
-              );
-            }
-          }),
-        );
-
-        return res.status(200).json({ editCampaign, editContact });
-      } else {
-        return res
-          .status(500)
-          .json({ status: 500, message: "Fail to send emails" });
-      }
+    if (campaignSend === null) {
+      return res.status(404).json({ status: 404, message: "Send not found" });
     }
+
+    return res.status(200).json({ send: campaignSend.toSummary() });
   } catch (err) {
     return next(err);
   }
@@ -284,7 +220,7 @@ module.exports = {
   marketingCampaignGetAllByContact,
   marketingCampaignCreate,
   marketingCampaignUpdate,
-  marketingCampaignSendEmail,
+  marketingCampaignSendStatus,
   contactReceiveEmail, // Faltaba exportar
   marketingCampaignDelete,
 };
