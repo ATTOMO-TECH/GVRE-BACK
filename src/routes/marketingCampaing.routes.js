@@ -4,7 +4,7 @@ const {
   marketingCampaignCreate,
   marketingCampaignUpdate,
   marketingCampaignDelete,
-  marketingCampaignSendEmail,
+  marketingCampaignSendStatus,
   marketingCampaignsGetAll,
 } = require("../controllers/marketingCampaing.controller");
 const {
@@ -24,12 +24,8 @@ router.get("/:id", () => {});
 
 router.post("/create", marketingCampaignCreate);
 router.put("/edit/:idCampaign", marketingCampaignUpdate);
-router.post(
-  "/sendEmail",
-  getConsultantTokenById,
-  sendEmailCampaignToContacts,
-  marketingCampaignSendEmail,
-);
+router.post("/sendEmail", getConsultantTokenById, sendEmailCampaignToContacts);
+router.get("/sendStatus/:idSend", marketingCampaignSendStatus);
 
 router.delete("/delete/:idCampaign", marketingCampaignDelete);
 

@@ -29,6 +29,7 @@ const contactGetOne = async (req, res, next) => {
       })
       .populate({
         path: "marketingCampaings",
+        select: "title image",
       });
     return res.status(200).json(contact);
   } catch (err) {
@@ -258,6 +259,7 @@ const contactGetIdsByFilters = async (req, res, next) => {
       typeOperator,
       globalSearch,
       consultantIds,
+      tagsOperator = "or",
       adZones, // Cambiado
       reqZones, // Nuevo
     } = req.query;
@@ -300,7 +302,8 @@ const contactGetIdsByFilters = async (req, res, next) => {
     if (tags) {
       const tagsArray = tags.split(",").filter((id) => id.trim() !== "");
       if (tagsArray.length > 0) {
-        query.tags = { $in: tagsArray };
+        query.tags =
+          tagsOperator === "and" ? { $all: tagsArray } : { $in: tagsArray };
       }
     }
 
