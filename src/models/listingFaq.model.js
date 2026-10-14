@@ -3,6 +3,7 @@ const {
   DEPARTMENTS,
   OPERATIONS,
 } = require("../listingFaqs/pageKey");
+const { ENTITIES, buildTranslationsDefinition } = require("../i18n");
 
 const Schema = mongoose.Schema;
 
@@ -20,6 +21,8 @@ const listingFaqSchema = new Schema(
     answer: { type: String, required: true, trim: true },
     // Posición dentro de la página (0 = primera)
     order: { type: Number, default: 0 },
+    // Textos en otros idiomas; el español sigue en `question` y `answer`
+    translations: buildTranslationsDefinition(ENTITIES.LISTING_FAQ),
   },
   {
     timestamps: true,

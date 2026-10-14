@@ -40,6 +40,7 @@ const ENTITIES = Object.freeze({
   ZONE: "zone",
   OFFICE: "office",
   WEB_HOME: "webHome",
+  LISTING_FAQ: "listingFaq",
 });
 
 const TRANSLATABLE_FIELDS = Object.freeze({
@@ -74,6 +75,9 @@ const TRANSLATABLE_FIELDS = Object.freeze({
   [ENTITIES.ZONE]: [text("zoneDescription")],
 
   [ENTITIES.OFFICE]: [text("name"), text("schedule")],
+
+  // FAQs de los listados de la web (debajo de los resultados)
+  [ENTITIES.LISTING_FAQ]: [text("question"), text("answer")],
 
   // Solo los bloques que pinta la web actual. Los heredados (portada,
   // secciones y servicios antiguos) no se muestran y no llevan traducción.

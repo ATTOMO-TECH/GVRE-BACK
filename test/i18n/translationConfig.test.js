@@ -13,7 +13,7 @@ test("la configuración expone idiomas y campos traducibles por entidad", () => 
     { code: "fr", name: "Français" },
     { code: "de", name: "Deutsch" },
   ]);
-  assert.deepEqual(Object.keys(payload.entities), ["ad", "blog", "zone", "office", "webHome"]);
+  assert.deepEqual(Object.keys(payload.entities), ["ad", "blog", "zone", "office", "webHome", "listingFaq"]);
   assert.deepEqual(
     payload.entities.ad.map((field) => field.path),
     ["title", "description.web", "description.emailPDF", "description.distribution", "floor", "disponibility", "surfacesBox"],

@@ -73,6 +73,7 @@ test.before(async () => {
 
   const app = express();
   app.use(express.json());
+  app.use(require("../../src/middlewares/lang.middleware").resolveRequestLang);
   app.use("/listing-faqs", require("../../src/routes/listingFaq.routes"));
   await new Promise((resolve) => {
     ctx.server = app.listen(0, "127.0.0.1", resolve);
@@ -179,3 +180,51 @@ test("errores de entrada", { skip: SKIP }, async () => {
   });
   assert.equal(partial.status, 400);
 });
+
+test("traducciones: el CRM las guarda y la web las recibe en su idioma", { skip: SKIP }, async () => {
+  const page = { ...MORALEJA_VENTA, zone: "el-viso", operation: "alquiler" };
+  const created = await api("POST", "/listing-faqs", {
+    json: {
+      ...page,
+      question: "¿Se admiten mascotas?",
+      answer: "Depende del propietario.",
+      translations: { en: { question: "Are pets allowed?", answer: "It depends on the owner." } },
+    },
+  });
+  assert.equal(created.status, 201);
+  // Respuesta para el CRM: español + estado de la traducción
+  assert.equal(created.body.faq.question, "¿Se admiten mascotas?");
+  assert.equal(created.body.faq.translations.en.question.value, "Are pets allowed?");
+  assert.equal(created.body.faq.translations.en.question.outdated, false);
+
+  const en = await api("GET", `${pageQuery(page)}&lang=en`, { auth: false });
+  assert.equal(en.body.faqs[0].question, "Are pets allowed?");
+  assert.deepEqual(en.body.faqs[0].translatedLangs, ["en"]);
+  assert.equal(en.body.faqs[0].translations, undefined);
+
+  // Sin traducción al francés: se muestra en español
+  const fr = await api("GET", `${pageQuery(page)}&lang=fr`, { auth: false });
+  assert.equal(fr.body.faqs[0].question, "¿Se admiten mascotas?");
+  assert.deepEqual(fr.body.faqs[0].translatedLangs, ["en"]);
+
+  // Cambia el español: la traducción queda desactualizada, pero no se borra
+  const id = created.body.faq._id;
+  const edited = await api("PUT", `/listing-faqs/${id}`, {
+    json: { question: "¿Se admiten mascotas en el piso?", answer: "Depende del propietario." },
+  });
+  assert.equal(edited.body.faq.translations.en.question.outdated, true);
+  assert.equal(edited.body.faq.translations.en.answer.outdated, false);
+
+  // Vaciar una traducción la borra
+  const cleared = await api("PUT", `/listing-faqs/${id}`, {
+    json: {
+      question: "¿Se admiten mascotas en el piso?",
+      answer: "Depende del propietario.",
+      translations: { en: { question: "", answer: "" } },
+    },
+  });
+  assert.equal(cleared.body.faq.translations?.en?.question, undefined);
+  const enAfter = await api("GET", `${pageQuery(page)}&lang=en`, { auth: false });
+  assert.deepEqual(enAfter.body.faqs[0].translatedLangs, []);
+});
+

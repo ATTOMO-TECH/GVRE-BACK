@@ -3,6 +3,14 @@ const ListingFaq = require("../models/listingFaq.model");
 const Zone = require("../models/zone.model");
 const { revalidateWeb } = require("../utils/revalidateWeb");
 const {
+  ENTITIES,
+  getTranslatedLangs,
+  localizeDocument,
+  withTranslationStatus,
+  planTranslationWrites,
+  applyWritesToDocument,
+} = require("../i18n");
+const {
   ListingFaqInputError,
   parsePageKey,
   parseFaqContent,
@@ -13,7 +21,37 @@ const {
 const WEB_CACHE_TAG = "listing-faqs";
 
 const SORT = { order: 1, createdAt: 1 };
-const PUBLIC_FIELDS = "department city zone operation question answer order";
+const PUBLIC_FIELDS =
+  "department city zone operation question answer order translations";
+// Una FAQ cuenta como traducida a un idioma si lo están pregunta y respuesta
+const MAIN_PATHS = ["question", "answer"];
+
+// Web (con idioma): textos en ese idioma + idiomas en los que está traducida.
+// CRM (sin idioma): documento en español con el estado de sus traducciones.
+const presentFaq = (faq, lang) =>
+  lang
+    ? {
+        ...localizeDocument(ENTITIES.LISTING_FAQ, faq, lang),
+        translatedLangs: getTranslatedLangs(ENTITIES.LISTING_FAQ, faq, MAIN_PATHS),
+      }
+    : withTranslationStatus(ENTITIES.LISTING_FAQ, faq);
+
+const hasTranslationsInput = (input) =>
+  Boolean(input?.incoming || input?.confirmed);
+
+// Aplica las traducciones que llegan del CRM sobre la FAQ (en español ya
+// actualizada), comparando con las que tenía guardadas
+const applyTranslations = (faq, input, stored) => {
+  if (!hasTranslationsInput(input)) return;
+  applyWritesToDocument(
+    faq,
+    planTranslationWrites(ENTITIES.LISTING_FAQ, {
+      source: faq.toObject(),
+      stored,
+      ...input,
+    }),
+  );
+};
 
 const sendInputError = (res, err) => res.status(400).json({ message: err.message });
 
@@ -52,7 +90,9 @@ const getPageFaqs = async (req, res, next) => {
       .select(PUBLIC_FIELDS)
       .lean();
 
-    return res.status(200).json({ faqs });
+    return res
+      .status(200)
+      .json({ faqs: faqs.map((faq) => presentFaq(faq, req.lang)) });
   } catch (err) {
     if (err instanceof ListingFaqInputError) return sendInputError(res, err);
     return next(err);
@@ -111,14 +151,16 @@ const createFaq = async (req, res, next) => {
       .select("order")
       .lean();
 
-    const faq = await ListingFaq.create({
+    const faq = new ListingFaq({
       ...page,
       ...content,
       order: last ? last.order + 1 : 0,
     });
+    applyTranslations(faq, req.translationsInput);
+    await faq.save();
 
     await revalidateWeb([WEB_CACHE_TAG]);
-    return res.status(201).json({ faq });
+    return res.status(201).json({ faq: presentFaq(faq.toObject()) });
   } catch (err) {
     if (err instanceof ListingFaqInputError) return sendInputError(res, err);
     return next(err);
@@ -133,11 +175,13 @@ const updateFaq = async (req, res, next) => {
     const faq = await findFaqOr404(req.params.id, res);
     if (!faq) return undefined;
 
+    const storedTranslations = faq.toObject().translations;
     faq.set(content);
+    applyTranslations(faq, req.translationsInput, storedTranslations);
     await faq.save();
 
     await revalidateWeb([WEB_CACHE_TAG]);
-    return res.status(200).json({ faq });
+    return res.status(200).json({ faq: presentFaq(faq.toObject()) });
   } catch (err) {
     if (err instanceof ListingFaqInputError) return sendInputError(res, err);
     return next(err);
@@ -189,7 +233,9 @@ const reorderFaqs = async (req, res, next) => {
 
     await revalidateWeb([WEB_CACHE_TAG]);
     const faqs = await ListingFaq.find(toPageFilter(page)).sort(SORT).lean();
-    return res.status(200).json({ faqs });
+    return res
+      .status(200)
+      .json({ faqs: faqs.map((faq) => presentFaq(faq, req.lang)) });
   } catch (err) {
     if (err instanceof ListingFaqInputError) return sendInputError(res, err);
     return next(err);
