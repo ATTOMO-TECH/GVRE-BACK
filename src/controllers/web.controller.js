@@ -1734,13 +1734,21 @@ const getAdDetails = async (req, res, next) => {
   }
 };
 
+// Operación de la URL de la web → valor de `adType` en los anuncios
+const ACTIVE_INVENTORY_AD_TYPES = { venta: "Venta", alquiler: "Alquiler" };
+
 const getActiveInventoryZones = async (req, res) => {
   try {
-    const { department } = req.body;
+    const { department, operation } = req.body;
+
+    // Operación opcional ("venta" | "alquiler"): solo barrios con anuncios de
+    // esa operación. La usa el sitemap para los listados barrio + operación.
+    const adType = ACTIVE_INVENTORY_AD_TYPES[operation];
 
     // 1. Buscamos los anuncios y traemos el campo 'slug' de la zona referenciada
     const ads = await Ad.find({
       department,
+      ...(adType && { adType }),
       $or: [{ showOnWeb: true }, { showOnWebOffMarket: true }],
     }).populate("zone", "slug");
 
