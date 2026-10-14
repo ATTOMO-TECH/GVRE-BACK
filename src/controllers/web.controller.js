@@ -8,16 +8,69 @@ const { revalidateWeb } = require("../utils/revalidateWeb");
 const { default: mongoose } = require("mongoose");
 const { makeDiacriticRegex } = require("../utils/utils");
 const pdfGenerator = require("../services/pdfGenerator");
+const {
+  ENTITIES,
+  isTranslationLang,
+  getTranslatedLangs,
+  getLocalizedValue,
+  localizeDocument,
+  omitTranslations,
+  withTranslationStatus,
+  translateLabel,
+  translateLabels,
+  planTranslationWrites,
+  toMongoUpdate,
+  applyWritesToDocument,
+} = require("../i18n");
+
+const hasTranslationsInput = (input) =>
+  Boolean(input?.incoming || input?.confirmed);
+
+// Aplica sobre el documento de la home las traducciones que llegan en la
+// petición, comparándolas con el español tal y como queda tras la edición.
+// Hay que llamarlo después de asignar los textos en español y antes de save().
+const applyWebHomeTranslations = (webHome, translationsInput) => {
+  if (!hasTranslationsInput(translationsInput)) return;
+
+  const current = webHome.toObject();
+
+  applyWritesToDocument(
+    webHome,
+    planTranslationWrites(ENTITIES.WEB_HOME, {
+      source: current,
+      stored: current.translations,
+      ...translationsInput,
+    }),
+  );
+};
+
+// Campos extra que hay que pedir a Mongo para poder traducir el título de un
+// anuncio. En español (o sin idioma) no hace falta ninguno.
+const adTitleTranslationSelect = (lang) =>
+  isTranslationLang(lang) ? ` translations.${lang}.title` : "";
+
+const getAdTitle = (ad, lang) =>
+  getLocalizedValue(ENTITIES.AD, ad, "title", lang);
+
+// Un anuncio se considera traducido a un idioma cuando lo están su título y
+// su descripción web. Solo se informa en modo web (cuando se pide idioma).
+const AD_MAIN_PATHS = ["title", "description.web"];
+
+const getAdTranslatedLangs = (ad, lang) =>
+  lang ? { translatedLangs: getTranslatedLangs(ENTITIES.AD, ad, AD_MAIN_PATHS) } : {};
 
 // Asegúrate de tener importado el modelo Zone al principio de tu archivo si no lo tienes:
 // const Zone = require("../models/zone");
 
 const webHomeGet = async (req, res, next) => {
   try {
+    const { lang } = req;
+
     const webDocs = await WebHome.find().populate({
       path: "videoSection.videos.adId",
-      select:
-        "adStatus showOnWeb gvOperationClose adType sale rent adDirection department zone",
+      select: `adStatus showOnWeb gvOperationClose adType sale rent adDirection department zone${
+        lang ? " title" : ""
+      }${adTitleTranslationSelect(lang)}`,
     });
 
     if (!webDocs || webDocs.length === 0) return res.status(200).json([]);
@@ -135,7 +188,25 @@ const webHomeGet = async (req, res, next) => {
       }
     });
 
-    return res.status(200).json([webData]);
+    // Sin idioma (CRM) se devuelve el documento completo, con el estado de
+    // cada traducción. Con idioma (web pública) se devuelve ya traducido.
+    if (!lang) {
+      return res
+        .status(200)
+        .json([withTranslationStatus(ENTITIES.WEB_HOME, webData)]);
+    }
+
+    // El título de cada vídeo es una copia del título del anuncio guardada en
+    // español; en otros idiomas se toma la traducción del propio anuncio.
+    webData.videoSection.videos = webData.videoSection.videos.map((video) => ({
+      ...video,
+      title: (video.adId && getAdTitle(video.adId, lang)) || video.title,
+      adId: omitTranslations(video.adId),
+    }));
+
+    return res
+      .status(200)
+      .json([localizeDocument(ENTITIES.WEB_HOME, webData, lang)]);
   } catch (err) {
     console.error("Error obteniendo datos de home:", err);
     return next(err);
@@ -318,6 +389,8 @@ const webVideoSectionUpdate = async (req, res, next) => {
       }
     }
 
+    applyWebHomeTranslations(webHome, req.translationsInput);
+
     const updatedWebHome = await webHome.save();
 
     // 🚀 ACTUALIZADO: Batching y Fire & Forget
@@ -328,7 +401,11 @@ const webVideoSectionUpdate = async (req, res, next) => {
       ),
     );
 
-    return res.status(200).json(updatedWebHome);
+    return res
+      .status(200)
+      .json(
+        withTranslationStatus(ENTITIES.WEB_HOME, updatedWebHome.toObject()),
+      );
   } catch (err) {
     console.error("Error en webVideoSectionUpdate:", err);
     return next(err);
@@ -762,10 +839,22 @@ const webHomeTalkWithUs = async (req, res, next) => {
       // 4. Guardado con markModified
       // Al ser un objeto mixto y haber cambiado arrays, avisamos a Mongoose
       webHome.markModified("talkWithUs");
+      applyWebHomeTranslations(webHome, req.translationsInput);
       const updatedWebHome = await webHome.save();
 
-      // ... revalidate y respuesta ...
-      return res.status(200).json(updatedWebHome);
+      // Este bloque se pinta en la home y en la página de contacto
+      revalidateWeb(["home-data", "contact-and-offices"]).catch((err) =>
+        console.error(
+          "❌ Falló revalidación en background (webHomeTalkWithUs):",
+          err,
+        ),
+      );
+
+      return res
+        .status(200)
+        .json(
+          withTranslationStatus(ENTITIES.WEB_HOME, updatedWebHome.toObject()),
+        );
     }
   } catch (err) {
     next(err);
@@ -1032,11 +1121,16 @@ const updateCategoriesSection = async (req, res, next) => {
     }
 
     webHome.markModified("categoriesSection");
+    applyWebHomeTranslations(webHome, req.translationsInput);
     const updatedWebHome = await webHome.save();
     revalidateWeb(["home-data"]).catch((err) =>
       console.error("❌ Error revalidando home-data:", err),
     );
-    return res.status(200).json(updatedWebHome);
+    return res
+      .status(200)
+      .json(
+        withTranslationStatus(ENTITIES.WEB_HOME, updatedWebHome.toObject()),
+      );
   } catch (err) {
     console.error("Error en updateCategoriesSection:", err);
     return next(err);
@@ -1076,6 +1170,7 @@ const getFilteredAds = async (req, res, next) => {
       livestock,
       recess,
     } = req.body;
+    const { lang } = req;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -1368,9 +1463,9 @@ const getFilteredAds = async (req, res, next) => {
         formattedAds.push({
           id: ad._id.toString(),
           slug: ad.slug,
-          title: ad.title,
+          title: getAdTitle(ad, lang),
           category: categorySlug,
-          ad: ad.profitability && "En Rentabilidad",
+          ad: ad.profitability && translateLabel("En Rentabilidad", lang),
           subzone: ad.zone?.[0]?.subzone || null,
           ref: ad.adReference,
           salePrice: ad.sale?.saleValue || null,
@@ -1396,24 +1491,29 @@ const getFilteredAds = async (req, res, next) => {
           },
           zoneName: ad.zone?.[0]?.name || "",
           gvOperationClose: ad.gvOperationClose || "",
-          tags: [
-            ad.adBuildingType?.[0],
-            ad.quality?.reformed && "Reformado",
-            ...activeTags,
-          ]
-            .filter(Boolean)
-            .slice(0, 4),
+          tags: translateLabels(
+            [
+              ad.adBuildingType?.[0],
+              ad.quality?.reformed && "Reformado",
+              ...activeTags,
+            ]
+              .filter(Boolean)
+              .slice(0, 4),
+            lang,
+          ),
           isOffMarket: true,
           consultant: ad.consultant,
           gvOperationClose: ad.gvOperationClose || "",
+          ...getAdTranslatedLangs(ad, lang),
         });
       } else {
         formattedAds.push({
           id: ad._id.toString(),
           slug: ad.slug,
-          title: ad.title,
+          title: getAdTitle(ad, lang),
           category: categorySlug,
-          profitability: ad.profitability && "En Rentabilidad",
+          profitability:
+            ad.profitability && translateLabel("En Rentabilidad", lang),
           subzone: ad.zone?.[0]?.subzone || null,
           ref: ad.adReference,
           salePrice: ad.sale?.saleValue || null,
@@ -1444,13 +1544,17 @@ const getFilteredAds = async (req, res, next) => {
           },
           zoneName: ad.zone?.[0]?.name || "",
           gvOperationClose: ad.gvOperationClose || "",
-          tags: [
-            ad.adBuildingType?.[0],
-            ad.quality?.reformed && "Reformado",
-            ...activeTags,
-          ]
-            .filter(Boolean)
-            .slice(0, 4),
+          tags: translateLabels(
+            [
+              ad.adBuildingType?.[0],
+              ad.quality?.reformed && "Reformado",
+              ...activeTags,
+            ]
+              .filter(Boolean)
+              .slice(0, 4),
+            lang,
+          ),
+          ...getAdTranslatedLangs(ad, lang),
         });
       }
     });
@@ -1477,6 +1581,7 @@ const getFilteredAds = async (req, res, next) => {
 
 const getHighlightAds = async (req, res, next) => {
   try {
+    const { lang } = req;
     const filter = {
       featuredOnMain: true,
       showOnWeb: true,
@@ -1484,7 +1589,7 @@ const getHighlightAds = async (req, res, next) => {
 
     const ads = await Ad.find(filter)
       .select(
-        "title zone slug adType sale rent adDirection images quality buildSurface plotSurface department adReference gvOperationClose",
+        `title zone slug adType sale rent adDirection images quality buildSurface plotSurface department adReference gvOperationClose${adTitleTranslationSelect(lang)}`,
       )
       .populate("zone", "name")
       .sort({ createdAt: -1 })
@@ -1517,7 +1622,7 @@ const getHighlightAds = async (req, res, next) => {
       return {
         id: ad._id.toString(),
         slug: ad.slug,
-        title: ad.title,
+        title: getAdTitle(ad, lang),
         ref: ad.adReference,
         zoneName: ad.zone[0]?.name || "",
         category,
@@ -1541,14 +1646,17 @@ const getHighlightAds = async (req, res, next) => {
             : 0,
         },
         gvOperationClose: ad.gvOperationClose || "",
-        tags: [
-          ad.adBuildingType?.[0],
-          ad.profitability && "En Rentabilidad",
-          ad.quality?.reformed && "Reformado",
-          ...finalOperations,
-        ]
-          .filter(Boolean)
-          .slice(0, 4),
+        tags: translateLabels(
+          [
+            ad.adBuildingType?.[0],
+            ad.profitability && "En Rentabilidad",
+            ad.quality?.reformed && "Reformado",
+            ...finalOperations,
+          ]
+            .filter(Boolean)
+            .slice(0, 4),
+          lang,
+        ),
       };
     });
 
@@ -1562,6 +1670,7 @@ const getHighlightAds = async (req, res, next) => {
 const getAdDetails = async (req, res, next) => {
   try {
     const slug = req.params.slug;
+    const { lang } = req;
 
     if (!slug) {
       return res.status(400).json({ message: "Falta el slug del inmueble" });
@@ -1583,6 +1692,9 @@ const getAdDetails = async (req, res, next) => {
     }
 
     const mainZone = ad.zone && ad.zone.length > 0 ? ad.zone[0] : null;
+
+    const localizedAdField = (path) =>
+      getLocalizedValue(ENTITIES.AD, ad, path, lang);
 
     const salePrice =
       ad.sale?.saleShowOnWeb && ad.adType?.includes("Venta")
@@ -1659,19 +1771,21 @@ const getAdDetails = async (req, res, next) => {
     const propertyDetail = {
       id: ad._id,
       slug: ad.slug,
-      title: ad.title,
+      title: getAdTitle(ad, lang),
       reference: ad.adReference,
       category: ad.department,
       subzone: mainZone ? mainZone.subzone : null,
       zoneName: mainZone ? mainZone.name : null,
-      zoneDescription: mainZone ? mainZone.zoneDescription : null,
+      zoneDescription: mainZone
+        ? getLocalizedValue(ENTITIES.ZONE, mainZone, "zoneDescription", lang)
+        : null,
       operation: ad.adType,
-      description: ad.description?.web,
-      distribution: ad.description?.distribution,
+      description: localizedAdField("description.web"),
+      distribution: localizedAdField("description.distribution"),
       salePrice: salePrice,
       rentPrice: rentPrice,
-      priceLabel: priceLabel,
-      period: period,
+      priceLabel: translateLabel(priceLabel, lang),
+      period: translateLabel(period, lang),
       saleRepercussionM2: saleRepercussionM2,
       saleRepercussionM2ShowOnWeb: saleRepercussionM2ShowOnWeb,
       expenses: fixedExpenses,
@@ -1702,8 +1816,8 @@ const getAdDetails = async (req, res, next) => {
         area: ad.buildSurface || 0,
         plot: ad.plotSurface || 0,
         year: ad.buildingYear,
-        disponibility: ad.disponibility,
-        floor: ad.floor,
+        disponibility: localizedAdField("disponibility"),
+        floor: localizedAdField("floor"),
         subway: ad.quality.subway || "",
         bus: ad.quality.bus || "",
         numberOfPools:
@@ -1718,14 +1832,17 @@ const getAdDetails = async (req, res, next) => {
       mainImage: ad.images?.main || "",
       blueprints: ad.images?.blueprint || "",
       video: ad.images?.media || "",
-      surfacesBox: ad.surfacesBox || [],
+      surfacesBox: localizedAdField("surfacesBox") || [],
       tags: [],
+      ...getAdTranslatedLangs(ad, lang),
     };
 
     if (ad.adBuildingType && ad.adBuildingType.length > 0)
       propertyDetail.tags.push(ad.adBuildingType[0]);
-    if (ad.quality?.reformed) propertyDetail.tags.push("Reformado");
-    if (ad.quality?.toReform) propertyDetail.tags.push("A reformar");
+    if (ad.quality?.reformed)
+      propertyDetail.tags.push(translateLabel("Reformado", lang));
+    if (ad.quality?.toReform)
+      propertyDetail.tags.push(translateLabel("A reformar", lang));
 
     return res.status(200).json(propertyDetail);
   } catch (error) {
@@ -1884,6 +2001,7 @@ const getFilterStats = async (req, res, next) => {
 const getSimilarAds = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const { lang } = req;
 
     const currentAd = await Ad.findById(id).lean();
 
@@ -1904,7 +2022,7 @@ const getSimilarAds = async (req, res, next) => {
     // 2. Buscamos en BBDD con un find normal y poblamos las zonas
     const ads = await Ad.find(filter)
       .select(
-        "title zone slug adType adBuildingType sale rent adDirection images quality buildSurface plotSurface department adReference gvOperationClose profitability",
+        `title zone slug adType adBuildingType sale rent adDirection images quality buildSurface plotSurface department adReference gvOperationClose profitability${adTitleTranslationSelect(lang)}`,
       )
       .populate("zone", "name")
       .lean();
@@ -1981,11 +2099,12 @@ const getSimilarAds = async (req, res, next) => {
       return {
         id: ad._id.toString(),
         slug: ad.slug,
-        title: ad.title,
+        title: getAdTitle(ad, lang),
         ref: ad.adReference,
         zoneName: ad.zone[0]?.name || "",
         category,
-        profitability: ad.profitability && "En Rentabilidad",
+        profitability:
+          ad.profitability && translateLabel("En Rentabilidad", lang),
         salePrice: ad.sale?.saleValue || null,
         saleShowOnWeb: ad.sale?.saleShowOnWeb,
         rentPrice: ad.rent?.rentValue || null,
@@ -2006,13 +2125,16 @@ const getSimilarAds = async (req, res, next) => {
             : 0,
         },
         gvOperationClose: ad.gvOperationClose || "",
-        tags: [
-          ad.adBuildingType?.[0],
-          ad.quality?.reformed && "Reformado",
-          ...finalOperations,
-        ]
-          .filter(Boolean)
-          .slice(0, 4),
+        tags: translateLabels(
+          [
+            ad.adBuildingType?.[0],
+            ad.quality?.reformed && "Reformado",
+            ...finalOperations,
+          ]
+            .filter(Boolean)
+            .slice(0, 4),
+          lang,
+        ),
       };
     });
 
@@ -2080,6 +2202,7 @@ const updateServicesSection = async (req, res, next) => {
     }
 
     webHome.markModified(`services.${key}`);
+    applyWebHomeTranslations(webHome, req.translationsInput);
     const updatedWebHome = await webHome.save();
 
     // 🚀 ACTUALIZADO: Batching y Fire & Forget
@@ -2087,7 +2210,11 @@ const updateServicesSection = async (req, res, next) => {
       console.error("❌ Error revalidando:", err),
     );
 
-    return res.status(200).json(updatedWebHome);
+    return res
+      .status(200)
+      .json(
+        withTranslationStatus(ENTITIES.WEB_HOME, updatedWebHome.toObject()),
+      );
   } catch (err) {
     console.error("Error en updateServicesSection:", err);
     return next(err);
@@ -2104,10 +2231,14 @@ const getWebServicesPage = async (req, res, next) => {
         message: "No se encontraron los datos de la web.",
       });
     }
+    const { services } = req.lang
+      ? localizeDocument(ENTITIES.WEB_HOME, webData.toObject(), req.lang)
+      : webData;
+
     const servicesData = {
-      residenciales: webData.services.residenciales,
-      patrimoniales: webData.services.patrimoniales,
-      transversales: webData.services.transversales,
+      residenciales: services.residenciales,
+      patrimoniales: services.patrimoniales,
+      transversales: services.transversales,
     };
 
     return res.status(200).json({
@@ -2156,6 +2287,24 @@ const getWebContactAndOfficeData = async (req, res, next) => {
       });
     }
 
+    if (req.lang) {
+      const localizedWeb = localizeDocument(
+        ENTITIES.WEB_HOME,
+        webData.toObject(),
+        req.lang,
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          ...(localizedWeb.talkWithUs || {}),
+          offices: offices.map((office) =>
+            localizeDocument(ENTITIES.OFFICE, office.toObject(), req.lang),
+          ),
+        },
+      });
+    }
+
     const contactData = webData.talkWithUs || {};
 
     return res.status(200).json({
@@ -2177,6 +2326,7 @@ const getWebContactAndOfficeData = async (req, res, next) => {
 const searchByreference = async (req, res, next) => {
   try {
     const { reference } = req.body;
+    const { lang } = req;
 
     if (!reference) {
       return res
@@ -2194,6 +2344,16 @@ const searchByreference = async (req, res, next) => {
       { adReference: { $regex: safeTerm, $options: "i" } },
       { title: { $regex: safeTerm, $options: "i" } },
     ];
+
+    // En otros idiomas el visitante ve el título traducido: también se busca ahí
+    if (isTranslationLang(lang)) {
+      searchConditions.push({
+        [`translations.${lang}.title.value`]: {
+          $regex: safeTerm,
+          $options: "i",
+        },
+      });
+    }
 
     // 3. Ejecutamos la búsqueda final
     const ads = await Ad.find({
@@ -2227,7 +2387,7 @@ const searchByreference = async (req, res, next) => {
 
       return {
         slug: ad.slug,
-        title: ad.title,
+        title: getAdTitle(ad, lang),
         image: ad.images?.main || null,
         operation: activeTags,
         gvOperationClose: ad.gvOperationClose || "",
@@ -2267,10 +2427,10 @@ const downloadAdPDF = async (req, res, next) => {
 
     if (ad.department === "Patrimonio") {
       // Template de Patrimonio
-      pdfBuffer = await pdfGenerator.generatePatrimonioPDF(ad);
+      pdfBuffer = await pdfGenerator.generatePatrimonioPDF(ad, req.lang);
     } else {
       // Template de Residencial, y el resto de departamentos
-      pdfBuffer = await pdfGenerator.generateResidencialPDF(ad);
+      pdfBuffer = await pdfGenerator.generateResidencialPDF(ad, req.lang);
     }
 
     res.set({
@@ -2297,7 +2457,13 @@ const downloadAdPDF = async (req, res, next) => {
 const getAllOffices = async (req, res) => {
   try {
     const offices = await Office.find().sort({ createdAt: -1 });
-    return res.status(200).send(offices);
+    return res
+      .status(200)
+      .send(
+        offices.map((office) =>
+          withTranslationStatus(ENTITIES.OFFICE, office.toObject()),
+        ),
+      );
   } catch (error) {
     console.error("Error al obtener las oficinas:", error);
     return res
@@ -2318,6 +2484,13 @@ const createOffice = async (req, res) => {
     data.image = getCdnUrl(req.file);
 
     const office = new Office(data);
+    applyWritesToDocument(
+      office,
+      planTranslationWrites(ENTITIES.OFFICE, {
+        source: office.toObject(),
+        ...req.translationsInput,
+      }),
+    );
     const officeStored = await office.save();
 
     revalidateWeb(["get-offices", "contact-and-offices"]).catch((err) =>
@@ -2353,10 +2526,33 @@ const updateOffice = async (req, res) => {
       updates.image = getCdnUrl(req.file);
     }
 
-    const officeUpdated = await Office.findByIdAndUpdate(id, updates, {
-      new: true,
-      runValidators: true,
-    });
+    let translationUpdate = {};
+    if (hasTranslationsInput(req.translationsInput)) {
+      const currentOffice = await Office.findById(id).lean();
+
+      if (currentOffice) {
+        translationUpdate = toMongoUpdate(
+          planTranslationWrites(ENTITIES.OFFICE, {
+            source: { ...currentOffice, ...updates },
+            stored: currentOffice.translations,
+            ...req.translationsInput,
+          }),
+        );
+      }
+    }
+
+    const officeUpdated = await Office.findByIdAndUpdate(
+      id,
+      {
+        ...updates,
+        ...translationUpdate.$set,
+        ...(translationUpdate.$unset && { $unset: translationUpdate.$unset }),
+      },
+      {
+        new: true,
+        runValidators: true,
+      },
+    );
 
     if (!officeUpdated) {
       return res.status(404).send({ msg: "No se encontró la oficina" });
@@ -2366,9 +2562,10 @@ const updateOffice = async (req, res) => {
       console.error("❌ Falló revalidación en background (updateOffice):", err),
     );
 
-    return res
-      .status(200)
-      .send({ msg: "Oficina actualizada", office: officeUpdated });
+    return res.status(200).send({
+      msg: "Oficina actualizada",
+      office: withTranslationStatus(ENTITIES.OFFICE, officeUpdated.toObject()),
+    });
   } catch (error) {
     console.error("Error al actualizar la oficina:", error);
     return res

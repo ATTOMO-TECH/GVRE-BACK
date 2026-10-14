@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const slug = require("mongoose-slug-updater");
+const { ENTITIES, buildTranslationsDefinition } = require("../i18n");
 
 const Schema = mongoose.Schema;
 
@@ -48,6 +49,8 @@ const BlogSchema = new Schema(
       type: String,
       default: "Admin",
     },
+    // Textos en otros idiomas; el español sigue en los campos de siempre
+    translations: buildTranslationsDefinition(ENTITIES.BLOG),
     active: {
       type: Boolean,
       default: true,

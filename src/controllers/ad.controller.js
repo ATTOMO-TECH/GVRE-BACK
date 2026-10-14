@@ -8,6 +8,39 @@ const { normalizeAdHistory } = require("../utils/utils");
 const { revalidateWeb } = require("../utils/revalidateWeb");
 const WebHome = require("../models/webHome.model");
 const Zone = require("../models/zone.model");
+const {
+  ENTITIES,
+  TRANSLATION_LANGS,
+  TRANSLATIONS_KEY,
+  buildTranslationPath,
+  planTranslationWrites,
+  toMongoUpdate,
+  applyWritesToDocument,
+  withTranslationStatus,
+} = require("../i18n");
+
+const SURFACES_BOX_PATH = "surfacesBox";
+
+// Los listados del CRM devuelven anuncios completos y no usan las
+// traducciones: se excluyen para no multiplicar el tamaño de la respuesta.
+const LIST_PROJECTION = `-${TRANSLATIONS_KEY}`;
+
+// Traducciones del cuadro de superficies tal y como quedan tras guardar un
+// anuncio, listas para replicarse en los anuncios que comparten referencia
+// (igual que se replica el cuadro en español).
+const buildSurfacesBoxPropagation = (storedTranslations, writes) =>
+  toMongoUpdate(
+    TRANSLATION_LANGS.map((lang) => {
+      const path = buildTranslationPath(lang, SURFACES_BOX_PATH);
+      const pendingWrite = writes.find((write) => write.path === path);
+      if (pendingWrite) return pendingWrite;
+
+      return {
+        path,
+        entry: storedTranslations?.[lang]?.[SURFACES_BOX_PATH] || null,
+      };
+    }),
+  );
 
 const repairAds = async (req, res, next) => {
   try {
@@ -242,6 +275,7 @@ const getAdsPaginated = async (req, res, next) => {
 
     const totalAds = await Ad.countDocuments(finalMongoQuery);
     const ads = await Ad.find(finalMongoQuery)
+      .select(LIST_PROJECTION)
       .sort(sortOptions)
       .limit(adsPerPage)
       .skip((page - 1) * adsPerPage)
@@ -261,6 +295,7 @@ const getAdsPaginated = async (req, res, next) => {
 const adGetAll = async (req, res, next) => {
   try {
     const ads = await Ad.find()
+      .select(LIST_PROJECTION)
       .populate({ path: "owner", select: "fullName" })
       .populate({ path: "consultant", select: "fullName" })
       .populate({ path: "zone", select: "zone name" });
@@ -400,6 +435,7 @@ const adGetByFilters = async (req, res, next) => {
     // 6. Ejecución
     const [ads, totalElements] = await Promise.all([
       Ad.find(queryConditions)
+        .select(LIST_PROJECTION)
         .populate("zone", "zone name")
         .populate("owner", "fullName")
         .populate("consultant", "fullName")
@@ -665,7 +701,9 @@ const adGetOne = async (req, res, next) => {
   try {
     const { id } = req.params;
     const ad = await Ad.findById(id).populate("zone");
-    return res.status(200).json(ad);
+    return res
+      .status(200)
+      .json(ad ? withTranslationStatus(ENTITIES.AD, ad.toObject()) : ad);
   } catch (err) {
     return next(err);
   }
@@ -706,7 +744,9 @@ const getAdsByContact = async (req, res, next) => {
 const allAdsGetByIdConsultant = async (req, res, next) => {
   try {
     const { consultantId } = req.params;
-    const ad = await Ad.find({ consultant: consultantId });
+    const ad = await Ad.find({ consultant: consultantId }).select(
+      LIST_PROJECTION,
+    );
     return res.status(200).json(ad);
   } catch (err) {
     return next(err);
@@ -724,6 +764,9 @@ const adCreate = async (req, res, next) => {
       media: "",
     };
 
+    // Al duplicar un anuncio se parte también de sus traducciones
+    let copiedTranslations;
+
     // 🔁 Si hay un anuncio a copiar, copia sus imágenes
     if (idCopy) {
       const adToCopy = await Ad.findById(idCopy);
@@ -734,6 +777,7 @@ const adCreate = async (req, res, next) => {
           others: [...adToCopy.images.others],
           media: adToCopy.images.media,
         };
+        copiedTranslations = adToCopy.toObject().translations;
       }
     }
     const adDirection = {
@@ -923,7 +967,17 @@ const adCreate = async (req, res, next) => {
       quality,
       description,
       images,
+      translations: copiedTranslations,
     });
+
+    applyWritesToDocument(
+      newAd,
+      planTranslationWrites(ENTITIES.AD, {
+        source: newAd.toObject(),
+        stored: copiedTranslations,
+        ...req.translationsInput,
+      }),
+    );
 
     try {
       let consultantInfo = null;
@@ -982,7 +1036,9 @@ const adCreate = async (req, res, next) => {
       );
     }
 
-    return res.status(200).json(adCreated);
+    return res
+      .status(200)
+      .json(withTranslationStatus(ENTITIES.AD, adCreated.toObject()));
   } catch (err) {
     return next(err);
   }
@@ -1349,6 +1405,15 @@ const adUpdate = async (req, res, next) => {
       distribution: req.body.distribution,
     };
 
+    // Las traducciones se guardan con rutas de puntos (translations.en.title)
+    // para tocar solo los campos que cambian y no pisar el resto.
+    const translationWrites = planTranslationWrites(ENTITIES.AD, {
+      source: fieldsToUpdate,
+      stored: currentAd.translations,
+      ...req.translationsInput,
+    });
+    const translationUpdate = toMongoUpdate(translationWrites);
+
     const historyEntries = [];
     let consultantInfo = null;
     if (req.body.userId) {
@@ -1480,19 +1545,33 @@ const adUpdate = async (req, res, next) => {
 
     // 4. Actualización masiva
     if (req.body.updateSameRef && req.body.adReference) {
+      const surfacesBoxPropagation = buildSurfacesBoxPropagation(
+        currentAd.translations,
+        translationWrites,
+      );
+
       await Ad.updateMany(
         {
           adReference: req.body.adReference,
           _id: { $ne: id },
         },
         {
-          $set: { surfacesBox: req.body.surfacesBox },
+          $set: {
+            surfacesBox: req.body.surfacesBox,
+            ...surfacesBoxPropagation.$set,
+          },
+          ...(surfacesBoxPropagation.$unset && {
+            $unset: surfacesBoxPropagation.$unset,
+          }),
         },
       );
     }
 
     // 5. Update Ops e Historial Sintético
-    const updateOps = { $set: fieldsToUpdate };
+    const updateOps = {
+      $set: { ...fieldsToUpdate, ...translationUpdate.$set },
+      ...(translationUpdate.$unset && { $unset: translationUpdate.$unset }),
+    };
     const needCreation =
       !currentAd ||
       !Array.isArray(currentAd.changesHistory) ||
@@ -1569,7 +1648,10 @@ const adUpdate = async (req, res, next) => {
       console.error("Error Sync Home:", syncError);
     }
 
-    const updatedAd = updatedAdDoc.toObject();
+    const updatedAd = withTranslationStatus(
+      ENTITIES.AD,
+      updatedAdDoc.toObject(),
+    );
     if (typeof normalizeAdHistory === "function") {
       updatedAd.changesHistory = normalizeAdHistory(updatedAd);
     }

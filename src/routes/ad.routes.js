@@ -25,6 +25,10 @@ const {
   getAdsByContact,
 } = require("../controllers/ad.controller");
 
+const {
+  extractTranslationsInput,
+} = require("../middlewares/translations.middleware");
+
 const router = express.Router();
 
 router.get("/", adGetAll);
@@ -35,8 +39,8 @@ router.get("/repair/ads", repairAds);
 router.get("/web/:query", getAdsPaginated);
 router.get("/:id", adGetOne);
 router.get("/consultant/:consultantId", allAdsGetByIdConsultant);
-router.post("/create", adCreate);
-router.put("/edit", adUpdate);
+router.post("/create", extractTranslationsInput, adCreate);
+router.put("/edit", extractTranslationsInput, adUpdate);
 router.put("/edit/sendedto", adUpdateSendedTo);
 router.put(
   "/editmanyconsultant/:currentConsultant",

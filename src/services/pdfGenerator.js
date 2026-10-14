@@ -5,6 +5,7 @@ const fs = require("fs-extra");
 const path = require("path");
 const QRCode = require("qrcode");
 const { formattedNumber, getPropertyUrl } = require("../utils/utils");
+const { getAdPdfTexts } = require("./pdfTexts");
 
 const fontLightPath = path.join(
   process.cwd(),
@@ -353,12 +354,14 @@ process.once("SIGUSR2", async () => {
   process.kill(process.pid, "SIGUSR2");
 });
 
-const generateResidencialPDF = async (ad) => {
+const generateResidencialPDF = async (ad, lang) => {
   const frontendUrl = process.env.FRONTEND_URL;
+  const texts = getAdPdfTexts(ad, lang);
+  const adUrl = `${frontendUrl}${texts.urlPrefix}${getPropertyUrl(ad)}`;
 
   // Generación del QR
   const qrCodeData = await QRCode.toDataURL(
-    `${process.env.FRONTEND_URL}${getPropertyUrl(ad)}`,
+    adUrl,
     {
       margin: 1,
       color: { dark: "#2b363d", light: "#f8f7f7" },
@@ -418,7 +421,7 @@ const generateResidencialPDF = async (ad) => {
     frontendUrl,
     teodorLight: teodorLightURI, // Pasamos la fuente en Base64
     teodorRegular: teodorRegularURI,
-    title: ad.title,
+    title: texts.title,
     reference: ad.adReference,
     city:
       [ad.zone?.[0]?.name, ad.adDirection?.city].filter(Boolean).join(", ") ||
@@ -433,9 +436,8 @@ const generateResidencialPDF = async (ad) => {
     m2Terrace: ad?.m2Terrace
       ? formattedNumber(ad.m2Terrace, "", "decimal")
       : "",
-    description: ad.description?.emailPDF || "Sin descripción disponible.",
-    distribution:
-      ad.description?.distribution || "Sin distribución disponible.",
+    description: texts.pdfDescription || "Sin descripción disponible.",
+    distribution: texts.distribution || "Sin distribución disponible.",
     mainImage: ad.images?.main,
     rooms: ad.quality?.bedrooms,
     bathrooms: ad.quality?.bathrooms,
@@ -443,7 +445,7 @@ const generateResidencialPDF = async (ad) => {
     pool: (ad.quality?.indoorPool || 0) + (ad.quality?.outdoorPool || 0),
     attributes: activeAttributes.slice(0, 22),
     qrCode: qrCodeData,
-    adUrl: `${process.env.FRONTEND_URL}${getPropertyUrl(ad)}`,
+    adUrl,
     agent: {
       name: ad.consultant?.fullName || "EQUIPO GV",
       email: ad.consultant?.consultantEmail,
@@ -467,12 +469,14 @@ const generateResidencialPDF = async (ad) => {
   return renderPdf(content);
 };
 
-const generatePatrimonioPDF = async (ad) => {
+const generatePatrimonioPDF = async (ad, lang) => {
   const frontendUrl = process.env.FRONTEND_URL;
+  const texts = getAdPdfTexts(ad, lang);
+  const adUrl = `${frontendUrl}${texts.urlPrefix}${getPropertyUrl(ad)}`;
 
   // Generación del QR
   const qrCodeData = await QRCode.toDataURL(
-    `${process.env.FRONTEND_URL}${getPropertyUrl(ad)}`,
+    adUrl,
     { margin: 1, color: { dark: "#2b363d", light: "#f8f7f7" } },
   );
 
@@ -539,7 +543,7 @@ const generatePatrimonioPDF = async (ad) => {
   // --- LÓGICA ESPECÍFICA DE PATRIMONIO ---
 
   // Preparar Tabla de Superficies
-  const surfacesList = (ad.surfacesBox || []).map((row) => ({
+  const surfacesList = texts.surfacesBox.map((row) => ({
     floor: row.surfaceFloor || "-",
     use: row.surfaceUse || "-",
     meters: row.metersAvailables ? row.metersAvailables : "-",
@@ -571,7 +575,7 @@ const generatePatrimonioPDF = async (ad) => {
     frontendUrl,
     teodorLight: teodorLightURI, // Pasamos la fuente en Base64
     teodorRegular: teodorRegularURI,
-    title: ad.title,
+    title: texts.title,
     reference: ad.adReference,
     city:
       [ad.zone?.[0]?.name, ad.adDirection?.city].filter(Boolean).join(", ") ||
@@ -587,7 +591,7 @@ const generatePatrimonioPDF = async (ad) => {
     m2Terrace: ad?.m2Terrace
       ? formattedNumber(ad.m2Terrace, "", "decimal")
       : "",
-    description: ad.description?.emailPDF || ad.description?.web,
+    description: texts.pdfDescription || texts.webDescription,
     surfaces: surfacesList,
     mainImage: ad.images?.main,
 
@@ -604,9 +608,9 @@ const generatePatrimonioPDF = async (ad) => {
       ad.profitability && ad.profitabilityValue
         ? `${formattedNumber(ad.profitabilityValue, "", "decimal")}%`
         : null,
-    floor: ad.floor,
-    disponibility: ad.disponibility,
-    hasFloorOrDisp: !!(ad.floor || ad.disponibility),
+    floor: texts.floor,
+    disponibility: texts.disponibility,
+    hasFloorOrDisp: !!(texts.floor || texts.disponibility),
     communityExpenses,
     ibi,
     trashFee,
@@ -614,7 +618,7 @@ const generatePatrimonioPDF = async (ad) => {
 
     attributes: activeAttributes,
     qrCode: qrCodeData,
-    adUrl: `${process.env.FRONTEND_URL}${getPropertyUrl(ad)}`,
+    adUrl,
     agent: {
       name: ad.consultant?.fullName || "EQUIPO GV",
       email: ad.consultant?.consultantEmail,

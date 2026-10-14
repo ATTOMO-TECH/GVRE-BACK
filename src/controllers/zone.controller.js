@@ -1,4 +1,11 @@
 const Zone = require("../models/zone.model");
+const { revalidateWeb } = require("../utils/revalidateWeb");
+const {
+  ENTITIES,
+  withTranslationStatus,
+  planTranslationWrites,
+  toMongoUpdate,
+} = require("../i18n");
 
 const getAllZones = async (req, res, next) => {
   try {
@@ -129,7 +136,8 @@ const getGroupedZones = async (req, res, next) => {
     // 1. Agrupamos en un objeto (es más rápido y eficiente para organizar los datos)
     const groupedData = {};
 
-    zones.forEach((z) => {
+    zones.forEach((zoneDoc) => {
+      const z = withTranslationStatus(ENTITIES.ZONE, zoneDoc);
       const category = z.zone;
       const subzone = z.subzone;
 
@@ -194,11 +202,32 @@ const updateZoneDescription = async (req, res, next) => {
     const { id } = req.params;
     const { zoneDescription } = req.body;
 
+    const currentZone = await Zone.findById(id).lean();
+
+    if (!currentZone) {
+      return res.status(404).json({ message: "No se ha encontrado la zona." });
+    }
+
+    // Si la petición no trae descripción en español, la guardada no cambia
+    const translationUpdate = toMongoUpdate(
+      planTranslationWrites(ENTITIES.ZONE, {
+        source: {
+          zoneDescription: zoneDescription ?? currentZone.zoneDescription,
+        },
+        stored: currentZone.translations,
+        ...req.translationsInput,
+      }),
+    );
+
     // findByIdAndUpdate busca por el _id y actualiza los campos que le pasemos
     // { new: true } le dice a Mongoose que nos devuelva el objeto YA actualizado
     const updatedZone = await Zone.findByIdAndUpdate(
       id,
-      { zoneDescription },
+      {
+        zoneDescription,
+        ...translationUpdate.$set,
+        ...(translationUpdate.$unset && { $unset: translationUpdate.$unset }),
+      },
       { new: true },
     );
 
@@ -206,9 +235,17 @@ const updateZoneDescription = async (req, res, next) => {
       return res.status(404).json({ message: "No se ha encontrado la zona." });
     }
 
+    // La descripción de zona se muestra en la ficha de todos sus anuncios
+    revalidateWeb(["ad-details"]).catch((err) =>
+      console.error(
+        "❌ Falló revalidación en background (updateZoneDescription):",
+        err,
+      ),
+    );
+
     return res.status(200).json({
       message: "Descripción actualizada correctamente",
-      zone: updatedZone,
+      zone: withTranslationStatus(ENTITIES.ZONE, updatedZone.toObject()),
     });
   } catch (error) {
     console.error("Error actualizando la descripción de la zona:", error);

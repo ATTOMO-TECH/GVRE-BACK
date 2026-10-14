@@ -11,6 +11,7 @@ const db = require("./db");
 const cors = require("cors");
 const app = express();
 const { isAuth } = require("./middlewares/auth.middleware");
+const { resolveRequestLang } = require("./middlewares/lang.middleware");
 
 // Routes
 const indexRoutes = require("./routes/index.routes");
@@ -27,6 +28,7 @@ const marketingCampaignsRoutes = require("./routes/marketingCampaing.routes");
 const tagsRoutes = require("./routes/tag.routes");
 const blogRoutes = require("./routes/blog.routes");
 const officeRoutes = require("./routes/office.routes");
+const translationRoutes = require("./routes/translation.routes");
 const { authValidator } = require("./middlewares/auth.validator");
 
 // Settings
@@ -89,6 +91,9 @@ app.use(express.urlencoded({ limit: "100mb", extended: true }));
 
 app.use(express.static(path.join(__dirname, "public")));
 
+// Idioma pedido por la web pública (ver lang.middleware)
+app.use(resolveRequestLang);
+
 // Consultant authentication validator
 // app.use(authValidator)
 
@@ -107,6 +112,7 @@ app.use("/blogs", blogRoutes);
 app.use("/offices", officeRoutes);
 app.use("/marketingCampaigns", isAuth, marketingCampaignsRoutes);
 app.use("/tags", isAuth, tagsRoutes);
+app.use("/translations", isAuth, translationRoutes);
 
 db.connect()
   .then(() => {

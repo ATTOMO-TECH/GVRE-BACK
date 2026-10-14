@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const slug = require("mongoose-slug-updater"); // Asegúrate de haber hecho: npm install mongoose-slug-updater
+const { ENTITIES, buildTranslationsDefinition } = require("../i18n");
 
 mongoose.plugin(slug);
 
@@ -14,6 +15,8 @@ const zoneSchema = new Schema(
     id: { type: String },
     status: { type: Boolean, default: false },
     zoneDescription: { type: String },
+    // Textos en otros idiomas; el español sigue en los campos de siempre
+    translations: buildTranslationsDefinition(ENTITIES.ZONE),
   },
   {
     timestamps: true,

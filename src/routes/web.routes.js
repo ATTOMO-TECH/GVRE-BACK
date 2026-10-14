@@ -37,6 +37,10 @@ const {
   downloadAdPDF,
 } = require("../controllers/web.controller");
 
+const {
+  extractTranslationsInput,
+} = require("../middlewares/translations.middleware");
+
 const router = express.Router();
 // HOME TITLE AND IMAGE
 router.get("/home", webHomeGet);
@@ -116,6 +120,7 @@ router.put(
 router.put(
   "/home/talkwhitus/edit/:id",
   upload.single("contactImage"),
+  extractTranslationsInput,
   webHomeTalkWithUs,
 );
 
@@ -163,11 +168,16 @@ router.put(
 router.post("/search-by-reference", searchByreference);
 
 // HOME
-router.put("/home/videosection/edit/:id", webVideoSectionUpdate);
+router.put(
+  "/home/videosection/edit/:id",
+  extractTranslationsInput,
+  webVideoSectionUpdate,
+);
 router.get("/home/ads/search", getAdsByReference);
 router.put(
   "/home/categories-section/edit/:id",
   upload.single("image"),
+  extractTranslationsInput,
   updateCategoriesSection,
 );
 
@@ -176,6 +186,7 @@ router.get("/services/get", getWebServicesPage);
 router.put(
   "/services/:id",
   upload.single("image"), // O el nombre del campo que uses para el archivo
+  extractTranslationsInput,
   updateServicesSection,
 );
 

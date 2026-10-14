@@ -13,6 +13,10 @@ const {
   updateZoneDescription,
 } = require("../controllers/zone.controller");
 
+const {
+  extractTranslationsInput,
+} = require("../middlewares/translations.middleware");
+
 const router = express.Router();
 router.get("/allZones", getAllZones);
 router.get("/residentials", zonesGetResidentials);
@@ -25,5 +29,9 @@ router.get("/grouped", getGroupedZones);
 router.post("/create", zoneCreate);
 
 router.delete("/delete/:id", zoneDelete);
-router.patch("/:id/description", updateZoneDescription);
+router.patch(
+  "/:id/description",
+  extractTranslationsInput,
+  updateZoneDescription,
+);
 module.exports = router;

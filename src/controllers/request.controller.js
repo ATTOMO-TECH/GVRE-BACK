@@ -329,7 +329,9 @@ const requestGetAdsMatched = async (req, res, next) => {
       andConditions.length > 1 ? { $and: andConditions } : andConditions[0];
 
     // IMPORTANTE: Añadimos el .sort() para ordenar por los más recientes
+    // Sin traducciones: el matching no las usa
     const ads = await Ad.find(finalQuery)
+      .select("-translations")
       .sort({ "sale.saleValue": -1, "rent.rentValue": -1 })
       .populate("zone")
       .exec();
@@ -480,7 +482,9 @@ const requestGetNewMatched = async (req, res, next) => {
       andConditions.length > 1 ? { $and: andConditions } : andConditions[0];
 
     // Mismo ordenamiento por precio de venta y de alquiler que en el otro controlador
+    // Sin traducciones: el matching no las usa
     const ads = await Ad.find(finalQuery)
+      .select("-translations")
       .sort({ "sale.saleValue": -1, "rent.rentValue": -1 })
       .populate("zone")
       .exec();
