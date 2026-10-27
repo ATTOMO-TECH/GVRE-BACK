@@ -14,6 +14,10 @@
 //
 // `confirmed` permite dar por buena una traducción desactualizada sin
 // cambiarle el texto: { en: ["title", "description.web"] }.
+//
+// `auto` indica los campos cuyo texto viene del traductor automático (DeepL)
+// sin retocar: { en: ["title"] }. Se guardan con estado "auto" en lugar de
+// "manual", para saber qué no ha revisado todavía una persona.
 
 const { TRANSLATION_LANGS } = require("./config");
 const { getPath } = require("./objectPath");
@@ -67,6 +71,8 @@ const parseTranslationsInput = (raw) => parseJsonInput(raw, "translations");
 const parseConfirmedInput = (raw) =>
   parseJsonInput(raw, "translationsConfirmed");
 
+const parseAutoInput = (raw) => parseJsonInput(raw, "translationsAuto");
+
 // Un valor con un tipo inesperado se ignora en lugar de tratarse como vacío:
 // una petición mal formada nunca debe borrar traducciones ya guardadas.
 const hasExpectedShape = (field, raw) => {
@@ -77,10 +83,22 @@ const hasExpectedShape = (field, raw) => {
     : Array.isArray(raw);
 };
 
-const isConfirmed = (confirmed, lang, path) =>
-  Array.isArray(confirmed?.[lang]) && confirmed[lang].includes(path);
+// Comprueba si `path` está en la lista de un idioma: { en: ["title"] }
+const isListed = (byLang, lang, path) =>
+  Array.isArray(byLang?.[lang]) && byLang[lang].includes(path);
 
-const planFieldWrite = ({ field, lang, source, stored, incoming, confirmed, now }) => {
+const isConfirmed = isListed;
+
+const planFieldWrite = ({
+  field,
+  lang,
+  source,
+  stored,
+  incoming,
+  confirmed,
+  auto,
+  now,
+}) => {
   const mongoPath = buildTranslationPath(lang, field.path);
   const storedEntry = getPath(stored, `${lang}.${field.path}`);
   const hasStoredEntry = Boolean(storedEntry && typeof storedEntry === "object");
@@ -103,7 +121,9 @@ const planFieldWrite = ({ field, lang, source, stored, incoming, confirmed, now 
         path: mongoPath,
         entry: buildTranslationEntry({
           value,
-          status: TRANSLATION_STATUS.MANUAL,
+          status: isListed(auto, lang, field.path)
+            ? TRANSLATION_STATUS.AUTO
+            : TRANSLATION_STATUS.MANUAL,
           sourceHash,
           updatedAt: now,
         }),
@@ -135,7 +155,7 @@ const planFieldWrite = ({ field, lang, source, stored, incoming, confirmed, now 
 // guardado; `stored` es el bloque `translations` que hay ahora mismo en BD.
 const planTranslationWrites = (
   entity,
-  { source, stored, incoming, confirmed, now = new Date() },
+  { source, stored, incoming, confirmed, auto, now = new Date() },
 ) => {
   if (!isPlainObject(incoming) && !isPlainObject(confirmed)) return [];
 
@@ -144,7 +164,16 @@ const planTranslationWrites = (
   return TRANSLATION_LANGS.flatMap((lang) =>
     fields
       .map((field) =>
-        planFieldWrite({ field, lang, source, stored, incoming, confirmed, now }),
+        planFieldWrite({
+          field,
+          lang,
+          source,
+          stored,
+          incoming,
+          confirmed,
+          auto,
+          now,
+        }),
       )
       .filter(Boolean),
   );
@@ -172,6 +201,7 @@ module.exports = {
   TranslationInputError,
   parseTranslationsInput,
   parseConfirmedInput,
+  parseAutoInput,
   planTranslationWrites,
   toMongoUpdate,
   applyWritesToDocument,

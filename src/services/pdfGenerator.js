@@ -6,6 +6,7 @@ const path = require("path");
 const QRCode = require("qrcode");
 const { formattedNumber, getPropertyUrl } = require("../utils/utils");
 const { getAdPdfTexts } = require("./pdfTexts");
+const { getPdfLabels } = require("./pdfLabels");
 
 const fontLightPath = path.join(
   process.cwd(),
@@ -357,6 +358,10 @@ process.once("SIGUSR2", async () => {
 const generateResidencialPDF = async (ad, lang) => {
   const frontendUrl = process.env.FRONTEND_URL;
   const texts = getAdPdfTexts(ad, lang);
+  // Textos fijos de la plantilla y formato de números del idioma
+  const labels = getPdfLabels(lang);
+  const fmt = (number, period, type) =>
+    formattedNumber(number, period, type, labels.numberLocale);
   const adUrl = `${frontendUrl}${texts.urlPrefix}${getPropertyUrl(ad)}`;
 
   // Generación del QR
@@ -372,16 +377,16 @@ const generateResidencialPDF = async (ad, lang) => {
 
   // 1. Atributos de nivel superior en quality
   if (ad.quality?.reformed)
-    activeAttributes.push({ label: "Reformado", icon: "Reformado.svg" });
+    activeAttributes.push({ label: labels.qualities.reformed, icon: "Reformado.svg" });
   if (ad.quality?.toReform)
-    activeAttributes.push({ label: "A reformar", icon: "A_reformar.svg" });
+    activeAttributes.push({ label: labels.qualities.toReform, icon: "A_reformar.svg" });
 
   // 2. Recorrer el objeto quality.others
   if (ad.quality?.others) {
     for (const [key, value] of Object.entries(ad.quality.others)) {
       if (value === true && fullIconMapping[key]) {
         activeAttributes.push({
-          label: fullIconMapping[key].label,
+          label: labels.qualities[key] || fullIconMapping[key].label,
           icon: fullIconMapping[key].icon,
         });
       }
@@ -396,13 +401,13 @@ const generateResidencialPDF = async (ad, lang) => {
     ad.adType?.includes("Venta")
   ) {
     prices.push({
-      label: "VENTA",
-      value: formattedNumber(ad.sale.saleValue, "", "currency"),
+      label: labels.sale,
+      value: fmt(ad.sale.saleValue, "", "currency"),
       value2:
         ad.sale?.saleRepercussionM2ShowOnWeb &&
         ad.sale?.saleRepercussionM2 &&
         ad.sale.saleRepercussionM2 !== "true"
-          ? `${formattedNumber(ad.sale.saleRepercussionM2, "", "currency")}/m²`
+          ? `${fmt(ad.sale.saleRepercussionM2, "", "currency")}/m²`
           : null,
     });
   }
@@ -412,13 +417,15 @@ const generateResidencialPDF = async (ad, lang) => {
     ad.adType?.includes("Alquiler")
   ) {
     prices.push({
-      label: "ALQUILER",
-      value: `${formattedNumber(ad.rent.rentValue, "", "currency")}/MES`,
+      label: labels.rent,
+      value: `${fmt(ad.rent.rentValue, "", "currency")}/${labels.perMonth}`,
     });
   }
 
   const dataForTemplate = {
     frontendUrl,
+    lang: lang || "es",
+    labels,
     teodorLight: teodorLightURI, // Pasamos la fuente en Base64
     teodorRegular: teodorRegularURI,
     title: texts.title,
@@ -428,16 +435,16 @@ const generateResidencialPDF = async (ad, lang) => {
       "MADRID",
     prices,
     buildSurface: ad.buildSurface
-      ? formattedNumber(ad.buildSurface, "", "decimal")
+      ? fmt(ad.buildSurface, "", "decimal")
       : "",
     plotSurface: ad?.plotSurface
-      ? formattedNumber(ad.plotSurface, "", "decimal")
+      ? fmt(ad.plotSurface, "", "decimal")
       : "",
     m2Terrace: ad?.m2Terrace
-      ? formattedNumber(ad.m2Terrace, "", "decimal")
+      ? fmt(ad.m2Terrace, "", "decimal")
       : "",
-    description: texts.pdfDescription || "Sin descripción disponible.",
-    distribution: texts.distribution || "Sin distribución disponible.",
+    description: texts.pdfDescription || labels.noDescription,
+    distribution: texts.distribution || labels.noDistribution,
     mainImage: ad.images?.main,
     rooms: ad.quality?.bedrooms,
     bathrooms: ad.quality?.bathrooms,
@@ -447,7 +454,7 @@ const generateResidencialPDF = async (ad, lang) => {
     qrCode: qrCodeData,
     adUrl,
     agent: {
-      name: ad.consultant?.fullName || "EQUIPO GV",
+      name: ad.consultant?.fullName || labels.team,
       email: ad.consultant?.consultantEmail,
       phone:
         ad.consultant?.consultantMobileNumber ||
@@ -472,6 +479,10 @@ const generateResidencialPDF = async (ad, lang) => {
 const generatePatrimonioPDF = async (ad, lang) => {
   const frontendUrl = process.env.FRONTEND_URL;
   const texts = getAdPdfTexts(ad, lang);
+  // Textos fijos de la plantilla y formato de números del idioma
+  const labels = getPdfLabels(lang);
+  const fmt = (number, period, type) =>
+    formattedNumber(number, period, type, labels.numberLocale);
   const adUrl = `${frontendUrl}${texts.urlPrefix}${getPropertyUrl(ad)}`;
 
   // Generación del QR
@@ -482,15 +493,15 @@ const generatePatrimonioPDF = async (ad, lang) => {
 
   let activeAttributes = [];
   if (ad.quality?.reformed)
-    activeAttributes.push({ label: "Reformado", icon: "Reformado.svg" });
+    activeAttributes.push({ label: labels.qualities.reformed, icon: "Reformado.svg" });
   if (ad.quality?.toReform)
-    activeAttributes.push({ label: "A reformar", icon: "A_reformar.svg" });
+    activeAttributes.push({ label: labels.qualities.toReform, icon: "A_reformar.svg" });
 
   if (ad.quality?.others) {
     for (const [key, value] of Object.entries(ad.quality.others)) {
       if (value === true && fullIconMapping[key]) {
         activeAttributes.push({
-          label: fullIconMapping[key].label,
+          label: labels.qualities[key] || fullIconMapping[key].label,
           icon: fullIconMapping[key].icon,
         });
       }
@@ -506,13 +517,13 @@ const generatePatrimonioPDF = async (ad, lang) => {
     ad.adType?.includes("Venta")
   ) {
     prices.push({
-      label: "VENTA",
-      value: formattedNumber(ad.sale.saleValue, "", "currency"),
+      label: labels.sale,
+      value: fmt(ad.sale.saleValue, "", "currency"),
       value2:
         ad.sale?.saleRepercussionM2ShowOnWeb &&
         ad.sale?.saleRepercussionM2 &&
         ad.sale.saleRepercussionM2 !== "true"
-          ? `${formattedNumber(ad.sale.saleRepercussionM2, "", "currency")}/m²`
+          ? `${fmt(ad.sale.saleRepercussionM2, "", "currency")}/m²`
           : null,
     });
   }
@@ -522,20 +533,20 @@ const generatePatrimonioPDF = async (ad, lang) => {
     ad.adType?.includes("Alquiler")
   ) {
     prices.push({
-      label: "ALQUILER",
-      value: `${formattedNumber(ad.rent.rentValue, "", "currency")}/MES`,
+      label: labels.rent,
+      value: `${fmt(ad.rent.rentValue, "", "currency")}/${labels.perMonth}`,
       value2: ad?.monthlyRent
-        ? `${formattedNumber(ad?.monthlyRent, "", "currency")}/m²/MES`
+        ? `${fmt(ad?.monthlyRent, "", "currency")}/m²/${labels.perMonth}`
         : null,
     });
   }
 
   if (ad?.expensesIncluded) {
     prices.push({
-      label: "ALQUILER CON GASTOS INC.",
-      value: `${formattedNumber(ad?.expensesIncluded, "", "currency")}/MES`,
+      label: labels.rentWithExpenses,
+      value: `${fmt(ad?.expensesIncluded, "", "currency")}/${labels.perMonth}`,
       value2: ad?.expenses
-        ? `${formattedNumber(ad?.expenses, "", "currency")}/m²/MES`
+        ? `${fmt(ad?.expenses, "", "currency")}/m²/${labels.perMonth}`
         : null,
     });
   }
@@ -554,25 +565,27 @@ const generatePatrimonioPDF = async (ad, lang) => {
   // Rentabilidad (si la hay)
   const profitabilityLabel =
     ad.profitability && ad.profitabilityValue
-      ? `${formattedNumber(ad.profitabilityValue, "", "decimal")}%`
+      ? `${fmt(ad.profitabilityValue, "", "decimal")}%`
       : null;
 
   const communityExpenses =
     ad.communityExpenses?.expensesShowOnWeb &&
     ad.communityExpenses?.expensesValue
-      ? `${formattedNumber(ad.communityExpenses.expensesValue, "", "decimal")} €`
+      ? `${fmt(ad.communityExpenses.expensesValue, "", "decimal")} €`
       : null;
   const ibi =
     ad.ibi?.ibiShowOnWeb && ad.ibi?.ibiValue
-      ? `${formattedNumber(ad.ibi.ibiValue, "", "decimal")} €`
+      ? `${fmt(ad.ibi.ibiValue, "", "decimal")} €`
       : null;
   const trashFee =
     ad.trashFee?.trashFeeShowOnWeb && ad.trashFee?.trashFeeValue
-      ? `${formattedNumber(ad.trashFee.trashFeeValue, "", "decimal")} €`
+      ? `${fmt(ad.trashFee.trashFeeValue, "", "decimal")} €`
       : null;
 
   const dataForTemplate = {
     frontendUrl,
+    lang: lang || "es",
+    labels,
     teodorLight: teodorLightURI, // Pasamos la fuente en Base64
     teodorRegular: teodorRegularURI,
     title: texts.title,
@@ -583,13 +596,13 @@ const generatePatrimonioPDF = async (ad, lang) => {
     prices,
     profitabilityLabel,
     buildSurface: ad.buildSurface
-      ? formattedNumber(ad.buildSurface, "", "decimal")
+      ? fmt(ad.buildSurface, "", "decimal")
       : "",
     plotSurface: ad?.plotSurface
-      ? formattedNumber(ad.plotSurface, "", "decimal")
+      ? fmt(ad.plotSurface, "", "decimal")
       : "",
     m2Terrace: ad?.m2Terrace
-      ? formattedNumber(ad.m2Terrace, "", "decimal")
+      ? fmt(ad.m2Terrace, "", "decimal")
       : "",
     description: texts.pdfDescription || texts.webDescription,
     surfaces: surfacesList,
@@ -606,7 +619,7 @@ const generatePatrimonioPDF = async (ad, lang) => {
     // --- LISTADO DE DETALLES TABULAR ---
     profitabilityValue:
       ad.profitability && ad.profitabilityValue
-        ? `${formattedNumber(ad.profitabilityValue, "", "decimal")}%`
+        ? `${fmt(ad.profitabilityValue, "", "decimal")}%`
         : null,
     floor: texts.floor,
     disponibility: texts.disponibility,
@@ -620,7 +633,7 @@ const generatePatrimonioPDF = async (ad, lang) => {
     qrCode: qrCodeData,
     adUrl,
     agent: {
-      name: ad.consultant?.fullName || "EQUIPO GV",
+      name: ad.consultant?.fullName || labels.team,
       email: ad.consultant?.consultantEmail,
       phone:
         ad.consultant?.consultantMobileNumber ||

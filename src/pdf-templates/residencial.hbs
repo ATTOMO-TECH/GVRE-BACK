@@ -1,4 +1,4 @@
-<html lang="es">
+<html lang="{{lang}}">
   <head>
     <meta charset="UTF-8" />
     <link
@@ -316,7 +316,7 @@
                 class="icon-svg"
               />
               {{buildSurface}}
-              M² CONSTRUIDOS
+              {{labels.builtArea}}
             </span>
           {{/if}}
 
@@ -327,7 +327,7 @@
                 class="icon-svg"
               />
               {{plotSurface}}
-              M² PARCELA
+              {{labels.plot}}
             </span>
           {{/if}}
 
@@ -338,7 +338,7 @@
                 class="icon-svg"
               />
               {{m2Terrace}}
-              M² TERRAZAS
+              {{labels.terraces}}
             </span>
           {{/if}}
 
@@ -353,18 +353,18 @@
       <div class="main-grid">
         <div class="col-left">
           <div class="section">
-            <h2>Descripción</h2>
+            <h2>{{labels.description}}</h2>
             <div class="section-description">{{description}}</div>
           </div>
           <hr class="divider" />
           <div class="section">
-            <h2>Distribución</h2>
+            <h2>{{labels.distribution}}</h2>
             <div class="section-distribution">{{distribution}}</div>
           </div>
         </div>
         <div class="col-right">
           <div class="section">
-            <h2>Detalles</h2>
+            <h2>{{labels.details}}</h2>
             <div class="details-grid">
               {{#if rooms}}
                 <div class="detail-item">
@@ -373,7 +373,7 @@
                     class="icon-svg"
                   />
                   {{rooms}}
-                  HAB.
+                  {{labels.rooms}}
                 </div>
               {{/if}}
               {{#if bathrooms}}
@@ -383,7 +383,7 @@
                     class="icon-svg"
                   />
                   {{bathrooms}}
-                  BAÑOS
+                  {{labels.bathrooms}}
                 </div>
               {{/if}}
               {{#if parking}}
@@ -393,7 +393,7 @@
                     class="icon-svg"
                   />
                   {{parking}}
-                  GARAJE
+                  {{labels.garage}}
                 </div>
               {{/if}}
               {{#if pool}}
@@ -403,12 +403,12 @@
                     class="icon-svg"
                   />
                   {{pool}}
-                  PISCINA
+                  {{labels.pool}}
                 </div>
               {{/if}}
             </div>
             <hr class="divider" />
-            <h2>Atributos</h2>
+            <h2>{{labels.attributes}}</h2>
             <div class="attributes-grid">
               {{#each attributes}}
                 <div class="attr-item">
@@ -447,13 +447,12 @@
         <div class="qr-wrapper">
           <div class="qr-container">
             <img src="{{qrCode}}" class="qr-code" />
-            <a href="{{adUrl}}" class="property-link">Ver en la web</a>
+            <a href="{{adUrl}}" class="property-link">{{labels.viewOnWeb}}</a>
           </div>
         </div>
       </footer>
       <div class="legal-footer">
-        *Datos orientativos facilitados por la propiedad. Información sin
-        carácter contractual.
+        {{labels.legal}}
       </div>
     </div>
   </body>

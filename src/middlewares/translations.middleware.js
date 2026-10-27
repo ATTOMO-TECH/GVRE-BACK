@@ -2,6 +2,7 @@ const {
   TranslationInputError,
   parseTranslationsInput,
   parseConfirmedInput,
+  parseAutoInput,
 } = require("../i18n");
 
 // Saca del cuerpo las traducciones que envía el CRM, las valida y las deja en
@@ -18,6 +19,8 @@ const extractTranslationsInput = (req, res, next) => {
     req.translationsInput = {
       incoming: parseTranslationsInput(body.translations),
       confirmed: parseConfirmedInput(body.translationsConfirmed),
+      // Campos rellenados con DeepL sin retocar: se guardan como "auto"
+      auto: parseAutoInput(body.translationsAuto),
     };
   } catch (error) {
     if (error instanceof TranslationInputError) {
@@ -28,6 +31,7 @@ const extractTranslationsInput = (req, res, next) => {
 
   delete body.translations;
   delete body.translationsConfirmed;
+  delete body.translationsAuto;
 
   return next();
 };

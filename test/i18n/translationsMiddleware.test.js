@@ -25,7 +25,7 @@ test("sin traducciones en el cuerpo deja la entrada vacía y continúa", () => {
   const { req, nextCalls } = run({ title: "Piso" });
 
   assert.equal(nextCalls, 1);
-  assert.deepEqual(req.translationsInput, { incoming: undefined, confirmed: undefined });
+  assert.deepEqual(req.translationsInput, { incoming: undefined, confirmed: undefined, auto: undefined });
   assert.deepEqual(req.body, { title: "Piso" });
 });
 
@@ -34,12 +34,14 @@ test("extrae las traducciones (objeto o JSON) y las quita del cuerpo", () => {
     title: "Piso",
     translations: '{"en":{"title":"Flat"}}',
     translationsConfirmed: { fr: ["title"] },
+    translationsAuto: JSON.stringify({ en: ["title"] }),
   });
 
   assert.equal(nextCalls, 1);
   assert.deepEqual(req.translationsInput, {
     incoming: { en: { title: "Flat" } },
     confirmed: { fr: ["title"] },
+    auto: { en: ["title"] },
   });
   assert.deepEqual(req.body, { title: "Piso" });
 });
