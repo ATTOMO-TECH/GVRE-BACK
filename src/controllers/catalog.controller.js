@@ -56,8 +56,8 @@ const catalogEdit = async (req, res, next) => {
     if (req.files.length === 2) {
       try {
         await Promise.all([
-          deleteImage(catalogToUpdate.portraidImage),
-          deleteImage(catalogToUpdate.catalog),
+          deleteImage(catalogToUpdate.portraidImage, { ignoreId: catalogToUpdate._id }),
+          deleteImage(catalogToUpdate.catalog, { ignoreId: catalogToUpdate._id }),
         ]);
       } catch (e) {
         console.error(
@@ -71,12 +71,12 @@ const catalogEdit = async (req, res, next) => {
     } else if (req.files.length === 1) {
       if (req.files[0].mimetype.includes("pdf")) {
         try {
-          await deleteImage(catalogToUpdate.catalog);
+          await deleteImage(catalogToUpdate.catalog, { ignoreId: catalogToUpdate._id });
         } catch (e) {}
         catalogToUpdate.catalog = getCdnUrl(req.files[0]);
       } else {
         try {
-          await deleteImage(catalogToUpdate.portraidImage);
+          await deleteImage(catalogToUpdate.portraidImage, { ignoreId: catalogToUpdate._id });
         } catch (e) {}
         catalogToUpdate.portraidImage = getCdnUrl(req.files[0]);
       }
@@ -109,9 +109,9 @@ const catalogDelete = async (req, res, next) => {
       // CORRECCIÓN: Borramos en paralelo y evitamos que un fallo en S3 cancele el borrado en BD
       try {
         const deletePromises = [];
-        if (catalog.catalog) deletePromises.push(deleteImage(catalog.catalog));
+        if (catalog.catalog) deletePromises.push(deleteImage(catalog.catalog, { ignoreId: catalog._id }));
         if (catalog.portraidImage)
-          deletePromises.push(deleteImage(catalog.portraidImage));
+          deletePromises.push(deleteImage(catalog.portraidImage, { ignoreId: catalog._id }));
 
         if (deletePromises.length > 0) {
           await Promise.all(deletePromises);
@@ -184,7 +184,7 @@ const deleteImageCatalogSection = async (req, res, next) => {
     if (mainImageCatalog !== null) {
       // CORRECCIÓN: Manejo de errores en S3 independiente de la BD
       try {
-        await deleteImage(mainImageCatalog.imgSection);
+        await deleteImage(mainImageCatalog.imgSection, { ignoreId: mainImageCatalog._id });
       } catch (e) {
         console.error(
           "Aviso: No se pudo borrar la imagen de sección de S3.",

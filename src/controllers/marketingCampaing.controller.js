@@ -185,7 +185,7 @@ const marketingCampaignDelete = async (req, res, next) => {
     if (toDelete) {
       // CORRECCIÓN: Blindamos el borrado por si S3 falla
       try {
-        await deleteImage(toDelete);
+        await deleteImage(toDelete, { ignoreId: idCampaign });
       } catch (e) {
         console.error(
           "Aviso: Falló el borrado de la imagen asociada a la campaña en S3",

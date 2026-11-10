@@ -202,14 +202,14 @@ const consultantUpdate = async (req, res, next) => {
 
       if (avatar) {
         if (consultant.avatar)
-          deletePromises.push(deleteImage(consultant.avatar));
+          deletePromises.push(deleteImage(consultant.avatar, { ignoreId: consultant._id }));
         // CORRECCIÓN: Usamos getCdnUrl
         fieldsToUpdate.avatar = getCdnUrl(avatar[0]);
       }
 
       if (companyUnitLogo) {
         if (consultant.companyUnitLogo)
-          deletePromises.push(deleteImage(consultant.companyUnitLogo));
+          deletePromises.push(deleteImage(consultant.companyUnitLogo, { ignoreId: consultant._id }));
         // CORRECCIÓN: Usamos getCdnUrl
         fieldsToUpdate.companyUnitLogo = getCdnUrl(companyUnitLogo[0]);
       }
@@ -313,7 +313,7 @@ const deleteConsultantImage = async (req, res, next) => {
 
     // CORRECCIÓN: Borramos de S3, pero si falla, al menos limpiamos la BD.
     try {
-      await deleteImage(imageToDelete);
+      await deleteImage(imageToDelete, { ignoreId: consultant._id });
     } catch (e) {
       console.error(
         "Aviso: S3 falló al borrar la imagen de firma del consultor, procediendo en BD.",
@@ -366,7 +366,11 @@ const consultantDelete = async (req, res, next) => {
     // Ejecutamos el borrado masivo en S3
     if (imagesToClean.length > 0) {
       try {
-        await Promise.allSettled(imagesToClean.map((img) => deleteImage(img)));
+        await Promise.allSettled(
+          imagesToClean.map((img) =>
+            deleteImage(img, { ignoreId: consultantToDelete._id }),
+          ),
+        );
       } catch (e) {
         console.error(
           "Aviso: Error limpiando imágenes de S3 al borrar el consultor",
