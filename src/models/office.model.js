@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { ENTITIES, buildTranslationsDefinition } = require("../i18n");
 
 const Schema = mongoose.Schema;
 
@@ -27,6 +28,8 @@ const OfficeSchema = new Schema(
       type: String,
       required: true,
     },
+    // Textos en otros idiomas; el español sigue en los campos de siempre
+    translations: buildTranslationsDefinition(ENTITIES.OFFICE),
     active: {
       type: Boolean,
       default: true,
