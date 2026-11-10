@@ -1,4 +1,4 @@
-<html lang="es">
+<html lang="{{lang}}">
   <head>
     <meta charset="UTF-8" />
     <link
@@ -363,13 +363,13 @@
                 class="icon-svg"
               />
               {{buildSurface}}
-              M² CONST.</span>{{/if}}
+              {{labels.builtAreaShort}}</span>{{/if}}
           {{#if plotSurface}}<span><img
                 src="{{frontendUrl}}/icons/adQualities/Superficie_parcela.svg"
                 class="icon-svg"
               />
               {{plotSurface}}
-              M² PARCELA</span>{{/if}}
+              {{labels.plot}}</span>{{/if}}
           <span>REF: {{reference}}</span>
         </div>
       </header>
@@ -382,16 +382,16 @@
         <div class="col-left">
 
           <div class="section">
-            <h2>Cuadro de superficies</h2>
+            <h2>{{labels.surfaces}}</h2>
             {{#if surfaces.length}}
               <table class="surfaces-table">
                 <thead>
                   <tr>
-                    <th>Planta</th>
-                    <th>Uso</th>
+                    <th>{{labels.surfaceFloor}}</th>
+                    <th>{{labels.surfaceUse}}</th>
                     <th>m²</th>
-                    <th>Precio</th>
-                    <th>Disponibilidad</th>
+                    <th>{{labels.surfacePrice}}</th>
+                    <th>{{labels.availability}}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -407,15 +407,14 @@
                 </tbody>
               </table>
             {{else}}
-              <div class="section-description">Información de superficies no
-                disponible.</div>
+              <div class="section-description">{{labels.surfacesEmpty}}</div>
             {{/if}}
           </div>
 
           <hr class="divider" />
 
           <div class="section">
-            <h2>Descripción</h2>
+            <h2>{{labels.description}}</h2>
             <div class="section-description">{{description}}</div>
           </div>
 
@@ -431,19 +430,19 @@
                   src="{{frontendUrl}}/icons/adQualities/Metro.svg"
                   class="icon-svg"
                 />
-                METRO
+                {{labels.subway}}
                 {{subway}}</div>{{/if}}{{#if bus}}<div class="detail-item"><img
                   src="{{frontendUrl}}/icons/adQualities/Bus.svg"
                   class="icon-svg"
                 />
-                AUTOBÚS
+                {{labels.bus}}
                 {{bus}}</div>{{/if}}</div>
 
         </div>
 
         <div class="col-right">
           <div class="section">
-            <h2>Detalles</h2>
+            <h2>{{labels.details}}</h2>
 
             <div class="details-grid">
               {{#if jobPositions}}<div class="detail-item"><img
@@ -451,32 +450,32 @@
                     class="icon-svg"
                   />
                   {{jobPositions}}
-                  PUESTOS</div>{{/if}}
+                  {{labels.jobPositions}}</div>{{/if}}
               {{#if parking}}<div class="detail-item"><img
                     src="{{frontendUrl}}/icons/adQualities/Garaje.svg"
                     class="icon-svg"
                   />
                   {{parking}}
-                  GARAJE</div>{{/if}}
+                  {{labels.garage}}</div>{{/if}}
               {{#if bathrooms}}<div class="detail-item"><img
                     src="{{frontendUrl}}/icons/adQualities/Banho.svg"
                     class="icon-svg"
                   />
                   {{bathrooms}}
-                  BAÑOS</div>{{/if}}
+                  {{labels.bathrooms}}</div>{{/if}}
               {{#if rooms}}<div class="detail-item"><img
                     src="{{frontendUrl}}/icons/adQualities/Habitacion.svg"
                     class="icon-svg"
                   />
                   {{rooms}}
-                  HAB.</div>{{/if}}
+                  {{labels.rooms}}</div>{{/if}}
             </div>
 
             <div class="details-list">
               {{#if profitabilityValue}}
                 <hr class="divider" />
                 <div class="detail-group">
-                  <div class="detail-row"><span>Rentabilidad</span><span
+                  <div class="detail-row"><span>{{labels.profitability}}</span><span
                     >{{profitabilityValue}}</span></div>
                 </div>
               {{/if}}
@@ -487,7 +486,7 @@
                   {{#if floor}}<div class="detail-row"><span
                       >{{floor}}</span></div>{{/if}}
                   {{#if disponibility}}<div class="detail-row"><span
-                      >Disponibilidad</span><span
+                      >{{labels.availability}}</span><span
                       >{{disponibility}}</span></div>{{/if}}
                 </div>
               {{/if}}
@@ -495,12 +494,11 @@
               {{#if hasExpenses}}
                 <hr class="divider" />
                 <div class="detail-group">
-                  {{#if communityExpenses}}<div class="detail-row"><span>Gastos
-                        de Comunidad</span><span
+                  {{#if communityExpenses}}<div class="detail-row"><span>{{labels.communityExpenses}}</span><span
                       >{{communityExpenses}}</span></div>{{/if}}
-                  {{#if ibi}}<div class="detail-row"><span>IBI</span><span
+                  {{#if ibi}}<div class="detail-row"><span>{{labels.ibi}}</span><span
                       >{{ibi}}</span></div>{{/if}}
-                  {{#if trashFee}}<div class="detail-row"><span>TRU</span><span
+                  {{#if trashFee}}<div class="detail-row"><span>{{labels.trashFee}}</span><span
                       >{{trashFee}}</span></div>{{/if}}
                 </div>
               {{/if}}
@@ -508,7 +506,7 @@
 
             <hr class="divider" style="margin-top: 15px;" />
 
-            <h2>Atributos</h2>
+            <h2>{{labels.attributes}}</h2>
             <div class="attributes-grid">
               {{#each attributes}}
                 <div class="attr-item">
@@ -547,13 +545,12 @@
         <div class="qr-wrapper">
           <div class="qr-container">
             <img src="{{qrCode}}" class="qr-code" />
-            <a href="{{adUrl}}" class="property-link">Ver en la web</a>
+            <a href="{{adUrl}}" class="property-link">{{labels.viewOnWeb}}</a>
           </div>
         </div>
       </footer>
       <div class="legal-footer">
-        *Datos orientativos facilitados por la propiedad. Información sin
-        carácter contractual.
+        {{labels.legal}}
       </div>
     </div>
   </body>

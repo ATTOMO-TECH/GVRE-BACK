@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 
 const slug = require("mongoose-slug-updater");
+const { ENTITIES, buildTranslationsDefinition } = require("../i18n");
 
 const Schema = mongoose.Schema;
 
@@ -263,6 +264,8 @@ const adSchema = new Schema(
         note: { type: String },
       },
     ],
+    // Textos en otros idiomas; el español sigue en los campos de siempre
+    translations: buildTranslationsDefinition(ENTITIES.AD),
     images: {
       main: { type: String },
       blueprint: { type: Array },

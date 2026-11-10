@@ -189,7 +189,10 @@ const contactGetAllByEmailNotificationsTrue = async (req, res, next) => {
     const contactIds = contacts.map((c) => c._id);
     const [allAds, allReqs] = await Promise.all([
       // IMPORTANTE: Añadimos "zone" al populate para traer el label técnico de la DB
-      Ad.find({ owner: { $in: contactIds } }).populate("zone", "name zone"),
+      // Sin traducciones: este listado no las usa
+      Ad.find({ owner: { $in: contactIds } })
+        .select("-translations")
+        .populate("zone", "name zone"),
       Request.find({ requestContact: { $in: contactIds } }).populate(
         "requestZone",
         "name zone",

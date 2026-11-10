@@ -207,7 +207,7 @@ const getPropertyUrl = (ad) => {
   return `/${segments.filter(Boolean).join("/")}`;
 };
 
-const formattedNumber = (number, period, type) => {
+const formattedNumber = (number, period, type, locale = "es-ES") => {
   if (number === undefined || number === null) return "Consultar";
 
   const isCurrency = type === "currency";
@@ -219,7 +219,7 @@ const formattedNumber = (number, period, type) => {
     ...(isCurrency && { currency: "EUR" }),
   };
 
-  const formatted = new Intl.NumberFormat("es-ES", options).format(number);
+  const formatted = new Intl.NumberFormat(locale, options).format(number);
   return period && period.trim() !== ""
     ? `${formatted}/${period.toUpperCase()}`
     : formatted;
