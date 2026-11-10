@@ -1,6 +1,31 @@
 const Ad = require("./../models/ad.model");
 const Request = require("./../models/request.model");
-const { deleteImage, getCdnUrl } = require("../middlewares/file.middleware");
+const {
+  deleteImages,
+  copyAdImages,
+  getCdnUrl,
+} = require("../middlewares/file.middleware");
+const { adImageUrls } = require("../utils/imageStorage");
+
+// Borra del bucket las imágenes quitadas de un anuncio. Se llama después de
+// actualizar la BD; si S3 falla solo queda un archivo huérfano, así que no se
+// hace fallar la petición. deleteImages no borra archivos que otro documento
+// siga usando.
+const removeAdFiles = async (urls, adId) => {
+  try {
+    await deleteImages(urls, { ignoreId: adId });
+  } catch (err) {
+    console.error(
+      `Aviso: no se pudieron borrar del bucket imágenes del anuncio ${adId}`,
+      err,
+    );
+  }
+};
+
+const toUrlList = (value) =>
+  (Array.isArray(value) ? value : [value]).filter(
+    (url) => typeof url === "string" && url,
+  );
 const mongoose = require("mongoose");
 const Contact = require("../models/contact.model");
 const Consultant = require("../models/consultant.model");
@@ -767,16 +792,18 @@ const adCreate = async (req, res, next) => {
     // Al duplicar un anuncio se parte también de sus traducciones
     let copiedTranslations;
 
-    // 🔁 Si hay un anuncio a copiar, copia sus imágenes
+    // 🔁 Si hay un anuncio a copiar, copia sus imágenes.
+    // Se duplican los archivos en el bucket: si la copia reutilizara las URLs
+    // del original, borrar fotos de la copia borraría las del original.
     if (idCopy) {
       const adToCopy = await Ad.findById(idCopy);
       if (adToCopy) {
-        images = {
-          main: adToCopy.images.main,
-          blueprint: [...adToCopy.images.blueprint],
-          others: [...adToCopy.images.others],
-          media: adToCopy.images.media,
-        };
+        images = await copyAdImages({
+          main: adToCopy.images?.main,
+          media: adToCopy.images?.media,
+          blueprint: adToCopy.images?.blueprint || [],
+          others: adToCopy.images?.others || [],
+        });
         copiedTranslations = adToCopy.toObject().translations;
       }
     }
@@ -1136,93 +1163,63 @@ const adOthersImagesUpload = async (req, res, next) => {
   }
 };
 
-const adMainImagesDelete = async (req, res, next) => {
+// Quita del anuncio una imagen de campo único (main o media), como siempre, y
+// borra del bucket el archivo que el anuncio tenía guardado si nadie más lo
+// usa. Nunca se borra la URL recibida en toDelete: así no se pueden borrar
+// archivos de otros anuncios.
+const deleteSingleAdImage = (field) => async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    await deleteImage(req.body.toDelete);
+    const ad = await Ad.findById(id).lean();
+    if (!ad) return res.status(404).json({ message: "Anuncio no encontrado." });
 
-    const ad = await Ad.findById(id);
-    const fieldsToUpdate = ad;
-    fieldsToUpdate.images.main = "";
-
-    const updatedAd = await Ad.findByIdAndUpdate(id, fieldsToUpdate, {
-      new: true,
-    });
-    return res.status(200).json(updatedAd);
-  } catch (err) {
-    return next(err);
-  }
-};
-
-const adMediaImagesDelete = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-
-    await deleteImage(req.body.toDelete);
-
-    const ad = await Ad.findById(id);
-    const fieldsToUpdate = ad;
-    fieldsToUpdate.images.media = "";
-
-    const updatedAd = await Ad.findByIdAndUpdate(id, fieldsToUpdate, {
-      new: true,
-    });
-    return res.status(200).json(updatedAd);
-  } catch (err) {
-    return next(err);
-  }
-};
-
-const adBlueprintImagesDelete = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { toDelete } = req.body;
-
-    const ad = await Ad.findById(id);
-    const fieldsToUpdate = ad;
-
-    const imagesToDelete = Array.isArray(toDelete) ? toDelete : [toDelete];
-
-    await Promise.all(imagesToDelete.map((img) => deleteImage(img)));
-
-    fieldsToUpdate.images.blueprint = fieldsToUpdate.images.blueprint.filter(
-      (location) => !imagesToDelete.includes(location),
+    const storedUrl = ad.images?.[field];
+    const updatedAd = await Ad.findByIdAndUpdate(
+      id,
+      { $set: { [`images.${field}`]: "" } },
+      { new: true },
     );
-
-    const updatedAd = await Ad.findByIdAndUpdate(id, fieldsToUpdate, {
-      new: true,
-    });
+    await removeAdFiles(toUrlList(storedUrl), id);
     return res.status(200).json(updatedAd);
   } catch (err) {
     return next(err);
   }
 };
 
-const adOthersImagesDelete = async (req, res, next) => {
+// Quita del anuncio imágenes de una galería (blueprint u others) y borra los
+// archivos que nadie más use. Las URLs que no son del anuncio se ignoran (por
+// ejemplo, la vista previa de una foto aún no subida), como antes.
+const deleteGalleryAdImages = (field) => async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { toDelete } = req.body;
+    const requested = toUrlList(req.body.toDelete);
 
-    const ad = await Ad.findById(id);
-    const fieldsToUpdate = ad;
+    const ad = await Ad.findById(id).lean();
+    if (!ad) return res.status(404).json({ message: "Anuncio no encontrado." });
 
-    const imagesToDelete = Array.isArray(toDelete) ? toDelete : [toDelete];
+    const current = Array.isArray(ad.images?.[field]) ? ad.images[field] : [];
+    const imagesToDelete = requested.filter((url) => current.includes(url));
+    if (!imagesToDelete.length) {
+      return res.status(200).json(await Ad.findById(id));
+    }
 
-    await Promise.all(imagesToDelete.map((img) => deleteImage(img)));
-
-    fieldsToUpdate.images.others = fieldsToUpdate.images.others.filter(
-      (location) => !imagesToDelete.includes(location),
+    const updatedAd = await Ad.findByIdAndUpdate(
+      id,
+      { $pull: { [`images.${field}`]: { $in: imagesToDelete } } },
+      { new: true },
     );
-
-    const updatedAd = await Ad.findByIdAndUpdate(id, fieldsToUpdate, {
-      new: true,
-    });
+    await removeAdFiles(imagesToDelete, id);
     return res.status(200).json(updatedAd);
   } catch (err) {
     return next(err);
   }
 };
+
+const adMainImagesDelete = deleteSingleAdImage("main");
+const adMediaImagesDelete = deleteSingleAdImage("media");
+const adBlueprintImagesDelete = deleteGalleryAdImages("blueprint");
+const adOthersImagesDelete = deleteGalleryAdImages("others");
 
 const adUpdate = async (req, res, next) => {
   try {
@@ -1777,32 +1774,9 @@ const adDelete = async (req, res, next) => {
     // =====================================================================
     // 🧹 NUEVO: LIMPIEZA DE S3 (Evitamos imágenes huérfanas)
     // =====================================================================
-    try {
-      const deletePromises = [];
-
-      if (adToDelete.images?.main)
-        deletePromises.push(deleteImage(adToDelete.images.main));
-      if (adToDelete.images?.media)
-        deletePromises.push(deleteImage(adToDelete.images.media));
-
-      if (adToDelete.images?.blueprint?.length > 0) {
-        adToDelete.images.blueprint.forEach((img) =>
-          deletePromises.push(deleteImage(img)),
-        );
-      }
-
-      if (adToDelete.images?.others?.length > 0) {
-        adToDelete.images.others.forEach((img) =>
-          deletePromises.push(deleteImage(img)),
-        );
-      }
-
-      if (deletePromises.length > 0) {
-        await Promise.allSettled(deletePromises);
-      }
-    } catch (e) {
-      console.error("Aviso: Error durante el borrado de imágenes en S3", e);
-    }
+    // Solo se borran los archivos que ningún otro anuncio o entidad use
+    // (p. ej. un anuncio copiado de este antes del arreglo).
+    await removeAdFiles(adImageUrls(adToDelete), adToDelete._id);
     // =====================================================================
 
     response = "Anuncio borrado de la base de datos";
