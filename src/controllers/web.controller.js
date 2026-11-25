@@ -243,7 +243,7 @@ const webHomeEdit = async (req, res, next) => {
     if (req.file) {
       if (webHomeToUpdate.portraidImage) {
         try {
-          await deleteImage(webHomeToUpdate.portraidImage);
+          await deleteImage(webHomeToUpdate.portraidImage, { ignoreId: webHomeToUpdate._id });
         } catch (e) {
           console.error("Aviso: S3 falló al borrar la imagen anterior", e);
         }
@@ -420,7 +420,7 @@ const webResidentialCategoryImageUpload = async (req, res, next) => {
     if (req.file) {
       if (webHomeToUpdate.categoriesImages.residential) {
         try {
-          await deleteImage(webHomeToUpdate.categoriesImages.residential);
+          await deleteImage(webHomeToUpdate.categoriesImages.residential, { ignoreId: webHomeToUpdate._id });
         } catch (e) {
           console.error(e);
         }
@@ -456,7 +456,7 @@ const webPatrimonialCategoryImageUpload = async (req, res, next) => {
     if (req.file) {
       if (webHomeToUpdate.categoriesImages.patrimonial) {
         try {
-          await deleteImage(webHomeToUpdate.categoriesImages.patrimonial);
+          await deleteImage(webHomeToUpdate.categoriesImages.patrimonial, { ignoreId: webHomeToUpdate._id });
         } catch (e) {
           console.error(e);
         }
@@ -492,7 +492,7 @@ const webArtCategoryImageUpload = async (req, res, next) => {
     if (req.file) {
       if (webHomeToUpdate.categoriesImages.art) {
         try {
-          await deleteImage(webHomeToUpdate.categoriesImages.art);
+          await deleteImage(webHomeToUpdate.categoriesImages.art, { ignoreId: webHomeToUpdate._id });
         } catch (e) {
           console.error(e);
         }
@@ -528,7 +528,7 @@ const webCatalogCategoryImageUpload = async (req, res, next) => {
     if (req.file) {
       if (webHomeToUpdate.categoriesImages.catalog) {
         try {
-          await deleteImage(webHomeToUpdate.categoriesImages.catalog);
+          await deleteImage(webHomeToUpdate.categoriesImages.catalog, { ignoreId: webHomeToUpdate._id });
         } catch (e) {
           console.error(e);
         }
@@ -564,7 +564,7 @@ const webCoastCategoryImageUpload = async (req, res, next) => {
     if (req.file) {
       if (webHomeToUpdate.otherCategoriesImages.coast) {
         try {
-          await deleteImage(webHomeToUpdate.otherCategoriesImages.coast);
+          await deleteImage(webHomeToUpdate.otherCategoriesImages.coast, { ignoreId: webHomeToUpdate._id });
         } catch (e) {
           console.error(e);
         }
@@ -600,7 +600,7 @@ const webRusticCategoryImageUpload = async (req, res, next) => {
     if (req.file) {
       if (webHomeToUpdate.otherCategoriesImages.rustic) {
         try {
-          await deleteImage(webHomeToUpdate.otherCategoriesImages.rustic);
+          await deleteImage(webHomeToUpdate.otherCategoriesImages.rustic, { ignoreId: webHomeToUpdate._id });
         } catch (e) {
           console.error(e);
         }
@@ -636,7 +636,7 @@ const webSingularCategoryImageUpload = async (req, res, next) => {
     if (req.file) {
       if (webHomeToUpdate.otherCategoriesImages.singular) {
         try {
-          await deleteImage(webHomeToUpdate.otherCategoriesImages.singular);
+          await deleteImage(webHomeToUpdate.otherCategoriesImages.singular, { ignoreId: webHomeToUpdate._id });
         } catch (e) {
           console.error(e);
         }
@@ -673,7 +673,7 @@ const webInteriorismTextAndImageUpload = async (req, res, next) => {
       if (req.file) {
         if (webHomeToUpdate.sections.interiorims.image) {
           try {
-            await deleteImage(webHomeToUpdate.sections.interiorims.image);
+            await deleteImage(webHomeToUpdate.sections.interiorims.image, { ignoreId: webHomeToUpdate._id });
           } catch (e) {
             console.error(e);
           }
@@ -715,7 +715,7 @@ const webSellTextAndImageUpload = async (req, res, next) => {
       if (req.file) {
         if (webHomeToUpdate.sections.sell.image) {
           try {
-            await deleteImage(webHomeToUpdate.sections.sell.image);
+            await deleteImage(webHomeToUpdate.sections.sell.image, { ignoreId: webHomeToUpdate._id });
           } catch (e) {
             console.error(e);
           }
@@ -756,7 +756,7 @@ const webOfficeTextAndImageUpload = async (req, res, next) => {
       if (req.file) {
         if (webHomeToUpdate.sections.offices.image) {
           try {
-            await deleteImage(webHomeToUpdate.sections.offices.image);
+            await deleteImage(webHomeToUpdate.sections.offices.image, { ignoreId: webHomeToUpdate._id });
           } catch (e) {
             console.error(e);
           }
@@ -870,7 +870,7 @@ const webDevelopmentServicesUpload = async (req, res, next) => {
       if (req.file) {
         if (webHomeToUpdate.services.development.image) {
           try {
-            await deleteImage(webHomeToUpdate.services.development.image);
+            await deleteImage(webHomeToUpdate.services.development.image, { ignoreId: webHomeToUpdate._id });
           } catch (e) {
             console.error(e);
           }
@@ -1017,7 +1017,7 @@ const webInteriorismServicesUpload = async (req, res, next) => {
       if (req.file) {
         if (webHomeToUpdate.services.interiorims.image) {
           try {
-            await deleteImage(webHomeToUpdate.services.interiorims.image);
+            await deleteImage(webHomeToUpdate.services.interiorims.image, { ignoreId: webHomeToUpdate._id });
           } catch (e) {
             console.error(e);
           }
@@ -1108,7 +1108,7 @@ const updateCategoriesSection = async (req, res, next) => {
       const oldImageUrl = webHome.categoriesSection[key].image;
       if (oldImageUrl) {
         try {
-          await deleteImage(oldImageUrl);
+          await deleteImage(oldImageUrl, { ignoreId: webHome._id });
         } catch (e) {
           console.error(
             "Aviso: S3 falló al borrar la imagen de categoría anterior",
@@ -2198,7 +2198,7 @@ const updateServicesSection = async (req, res, next) => {
       const oldImageUrl = webHome.services[key].image;
       if (oldImageUrl) {
         try {
-          await deleteImage(oldImageUrl);
+          await deleteImage(oldImageUrl, { ignoreId: webHome._id });
         } catch (e) {
           console.error(
             "Aviso: S3 falló al borrar la imagen de servicios anterior",
@@ -2525,7 +2525,7 @@ const updateOffice = async (req, res) => {
       try {
         const oldOffice = await Office.findById(id);
         if (oldOffice && oldOffice.image) {
-          await deleteImage(oldOffice.image);
+          await deleteImage(oldOffice.image, { ignoreId: oldOffice._id });
         }
       } catch (e) {
         console.error("Aviso: No se pudo borrar la imagen anterior de S3", e);
@@ -2593,7 +2593,7 @@ const deleteOffice = async (req, res) => {
 
     if (officeToDelete.image) {
       try {
-        await deleteImage(officeToDelete.image);
+        await deleteImage(officeToDelete.image, { ignoreId: officeToDelete._id });
       } catch (e) {
         console.error("Aviso: No se pudo borrar la imagen de S3", e);
       }

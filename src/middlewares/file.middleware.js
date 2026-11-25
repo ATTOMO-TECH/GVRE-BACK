@@ -1,5 +1,7 @@
-const { S3Client, DeleteObjectCommand } = require("@aws-sdk/client-s3");
+const { S3Client } = require("@aws-sdk/client-s3");
+const mongoose = require("mongoose");
 const multer = require("multer");
+const { createImageStorage } = require("../utils/imageStorage");
 const multerS3 = require("multer-s3");
 const path = require("path");
 
@@ -85,35 +87,49 @@ const uploadFiles = multer({
   FileFilter,
 });
 
-// --- 2. ELIMINACIÓN DE ARCHIVOS CORREGIDA ---
-const deleteImage = async (fileUrl) => {
+// --- 2. ELIMINACIÓN Y COPIA DE ARCHIVOS ---
+// Un mismo archivo puede estar referenciado por varios documentos (p. ej. un
+// anuncio y su copia). deleteImage solo lo borra del bucket si ningún otro
+// documento lo usa; options.ignoreId es el documento que se está editando o
+// borrando, que no cuenta como referencia.
+const imageStorage = createImageStorage({
+  s3,
+  bucket: BUCKET_NAME,
+  getDb: () => mongoose.connection.db,
+});
+
+const deleteImage = async (fileUrl, options) => {
   try {
-    // CORRECCIÓN: Parseamos la URL de forma segura.
-    // Extrae "/nombre-del-archivo.jpg" y le quita la primera barra ("/").
-    const parsedUrl = new URL(fileUrl);
-    let key = parsedUrl.pathname.substring(1);
-
-    // Si tu proveedor S3 pone el nombre del bucket en la ruta (path-style), lo quitamos para quedarnos solo con el Key real
-    if (key.startsWith(`${BUCKET_NAME}/`)) {
-      key = key.replace(`${BUCKET_NAME}/`, "");
-    }
-
-    const command = new DeleteObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: decodeURI(key),
-    });
-
-    const data = await s3.send(command);
-    return data;
+    return await imageStorage.deleteImage(fileUrl, options);
   } catch (err) {
     console.error("Error eliminando objeto de S3:", err);
-    throw err; // CORRECCIÓN: Lanzamos el error para que tu controlador se entere de que falló
+    throw err; // Lanzamos el error para que el controlador se entere de que falló
   }
 };
+
+const deleteImages = async (fileUrls, options) => {
+  try {
+    return await imageStorage.deleteImages(fileUrls, options);
+  } catch (err) {
+    console.error("Error eliminando objetos de S3:", err);
+    throw err;
+  }
+};
+
+const { copyImage, copyAdImages } = imageStorage;
 
 const getCdnUrl = (file) => {
   if (!file) return null;
   return `https://${file.bucket}.fra1.cdn.digitaloceanspaces.com/${file.key}`;
 };
 
-module.exports = { upload, uploadFiles, s3, deleteImage, getCdnUrl };
+module.exports = {
+  upload,
+  uploadFiles,
+  s3,
+  deleteImage,
+  deleteImages,
+  copyImage,
+  copyAdImages,
+  getCdnUrl,
+};

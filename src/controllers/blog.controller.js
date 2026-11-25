@@ -156,7 +156,7 @@ const updateBlog = async (req, res) => {
       try {
         const oldBlog = await Blog.findById(id);
         if (oldBlog && oldBlog.image) {
-          await deleteImage(oldBlog.image);
+          await deleteImage(oldBlog.image, { ignoreId: oldBlog._id });
         }
       } catch (e) {
         console.error("Aviso: No se pudo borrar la imagen anterior de S3", e);
@@ -281,7 +281,7 @@ const deleteBlog = async (req, res) => {
     const blogToDelete = await Blog.findById(id);
     if (blogToDelete && blogToDelete.image) {
       try {
-        await deleteImage(blogToDelete.image);
+        await deleteImage(blogToDelete.image, { ignoreId: blogToDelete._id });
       } catch (e) {
         console.error("Aviso: No se pudo borrar la imagen de S3", e);
       }
