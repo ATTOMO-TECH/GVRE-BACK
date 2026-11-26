@@ -26,6 +26,10 @@ const {
   applyWritesToDocument,
 } = require("./translationWrites");
 const { translateLabel, translateLabels } = require("./labels");
+const {
+  isAutoTranslationEnabled,
+  planTranslationWritesWithAuto,
+} = require("./machineTranslation/auto");
 
 module.exports = {
   DEFAULT_LANG: config.DEFAULT_LANG,
@@ -54,6 +58,8 @@ module.exports = {
   planTranslationWrites,
   toMongoUpdate,
   applyWritesToDocument,
+  isAutoTranslationEnabled,
+  planTranslationWritesWithAuto,
 
   translateLabel,
   translateLabels,

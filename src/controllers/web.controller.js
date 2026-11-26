@@ -18,25 +18,21 @@ const {
   withTranslationStatus,
   translateLabel,
   translateLabels,
-  planTranslationWrites,
+  planTranslationWritesWithAuto,
   toMongoUpdate,
   applyWritesToDocument,
 } = require("../i18n");
 
-const hasTranslationsInput = (input) =>
-  Boolean(input?.incoming || input?.confirmed);
-
 // Aplica sobre el documento de la home las traducciones que llegan en la
 // petición, comparándolas con el español tal y como queda tras la edición.
+// Los textos que falten se traducen solos (DeepL).
 // Hay que llamarlo después de asignar los textos en español y antes de save().
-const applyWebHomeTranslations = (webHome, translationsInput) => {
-  if (!hasTranslationsInput(translationsInput)) return;
-
+const applyWebHomeTranslations = async (webHome, translationsInput) => {
   const current = webHome.toObject();
 
   applyWritesToDocument(
     webHome,
-    planTranslationWrites(ENTITIES.WEB_HOME, {
+    await planTranslationWritesWithAuto(ENTITIES.WEB_HOME, {
       source: current,
       stored: current.translations,
       ...translationsInput,
@@ -389,7 +385,7 @@ const webVideoSectionUpdate = async (req, res, next) => {
       }
     }
 
-    applyWebHomeTranslations(webHome, req.translationsInput);
+    await applyWebHomeTranslations(webHome, req.translationsInput);
 
     const updatedWebHome = await webHome.save();
 
@@ -839,7 +835,7 @@ const webHomeTalkWithUs = async (req, res, next) => {
       // 4. Guardado con markModified
       // Al ser un objeto mixto y haber cambiado arrays, avisamos a Mongoose
       webHome.markModified("talkWithUs");
-      applyWebHomeTranslations(webHome, req.translationsInput);
+      await applyWebHomeTranslations(webHome, req.translationsInput);
       const updatedWebHome = await webHome.save();
 
       // Este bloque se pinta en la home y en la página de contacto
@@ -1121,7 +1117,7 @@ const updateCategoriesSection = async (req, res, next) => {
     }
 
     webHome.markModified("categoriesSection");
-    applyWebHomeTranslations(webHome, req.translationsInput);
+    await applyWebHomeTranslations(webHome, req.translationsInput);
     const updatedWebHome = await webHome.save();
     revalidateWeb(["home-data"]).catch((err) =>
       console.error("❌ Error revalidando home-data:", err),
@@ -2210,7 +2206,7 @@ const updateServicesSection = async (req, res, next) => {
     }
 
     webHome.markModified(`services.${key}`);
-    applyWebHomeTranslations(webHome, req.translationsInput);
+    await applyWebHomeTranslations(webHome, req.translationsInput);
     const updatedWebHome = await webHome.save();
 
     // 🚀 ACTUALIZADO: Batching y Fire & Forget
@@ -2494,7 +2490,7 @@ const createOffice = async (req, res) => {
     const office = new Office(data);
     applyWritesToDocument(
       office,
-      planTranslationWrites(ENTITIES.OFFICE, {
+      await planTranslationWritesWithAuto(ENTITIES.OFFICE, {
         source: office.toObject(),
         ...req.translationsInput,
       }),
@@ -2534,19 +2530,18 @@ const updateOffice = async (req, res) => {
       updates.image = getCdnUrl(req.file);
     }
 
+    // Traducciones de la petición más las que falten (DeepL)
     let translationUpdate = {};
-    if (hasTranslationsInput(req.translationsInput)) {
-      const currentOffice = await Office.findById(id).lean();
+    const currentOffice = await Office.findById(id).lean();
 
-      if (currentOffice) {
-        translationUpdate = toMongoUpdate(
-          planTranslationWrites(ENTITIES.OFFICE, {
-            source: { ...currentOffice, ...updates },
-            stored: currentOffice.translations,
-            ...req.translationsInput,
-          }),
-        );
-      }
+    if (currentOffice) {
+      translationUpdate = toMongoUpdate(
+        await planTranslationWritesWithAuto(ENTITIES.OFFICE, {
+          source: { ...currentOffice, ...updates },
+          stored: currentOffice.translations,
+          ...req.translationsInput,
+        }),
+      );
     }
 
     const officeUpdated = await Office.findByIdAndUpdate(

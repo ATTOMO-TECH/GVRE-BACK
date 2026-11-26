@@ -1,3 +1,5 @@
+const { getBookingEmailTexts } = require("../utils/bookingEmailTexts");
+const { getLanguageName } = require("../i18n");
 const nodemailer = require("nodemailer");
 const mongoose = require("mongoose");
 const {
@@ -2503,6 +2505,7 @@ const sendWebEmail = async (req, res) => {
             <p><strong>Email:</strong> ${email}</p>
             <p><strong>Teléfono:</strong> ${telefono || "No facilitado"}</p>
             <p><strong>Mensaje:</strong><br/> ${mensaje || "Sin mensaje"}</p>
+            ${req.lang ? `<p><strong>Idioma de la web:</strong> ${getLanguageName(req.lang) || req.lang}</p>` : ""}
             ${adSection}
             <p style="font-size: 10px; color: #999; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px;">
               Enviado desde: <strong>${config.label}</strong>
@@ -2519,31 +2522,33 @@ const sendWebEmail = async (req, res) => {
       const [year, month, day] = bookingDate.split("-");
       const formattedDate = `${day}/${month}/${year}`;
 
+      // En el idioma en que el cliente estaba viendo la web (español si no llega)
+      const tx = getBookingEmailTexts(req.lang);
       const mailToClient = {
         from: `"GV Real Estate" <info@gvre.es>`,
         to: email,
-        subject: "Tu solicitud de cita con GVRE",
+        subject: tx.subject,
         html: `
           <div style="font-family: Helvetica, sans-serif; color: #2b363d; max-width:600px; border: 1px solid #eee; padding: 30px;">
-            <h2 style="font-weight: lighter; color: #2b363d; text-align:center;">Hemos recibido tu solicitud</h2>
-            <p style="font-size: 15px; line-height: 1.5;">Hola ${nombre},</p>
+            <h2 style="font-weight: lighter; color: #2b363d; text-align:center;">${tx.title}</h2>
+            <p style="font-size: 15px; line-height: 1.5;">${tx.hello(nombre)}</p>
             <p style="font-size: 15px; line-height: 1.5;">
-              Hemos recibido correctamente tu solicitud de cita para visitar el inmueble <strong>${adReference || "solicitado"}</strong>.
+              ${tx.received(adReference)}
             </p>
             <div style="background-color: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #2b363d;">
-              <p style="margin: 5px 0;"><strong>Día propuesto:</strong> ${formattedDate}</p>
-              <p style="margin: 5px 0;"><strong>Hora propuesta:</strong> ${bookingTime}</p>
+              <p style="margin: 5px 0;"><strong>${tx.date}:</strong> ${formattedDate}</p>
+              <p style="margin: 5px 0;"><strong>${tx.time}:</strong> ${bookingTime}</p>
             </div>
             <p style="font-size: 15px; line-height: 1.5;">
-              En breve, el consultor/a encargado de este inmueble (${consultantName}) se pondrá en contacto contigo para <strong>confirmar definitivamente la cita e indicarte la dirección exacta</strong>, o sugerir alternativas si no hubiera disponibilidad.
+              ${tx.next(consultantName)}
             </p>
             <p style="font-size: 15px; line-height: 1.5; margin-top: 30px;">
-              Un saludo,<br/>
-              <strong>El equipo de GVRE</strong>
+              ${tx.regards}<br/>
+              <strong>${tx.team}</strong>
             </p>
             <hr style="border: none; border-top: 1px solid #eee; margin-top: 40px;" />
             <p style="font-size: 11px; color: #999; text-align:center;">
-              Este es un correo automático, por favor no respondas a esta dirección. Si tienes dudas, contáctanos en info@gvre.es.
+              ${tx.footer}
             </p>
           </div>
         `,
