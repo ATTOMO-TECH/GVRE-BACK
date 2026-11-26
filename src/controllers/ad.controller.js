@@ -38,11 +38,13 @@ const {
   TRANSLATION_LANGS,
   TRANSLATIONS_KEY,
   buildTranslationPath,
-  planTranslationWrites,
+  getTranslatableFields,
+  planTranslationWritesWithAuto,
   toMongoUpdate,
   applyWritesToDocument,
   withTranslationStatus,
 } = require("../i18n");
+const { getPath, setPath } = require("../i18n/objectPath");
 
 const SURFACES_BOX_PATH = "surfacesBox";
 
@@ -999,7 +1001,7 @@ const adCreate = async (req, res, next) => {
 
     applyWritesToDocument(
       newAd,
-      planTranslationWrites(ENTITIES.AD, {
+      await planTranslationWritesWithAuto(ENTITIES.AD, {
         source: newAd.toObject(),
         stored: copiedTranslations,
         ...req.translationsInput,
@@ -1404,8 +1406,22 @@ const adUpdate = async (req, res, next) => {
 
     // Las traducciones se guardan con rutas de puntos (translations.en.title)
     // para tocar solo los campos que cambian y no pisar el resto.
-    const translationWrites = planTranslationWrites(ENTITIES.AD, {
+    // Además se traducen solas (DeepL) las que falten o se hayan quedado
+    // desactualizadas siendo automáticas. Para eso hace falta el español
+    // completo: lo que no viene en la petición se queda como estaba.
+    const translationWrites = await planTranslationWritesWithAuto(ENTITIES.AD, {
       source: fieldsToUpdate,
+      autoSource: getTranslatableFields(ENTITIES.AD).reduce(
+        (out, { path }) => {
+          const value = getPath(fieldsToUpdate, path);
+          return setPath(
+            out,
+            path,
+            value === undefined ? getPath(currentAd, path) : value,
+          );
+        },
+        {},
+      ),
       stored: currentAd.translations,
       ...req.translationsInput,
     });

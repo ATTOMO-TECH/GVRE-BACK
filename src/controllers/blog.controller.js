@@ -8,13 +8,10 @@ const {
   getLocalizedValue,
   localizeDocument,
   withTranslationStatus,
-  planTranslationWrites,
+  planTranslationWritesWithAuto,
   toMongoUpdate,
   applyWritesToDocument,
 } = require("../i18n");
-
-const hasTranslationsInput = (input) =>
-  Boolean(input?.incoming || input?.confirmed);
 
 const BLOG_MAIN_PATHS = ["title", "content"];
 
@@ -114,7 +111,7 @@ const createBlog = async (req, res) => {
     const blog = new Blog(data);
     applyWritesToDocument(
       blog,
-      planTranslationWrites(ENTITIES.BLOG, {
+      await planTranslationWritesWithAuto(ENTITIES.BLOG, {
         source: blog.toObject(),
         ...req.translationsInput,
       }),
@@ -166,20 +163,18 @@ const updateBlog = async (req, res) => {
     }
 
     // D. Traducciones: se comparan con lo guardado y con el español tal y
-    // como queda tras esta edición
+    // como queda tras esta edición. Lo que falte se traduce solo (DeepL).
     let translationUpdate = {};
-    if (hasTranslationsInput(req.translationsInput)) {
-      const currentBlog = await Blog.findById(id).lean();
+    const currentBlog = await Blog.findById(id).lean();
 
-      if (currentBlog) {
-        translationUpdate = toMongoUpdate(
-          planTranslationWrites(ENTITIES.BLOG, {
-            source: { ...currentBlog, ...updates },
-            stored: currentBlog.translations,
-            ...req.translationsInput,
-          }),
-        );
-      }
+    if (currentBlog) {
+      translationUpdate = toMongoUpdate(
+        await planTranslationWritesWithAuto(ENTITIES.BLOG, {
+          source: { ...currentBlog, ...updates },
+          stored: currentBlog.translations,
+          ...req.translationsInput,
+        }),
+      );
     }
 
     // E. Actualizar en la base de datos

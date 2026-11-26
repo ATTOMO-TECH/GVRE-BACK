@@ -1,0 +1,3572 @@
+{
+ "1": {
+  "en": "1",
+  "fr": "1",
+  "de": "1"
+ },
+ "2": {
+  "en": "2",
+  "fr": "2",
+  "de": "2"
+ },
+ "3": {
+  "en": "3",
+  "fr": "3",
+  "de": "3"
+ },
+ "4": {
+  "en": "4",
+  "fr": "4",
+  "de": "4"
+ },
+ "5": {
+  "en": "5",
+  "fr": "5",
+  "de": "5"
+ },
+ "6": {
+  "en": "6",
+  "fr": "6",
+  "de": "6"
+ },
+ "9": {
+  "en": "9",
+  "fr": "9",
+  "de": "9"
+ },
+ "10": {
+  "en": "10",
+  "fr": "10",
+  "de": "10"
+ },
+ "14": {
+  "en": "14",
+  "fr": "14",
+  "de": "14"
+ },
+ "16": {
+  "en": "16",
+  "fr": "16",
+  "de": "16"
+ },
+ "18": {
+  "en": "18",
+  "fr": "18",
+  "de": "18"
+ },
+ "23": {
+  "en": "23",
+  "fr": "23",
+  "de": "23"
+ },
+ "31": {
+  "en": "31",
+  "fr": "31",
+  "de": "31"
+ },
+ "40": {
+  "en": "40",
+  "fr": "40",
+  "de": "40"
+ },
+ "45": {
+  "en": "45",
+  "fr": "45",
+  "de": "45"
+ },
+ "55": {
+  "en": "55",
+  "fr": "55",
+  "de": "55"
+ },
+ "140": {
+  "en": "140",
+  "fr": "140",
+  "de": "140"
+ },
+ "300": {
+  "en": "300",
+  "fr": "300",
+  "de": "300"
+ },
+ "321": {
+  "en": "321",
+  "fr": "321",
+  "de": "321"
+ },
+ "1 derecha": {
+  "en": "1 right",
+  "fr": "1 droite",
+  "de": "1 rechts"
+ },
+ "1/P1": {
+  "en": "1/P1",
+  "fr": "1/P1",
+  "de": "1/P1"
+ },
+ "1/PB": {
+  "en": "1/PB",
+  "fr": "1/PB",
+  "de": "1/PB"
+ },
+ "10 plazas": {
+  "en": "10 spaces",
+  "fr": "10 places",
+  "de": "10 Stellplätze"
+ },
+ "10ª": {
+  "en": "10th",
+  "fr": "10e",
+  "de": "10."
+ },
+ "10º": {
+  "en": "10th",
+  "fr": "10e",
+  "de": "10."
+ },
+ "10º Izq": {
+  "en": "10th Left",
+  "fr": "10e Gauche",
+  "de": "10. Links"
+ },
+ "10º Izquierda": {
+  "en": "10th Left",
+  "fr": "10e Gauche",
+  "de": "10. Links"
+ },
+ "10º-11º": {
+  "en": "10th-11th",
+  "fr": "10e-11e",
+  "de": "10.-11."
+ },
+ "11ª": {
+  "en": "11th",
+  "fr": "11e",
+  "de": "11."
+ },
+ "11º": {
+  "en": "11th",
+  "fr": "11e",
+  "de": "11."
+ },
+ "12ª": {
+  "en": "12th",
+  "fr": "12e",
+  "de": "12."
+ },
+ "12º": {
+  "en": "12th",
+  "fr": "12e",
+  "de": "12."
+ },
+ "12º + Terraza": {
+  "en": "12th + Terrace",
+  "fr": "12e + Terrasse",
+  "de": "12. + Terrasse"
+ },
+ "12º-13º": {
+  "en": "12th-13th",
+  "fr": "12e-13e",
+  "de": "12.-13."
+ },
+ "13ª": {
+  "en": "13th",
+  "fr": "13e",
+  "de": "13."
+ },
+ "13º": {
+  "en": "13th",
+  "fr": "13e",
+  "de": "13."
+ },
+ "14º": {
+  "en": "14th",
+  "fr": "14e",
+  "de": "14."
+ },
+ "15 de abril 2022": {
+  "en": "15 April 2022",
+  "fr": "15 avril 2022",
+  "de": "15. April 2022"
+ },
+ "15ª": {
+  "en": "15th",
+  "fr": "15e",
+  "de": "15."
+ },
+ "16ª N": {
+  "en": "16th N",
+  "fr": "16e N",
+  "de": "16. N"
+ },
+ "16º": {
+  "en": "16th",
+  "fr": "16e",
+  "de": "16."
+ },
+ "17º": {
+  "en": "17th",
+  "fr": "17e",
+  "de": "17."
+ },
+ "18ª": {
+  "en": "18th",
+  "fr": "18e",
+  "de": "18."
+ },
+ "1ª": {
+  "en": "1st",
+  "fr": "1er",
+  "de": "1."
+ },
+ "1ª 2": {
+  "en": "1st 2",
+  "fr": "1er 2",
+  "de": "1. 2"
+ },
+ "1ª B": {
+  "en": "1st B",
+  "fr": "1er B",
+  "de": "1. B"
+ },
+ "1ª Izquierda": {
+  "en": "1st Left",
+  "fr": "1er Gauche",
+  "de": "1. Links"
+ },
+ "1ª Mod. 2": {
+  "en": "1st Mod. 2",
+  "fr": "1er Mod. 2",
+  "de": "1. Mod. 2"
+ },
+ "1ª Módulo D": {
+  "en": "1st Module D",
+  "fr": "1er Module D",
+  "de": "1. Modul D"
+ },
+ "1ª Módulo D-E-F-G": {
+  "en": "1st Module D-E-F-G",
+  "fr": "1er Module D-E-F-G",
+  "de": "1. Modul D-E-F-G"
+ },
+ "1ª Planta": {
+  "en": "1st floor",
+  "fr": "1er étage",
+  "de": "1. Etage"
+ },
+ "1ª Pt. 1": {
+  "en": "1st Pt. 1",
+  "fr": "1er Pt. 1",
+  "de": "1. Pt. 1"
+ },
+ "1ª Pt. 2": {
+  "en": "1st Pt. 2",
+  "fr": "1er Pt. 2",
+  "de": "1. Pt. 2"
+ },
+ "1ª Pt. 3": {
+  "en": "1st Pt. 3",
+  "fr": "1er Pt. 3",
+  "de": "1. Pt. 3"
+ },
+ "1ª Pt. 4": {
+  "en": "1st Pt. 4",
+  "fr": "1er Pt. 4",
+  "de": "1. Pt. 4"
+ },
+ "1ª y 2ª": {
+  "en": "1st and 2nd",
+  "fr": "1er et 2e",
+  "de": "1. und 2."
+ },
+ "1ªB": {
+  "en": "1st B",
+  "fr": "1er B",
+  "de": "1. B"
+ },
+ "1º": {
+  "en": "1st",
+  "fr": "1er",
+  "de": "1."
+ },
+ "1º - Ed. B": {
+  "en": "1st - Bldg. B",
+  "fr": "1er - Bât. B",
+  "de": "1. - Geb. B"
+ },
+ "1º - mód. C": {
+  "en": "1st - mód. C",
+  "fr": "1er - mód. C",
+  "de": "1. - mód. C"
+ },
+ "1º -1": {
+  "en": "1st -1",
+  "fr": "1er -1",
+  "de": "1. -1"
+ },
+ "1º -2": {
+  "en": "1st -2",
+  "fr": "1er -2",
+  "de": "1. -2"
+ },
+ "1º -3": {
+  "en": "1st -3",
+  "fr": "1er -3",
+  "de": "1. -3"
+ },
+ "1º ( Dublín)": {
+  "en": "1st ( Dublín)",
+  "fr": "1er ( Dublín)",
+  "de": "1. ( Dublín)"
+ },
+ "1º ( Europa)": {
+  "en": "1st ( Europa)",
+  "fr": "1er ( Europa)",
+  "de": "1. ( Europa)"
+ },
+ "1º (B)": {
+  "en": "1st (B)",
+  "fr": "1er (B)",
+  "de": "1. (B)"
+ },
+ "1º (Canadá)": {
+  "en": "1st (Canadá)",
+  "fr": "1er (Canadá)",
+  "de": "1. (Canadá)"
+ },
+ "1º 4": {
+  "en": "1st 4",
+  "fr": "1er 4",
+  "de": "1. 4"
+ },
+ "1º A": {
+  "en": "1st A",
+  "fr": "1er A",
+  "de": "1. A"
+ },
+ "1º Austral": {
+  "en": "1st Austral",
+  "fr": "1er Austral",
+  "de": "1. Austral"
+ },
+ "1º b": {
+  "en": "1st b",
+  "fr": "1er b",
+  "de": "1. b"
+ },
+ "1º B": {
+  "en": "1st B",
+  "fr": "1er B",
+  "de": "1. B"
+ },
+ "1º B1": {
+  "en": "1st B1",
+  "fr": "1er B1",
+  "de": "1. B1"
+ },
+ "1º B2": {
+  "en": "1st B2",
+  "fr": "1er B2",
+  "de": "1. B2"
+ },
+ "1º C": {
+  "en": "1st C",
+  "fr": "1er C",
+  "de": "1. C"
+ },
+ "1º dcha": {
+  "en": "1st right",
+  "fr": "1er droite",
+  "de": "1. rechts"
+ },
+ "1º dercha-1": {
+  "en": "1st right-1",
+  "fr": "1er droite-1",
+  "de": "1. rechts-1"
+ },
+ "1º E": {
+  "en": "1st E",
+  "fr": "1er E",
+  "de": "1. E"
+ },
+ "1º G": {
+  "en": "1st G",
+  "fr": "1er G",
+  "de": "1. G"
+ },
+ "1º H": {
+  "en": "1st H",
+  "fr": "1er H",
+  "de": "1. H"
+ },
+ "1º izq": {
+  "en": "1st left",
+  "fr": "1er gauche",
+  "de": "1. links"
+ },
+ "1º Local 2": {
+  "en": "1st Unit 2",
+  "fr": "1er Local 2",
+  "de": "1. Einheit 2"
+ },
+ "1º Local 3": {
+  "en": "1st Unit 3",
+  "fr": "1er Local 3",
+  "de": "1. Einheit 3"
+ },
+ "1º M": {
+  "en": "1st M",
+  "fr": "1er M",
+  "de": "1. M"
+ },
+ "1º Mod A-B": {
+  "en": "1st Mod A-B",
+  "fr": "1er Mod A-B",
+  "de": "1. Mod A-B"
+ },
+ "1º Modulo 1": {
+  "en": "1st Module 1",
+  "fr": "1er Module 1",
+  "de": "1. Modul 1"
+ },
+ "1º Modulo 2": {
+  "en": "1st Module 2",
+  "fr": "1er Module 2",
+  "de": "1. Modul 2"
+ },
+ "1º Modulo 3": {
+  "en": "1st Module 3",
+  "fr": "1er Module 3",
+  "de": "1. Modul 3"
+ },
+ "1º Norte": {
+  "en": "1st North",
+  "fr": "1er Nord",
+  "de": "1. Nord"
+ },
+ "1º Norte 1": {
+  "en": "1st North 1",
+  "fr": "1er Nord 1",
+  "de": "1. Nord 1"
+ },
+ "1º Norte 2": {
+  "en": "1st North 2",
+  "fr": "1er Nord 2",
+  "de": "1. Nord 2"
+ },
+ "1º Oeste 3": {
+  "en": "1st West 3",
+  "fr": "1er Ouest 3",
+  "de": "1. West 3"
+ },
+ "1º OLMO": {
+  "en": "1st OLMO",
+  "fr": "1er OLMO",
+  "de": "1. OLMO"
+ },
+ "1º Onic 3": {
+  "en": "1st Onic 3",
+  "fr": "1er Onic 3",
+  "de": "1. Onic 3"
+ },
+ "1º Onic 6": {
+  "en": "1st Onic 6",
+  "fr": "1er Onic 6",
+  "de": "1. Onic 6"
+ },
+ "1º Planta": {
+  "en": "1st floor",
+  "fr": "1er étage",
+  "de": "1. Etage"
+ },
+ "1º Sur": {
+  "en": "1st South",
+  "fr": "1er Sud",
+  "de": "1. Süd"
+ },
+ "1º y 2º": {
+  "en": "1st and 2nd",
+  "fr": "1er et 2e",
+  "de": "1. und 2."
+ },
+ "1º-2º ROBLE": {
+  "en": "1st-2nd ROBLE",
+  "fr": "1er-2e ROBLE",
+  "de": "1.-2. ROBLE"
+ },
+ "1º-6º Bilbao": {
+  "en": "1st-6th Bilbao",
+  "fr": "1er-6e Bilbao",
+  "de": "1.-6. Bilbao"
+ },
+ "1º-6º Valencia": {
+  "en": "1st-6th Valencia",
+  "fr": "1er-6e Valencia",
+  "de": "1.-6. Valencia"
+ },
+ "1ºB": {
+  "en": "1st B",
+  "fr": "1er B",
+  "de": "1. B"
+ },
+ "1ºC": {
+  "en": "1st C",
+  "fr": "1er C",
+  "de": "1. C"
+ },
+ "1ºD": {
+  "en": "1st D",
+  "fr": "1er D",
+  "de": "1. D"
+ },
+ "20/11/2026": {
+  "en": "20/11/2026",
+  "fr": "20/11/2026",
+  "de": "20/11/2026"
+ },
+ "20ª N": {
+  "en": "20th N",
+  "fr": "20e N",
+  "de": "20. N"
+ },
+ "20º": {
+  "en": "20th",
+  "fr": "20e",
+  "de": "20."
+ },
+ "22ª": {
+  "en": "22nd",
+  "fr": "22e",
+  "de": "22."
+ },
+ "22º": {
+  "en": "22nd",
+  "fr": "22e",
+  "de": "22."
+ },
+ "24 plazas de parking": {
+  "en": "24 parking spaces",
+  "fr": "24 places de parking",
+  "de": "24 Stellplätze"
+ },
+ "24ª N": {
+  "en": "24th N",
+  "fr": "24e N",
+  "de": "24. N"
+ },
+ "24º": {
+  "en": "24th",
+  "fr": "24e",
+  "de": "24."
+ },
+ "2ª": {
+  "en": "2nd",
+  "fr": "2e",
+  "de": "2."
+ },
+ "2ª 3": {
+  "en": "2nd 3",
+  "fr": "2e 3",
+  "de": "2. 3"
+ },
+ "2ª 4": {
+  "en": "2nd 4",
+  "fr": "2e 4",
+  "de": "2. 4"
+ },
+ "2ª Derecha": {
+  "en": "2nd Right",
+  "fr": "2e Droite",
+  "de": "2. Rechts"
+ },
+ "2ª Izquierda": {
+  "en": "2nd Left",
+  "fr": "2e Gauche",
+  "de": "2. Links"
+ },
+ "2ª Mod 2": {
+  "en": "2nd Mod 2",
+  "fr": "2e Mod 2",
+  "de": "2. Mod 2"
+ },
+ "2ª Módulo B": {
+  "en": "2nd Module B",
+  "fr": "2e Module B",
+  "de": "2. Modul B"
+ },
+ "2ª norte": {
+  "en": "2nd north",
+  "fr": "2e nord",
+  "de": "2. Nord"
+ },
+ "2ª Pt. 1": {
+  "en": "2nd Pt. 1",
+  "fr": "2e Pt. 1",
+  "de": "2. Pt. 1"
+ },
+ "2ª Pt. 2": {
+  "en": "2nd Pt. 2",
+  "fr": "2e Pt. 2",
+  "de": "2. Pt. 2"
+ },
+ "2ª Pt. 3": {
+  "en": "2nd Pt. 3",
+  "fr": "2e Pt. 3",
+  "de": "2. Pt. 3"
+ },
+ "2ª Pt. 4": {
+  "en": "2nd Pt. 4",
+  "fr": "2e Pt. 4",
+  "de": "2. Pt. 4"
+ },
+ "2ª sur": {
+  "en": "2nd south",
+  "fr": "2e sud",
+  "de": "2. Süd"
+ },
+ "2º": {
+  "en": "2nd",
+  "fr": "2e",
+  "de": "2."
+ },
+ "2º  (Canadá)": {
+  "en": "2nd (Canadá)",
+  "fr": "2e (Canadá)",
+  "de": "2. (Canadá)"
+ },
+ "2º - Ed. B": {
+  "en": "2nd - Bldg. B",
+  "fr": "2e - Bât. B",
+  "de": "2. - Geb. B"
+ },
+ "2º ( Atenas)": {
+  "en": "2nd ( Atenas)",
+  "fr": "2e ( Atenas)",
+  "de": "2. ( Atenas)"
+ },
+ "2º ( Europa)": {
+  "en": "2nd ( Europa)",
+  "fr": "2e ( Europa)",
+  "de": "2. ( Europa)"
+ },
+ "2º (B)": {
+  "en": "2nd (B)",
+  "fr": "2e (B)",
+  "de": "2. (B)"
+ },
+ "2º A": {
+  "en": "2nd A",
+  "fr": "2e A",
+  "de": "2. A"
+ },
+ "2º A-B": {
+  "en": "2nd A-B",
+  "fr": "2e A-B",
+  "de": "2. A-B"
+ },
+ "2º ABEDUL": {
+  "en": "2nd ABEDUL",
+  "fr": "2e ABEDUL",
+  "de": "2. ABEDUL"
+ },
+ "2º Austral": {
+  "en": "2nd Austral",
+  "fr": "2e Austral",
+  "de": "2. Austral"
+ },
+ "2º B": {
+  "en": "2nd B",
+  "fr": "2e B",
+  "de": "2. B"
+ },
+ "2º B1B2": {
+  "en": "2nd B1B2",
+  "fr": "2e B1B2",
+  "de": "2. B1B2"
+ },
+ "2º C": {
+  "en": "2nd C",
+  "fr": "2e C",
+  "de": "2. C"
+ },
+ "2º D": {
+  "en": "2nd D",
+  "fr": "2e D",
+  "de": "2. D"
+ },
+ "2º dcha": {
+  "en": "2nd right",
+  "fr": "2e droite",
+  "de": "2. rechts"
+ },
+ "2º Dcha": {
+  "en": "2nd Right",
+  "fr": "2e Droite",
+  "de": "2. Rechts"
+ },
+ "2º DCHA": {
+  "en": "2nd RIGHT",
+  "fr": "2e DROITE",
+  "de": "2. RECHTS"
+ },
+ "2º dcha.": {
+  "en": "2nd right",
+  "fr": "2e droite",
+  "de": "2. rechts"
+ },
+ "2º Ed 1 Implantada": {
+  "en": "2nd Bldg 1 (fitted out)",
+  "fr": "2e Bât 1 (aménagé)",
+  "de": "2. Geb. 1 (ausgebaut)"
+ },
+ "2º Edificio O": {
+  "en": "2nd Building O",
+  "fr": "2e Bâtiment O",
+  "de": "2. Gebäude O"
+ },
+ "2º Implantada": {
+  "en": "2nd (fitted out)",
+  "fr": "2e (aménagé)",
+  "de": "2. (ausgebaut)"
+ },
+ "2º Izq": {
+  "en": "2nd Left",
+  "fr": "2e Gauche",
+  "de": "2. Links"
+ },
+ "2º M": {
+  "en": "2nd M",
+  "fr": "2e M",
+  "de": "2. M"
+ },
+ "2º Módulo 2": {
+  "en": "2nd Module 2",
+  "fr": "2e Module 2",
+  "de": "2. Modul 2"
+ },
+ "2º Modulo 3": {
+  "en": "2nd Module 3",
+  "fr": "2e Module 3",
+  "de": "2. Modul 3"
+ },
+ "2º Norte": {
+  "en": "2nd North",
+  "fr": "2e Nord",
+  "de": "2. Nord"
+ },
+ "2º Norte 1": {
+  "en": "2nd North 1",
+  "fr": "2e Nord 1",
+  "de": "2. Nord 1"
+ },
+ "2º O": {
+  "en": "2nd O",
+  "fr": "2e O",
+  "de": "2. O"
+ },
+ "2º Oeste 3": {
+  "en": "2nd West 3",
+  "fr": "2e Ouest 3",
+  "de": "2. West 3"
+ },
+ "2º OLMO": {
+  "en": "2nd OLMO",
+  "fr": "2e OLMO",
+  "de": "2. OLMO"
+ },
+ "2º Onic 3": {
+  "en": "2nd Onic 3",
+  "fr": "2e Onic 3",
+  "de": "2. Onic 3"
+ },
+ "2º Onic 6": {
+  "en": "2nd Onic 6",
+  "fr": "2e Onic 6",
+  "de": "2. Onic 6"
+ },
+ "2º Planta": {
+  "en": "2nd floor",
+  "fr": "2e étage",
+  "de": "2. Etage"
+ },
+ "2º Sur": {
+  "en": "2nd South",
+  "fr": "2e Sud",
+  "de": "2. Süd"
+ },
+ "2º y 3º": {
+  "en": "2nd and 3rd",
+  "fr": "2e et 3e",
+  "de": "2. und 3."
+ },
+ "2º- 11ª": {
+  "en": "2nd- 11th",
+  "fr": "2e- 11e",
+  "de": "2.- 11."
+ },
+ "2º-3º": {
+  "en": "2nd-3rd",
+  "fr": "2e-3e",
+  "de": "2.-3."
+ },
+ "2º-3º-4º": {
+  "en": "2nd-3rd-4th",
+  "fr": "2e-3e-4e",
+  "de": "2.-3.-4."
+ },
+ "2º-5º Torre Oriente": {
+  "en": "2nd-5th Torre Oriente",
+  "fr": "2e-5e Torre Oriente",
+  "de": "2.-5. Torre Oriente"
+ },
+ "2º, 4º y 5º": {
+  "en": "2nd, 4th and 5th",
+  "fr": "2e, 4e et 5e",
+  "de": "2., 4. und 5."
+ },
+ "2º1": {
+  "en": "2nd 1",
+  "fr": "2e 1",
+  "de": "2. 1"
+ },
+ "2º2": {
+  "en": "2nd 2",
+  "fr": "2e 2",
+  "de": "2. 2"
+ },
+ "2º3": {
+  "en": "2nd 3",
+  "fr": "2e 3",
+  "de": "2. 3"
+ },
+ "2ºB": {
+  "en": "2nd B",
+  "fr": "2e B",
+  "de": "2. B"
+ },
+ "2ºD": {
+  "en": "2nd D",
+  "fr": "2e D",
+  "de": "2. D"
+ },
+ "3 B": {
+  "en": "3 B",
+  "fr": "3 B",
+  "de": "3 B"
+ },
+ "3 D": {
+  "en": "3 D",
+  "fr": "3 D",
+  "de": "3 D"
+ },
+ "31ª Norte": {
+  "en": "31st North",
+  "fr": "31e Nord",
+  "de": "31. Nord"
+ },
+ "31ª Sur": {
+  "en": "31st South",
+  "fr": "31e Sud",
+  "de": "31. Süd"
+ },
+ "31º Planta": {
+  "en": "31st floor",
+  "fr": "31e étage",
+  "de": "31. Etage"
+ },
+ "37º": {
+  "en": "37th",
+  "fr": "37e",
+  "de": "37."
+ },
+ "3ª": {
+  "en": "3rd",
+  "fr": "3e",
+  "de": "3."
+ },
+ "3ª 2": {
+  "en": "3rd 2",
+  "fr": "3e 2",
+  "de": "3. 2"
+ },
+ "3ª 3": {
+  "en": "3rd 3",
+  "fr": "3e 3",
+  "de": "3. 3"
+ },
+ "3ª 4": {
+  "en": "3rd 4",
+  "fr": "3e 4",
+  "de": "3. 4"
+ },
+ "3ª A": {
+  "en": "3rd A",
+  "fr": "3e A",
+  "de": "3. A"
+ },
+ "3ª C-E-F-G": {
+  "en": "3rd C-E-F-G",
+  "fr": "3e C-E-F-G",
+  "de": "3. C-E-F-G"
+ },
+ "3ª Módulo B": {
+  "en": "3rd Module B",
+  "fr": "3e Module B",
+  "de": "3. Modul B"
+ },
+ "3ª Módulo C1": {
+  "en": "3rd Module C1",
+  "fr": "3e Module C1",
+  "de": "3. Modul C1"
+ },
+ "3ª Módulo C2": {
+  "en": "3rd Module C2",
+  "fr": "3e Module C2",
+  "de": "3. Modul C2"
+ },
+ "3ª y ático": {
+  "en": "3rd and penthouse",
+  "fr": "3e et attique",
+  "de": "3. und Dachgeschoss"
+ },
+ "3º": {
+  "en": "3rd",
+  "fr": "3e",
+  "de": "3."
+ },
+ "3º - Ed. A": {
+  "en": "3rd - Bldg. A",
+  "fr": "3e - Bât. A",
+  "de": "3. - Geb. A"
+ },
+ "3º - Ed. B": {
+  "en": "3rd - Bldg. B",
+  "fr": "3e - Bât. B",
+  "de": "3. - Geb. B"
+ },
+ "3º (B)": {
+  "en": "3rd (B)",
+  "fr": "3e (B)",
+  "de": "3. (B)"
+ },
+ "3º (Edificio 4)": {
+  "en": "3rd (Building 4)",
+  "fr": "3e (Bâtiment 4)",
+  "de": "3. (Gebäude 4)"
+ },
+ "3º 1": {
+  "en": "3rd 1",
+  "fr": "3e 1",
+  "de": "3. 1"
+ },
+ "3º 2": {
+  "en": "3rd 2",
+  "fr": "3e 2",
+  "de": "3. 2"
+ },
+ "3º 3": {
+  "en": "3rd 3",
+  "fr": "3e 3",
+  "de": "3. 3"
+ },
+ "3º 4": {
+  "en": "3rd 4",
+  "fr": "3e 4",
+  "de": "3. 4"
+ },
+ "3º A": {
+  "en": "3rd A",
+  "fr": "3e A",
+  "de": "3. A"
+ },
+ "3º A2": {
+  "en": "3rd A2",
+  "fr": "3e A2",
+  "de": "3. A2"
+ },
+ "3º B": {
+  "en": "3rd B",
+  "fr": "3e B",
+  "de": "3. B"
+ },
+ "3º B1A": {
+  "en": "3rd B1A",
+  "fr": "3e B1A",
+  "de": "3. B1A"
+ },
+ "3º Dcha": {
+  "en": "3rd Right",
+  "fr": "3e Droite",
+  "de": "3. Rechts"
+ },
+ "3º E": {
+  "en": "3rd E",
+  "fr": "3e E",
+  "de": "3. E"
+ },
+ "3º exterior izq": {
+  "en": "3rd exterior left",
+  "fr": "3e extérieur gauche",
+  "de": "3. außen links"
+ },
+ "3º M": {
+  "en": "3rd M",
+  "fr": "3e M",
+  "de": "3. M"
+ },
+ "3º Módulo A1 + A2": {
+  "en": "3rd Module A1 + A2",
+  "fr": "3e Module A1 + A2",
+  "de": "3. Modul A1 + A2"
+ },
+ "3º Norte": {
+  "en": "3rd North",
+  "fr": "3e Nord",
+  "de": "3. Nord"
+ },
+ "3º Norte 1": {
+  "en": "3rd North 1",
+  "fr": "3e Nord 1",
+  "de": "3. Nord 1"
+ },
+ "3º Oeste 3": {
+  "en": "3rd West 3",
+  "fr": "3e Ouest 3",
+  "de": "3. West 3"
+ },
+ "3º OLMO": {
+  "en": "3rd OLMO",
+  "fr": "3e OLMO",
+  "de": "3. OLMO"
+ },
+ "3º Onic 2": {
+  "en": "3rd Onic 2",
+  "fr": "3e Onic 2",
+  "de": "3. Onic 2"
+ },
+ "3º Onic 3": {
+  "en": "3rd Onic 3",
+  "fr": "3e Onic 3",
+  "de": "3. Onic 3"
+ },
+ "3º Planta": {
+  "en": "3rd floor",
+  "fr": "3e étage",
+  "de": "3. Etage"
+ },
+ "3º Poniente": {
+  "en": "3rd West",
+  "fr": "3e Ouest",
+  "de": "3. West"
+ },
+ "3º Sur": {
+  "en": "3rd South",
+  "fr": "3e Sud",
+  "de": "3. Süd"
+ },
+ "3º y 4º": {
+  "en": "3rd and 4th",
+  "fr": "3e et 4e",
+  "de": "3. und 4."
+ },
+ "3ºA": {
+  "en": "3rd A",
+  "fr": "3e A",
+  "de": "3. A"
+ },
+ "3ºC": {
+  "en": "3rd C",
+  "fr": "3e C",
+  "de": "3. C"
+ },
+ "3ºD": {
+  "en": "3rd D",
+  "fr": "3e D",
+  "de": "3. D"
+ },
+ "46 plazas": {
+  "en": "46 spaces",
+  "fr": "46 places",
+  "de": "46 Stellplätze"
+ },
+ "4ª": {
+  "en": "4th",
+  "fr": "4e",
+  "de": "4."
+ },
+ "4ª B2": {
+  "en": "4th B2",
+  "fr": "4e B2",
+  "de": "4. B2"
+ },
+ "4ª B3": {
+  "en": "4th B3",
+  "fr": "4e B3",
+  "de": "4. B3"
+ },
+ "4ª dcha": {
+  "en": "4th right",
+  "fr": "4e droite",
+  "de": "4. rechts"
+ },
+ "4º": {
+  "en": "4th",
+  "fr": "4e",
+  "de": "4."
+ },
+ "4º - Ed. A": {
+  "en": "4th - Bldg. A",
+  "fr": "4e - Bât. A",
+  "de": "4. - Geb. A"
+ },
+ "4º - Ed. B": {
+  "en": "4th - Bldg. B",
+  "fr": "4e - Bât. B",
+  "de": "4. - Geb. B"
+ },
+ "4º - mód. D": {
+  "en": "4th - mód. D",
+  "fr": "4e - mód. D",
+  "de": "4. - mód. D"
+ },
+ "4º (1)": {
+  "en": "4th (1)",
+  "fr": "4e (1)",
+  "de": "4. (1)"
+ },
+ "4º (2)": {
+  "en": "4th (2)",
+  "fr": "4e (2)",
+  "de": "4. (2)"
+ },
+ "4º (B)": {
+  "en": "4th (B)",
+  "fr": "4e (B)",
+  "de": "4. (B)"
+ },
+ "4º (Edificio 4)": {
+  "en": "4th (Building 4)",
+  "fr": "4e (Bâtiment 4)",
+  "de": "4. (Gebäude 4)"
+ },
+ "4º 1": {
+  "en": "4th 1",
+  "fr": "4e 1",
+  "de": "4. 1"
+ },
+ "4º 2": {
+  "en": "4th 2",
+  "fr": "4e 2",
+  "de": "4. 2"
+ },
+ "4º 3": {
+  "en": "4th 3",
+  "fr": "4e 3",
+  "de": "4. 3"
+ },
+ "4º 4": {
+  "en": "4th 4",
+  "fr": "4e 4",
+  "de": "4. 4"
+ },
+ "4º A": {
+  "en": "4th A",
+  "fr": "4e A",
+  "de": "4. A"
+ },
+ "4º B": {
+  "en": "4th B",
+  "fr": "4e B",
+  "de": "4. B"
+ },
+ "4º dcha.": {
+  "en": "4th right",
+  "fr": "4e droite",
+  "de": "4. rechts"
+ },
+ "4º Implantada": {
+  "en": "4th (fitted out)",
+  "fr": "4e (aménagé)",
+  "de": "4. (ausgebaut)"
+ },
+ "4º Izq": {
+  "en": "4th Left",
+  "fr": "4e Gauche",
+  "de": "4. Links"
+ },
+ "4º M": {
+  "en": "4th M",
+  "fr": "4e M",
+  "de": "4. M"
+ },
+ "4º M01": {
+  "en": "4th M01",
+  "fr": "4e M01",
+  "de": "4. M01"
+ },
+ "4º M03": {
+  "en": "4th M03",
+  "fr": "4e M03",
+  "de": "4. M03"
+ },
+ "4º M05": {
+  "en": "4th M05",
+  "fr": "4e M05",
+  "de": "4. M05"
+ },
+ "4º mod. D": {
+  "en": "4th mod. D",
+  "fr": "4e mod. D",
+  "de": "4. mod. D"
+ },
+ "4º Mod. D": {
+  "en": "4th Mod. D",
+  "fr": "4e Mod. D",
+  "de": "4. Mod. D"
+ },
+ "4º Módulos B2+B3": {
+  "en": "4th Modules B2+B3",
+  "fr": "4e Modules B2+B3",
+  "de": "4. Module B2+B3"
+ },
+ "4º Norte 1": {
+  "en": "4th North 1",
+  "fr": "4e Nord 1",
+  "de": "4. Nord 1"
+ },
+ "4º OLMO": {
+  "en": "4th OLMO",
+  "fr": "4e OLMO",
+  "de": "4. OLMO"
+ },
+ "4º Onic 2": {
+  "en": "4th Onic 2",
+  "fr": "4e Onic 2",
+  "de": "4. Onic 2"
+ },
+ "4º Onic 3": {
+  "en": "4th Onic 3",
+  "fr": "4e Onic 3",
+  "de": "4. Onic 3"
+ },
+ "4º Planta": {
+  "en": "4th floor",
+  "fr": "4e étage",
+  "de": "4. Etage"
+ },
+ "4º-5º": {
+  "en": "4th-5th",
+  "fr": "4e-5e",
+  "de": "4.-5."
+ },
+ "4º-7º": {
+  "en": "4th-7th",
+  "fr": "4e-7e",
+  "de": "4.-7."
+ },
+ "4ºB": {
+  "en": "4th B",
+  "fr": "4e B",
+  "de": "4. B"
+ },
+ "4ºB1A": {
+  "en": "4th B1A",
+  "fr": "4e B1A",
+  "de": "4. B1A"
+ },
+ "5/PB": {
+  "en": "5/PB",
+  "fr": "5/PB",
+  "de": "5/PB"
+ },
+ "5ª": {
+  "en": "5th",
+  "fr": "5e",
+  "de": "5."
+ },
+ "5ª 1": {
+  "en": "5th 1",
+  "fr": "5e 1",
+  "de": "5. 1"
+ },
+ "5ª 2": {
+  "en": "5th 2",
+  "fr": "5e 2",
+  "de": "5. 2"
+ },
+ "5ª 4": {
+  "en": "5th 4",
+  "fr": "5e 4",
+  "de": "5. 4"
+ },
+ "5ª A": {
+  "en": "5th A",
+  "fr": "5e A",
+  "de": "5. A"
+ },
+ "5º": {
+  "en": "5th",
+  "fr": "5e",
+  "de": "5."
+ },
+ "5º A": {
+  "en": "5th A",
+  "fr": "5e A",
+  "de": "5. A"
+ },
+ "5º B": {
+  "en": "5th B",
+  "fr": "5e B",
+  "de": "5. B"
+ },
+ "5º B1": {
+  "en": "5th B1",
+  "fr": "5e B1",
+  "de": "5. B1"
+ },
+ "5º dcha": {
+  "en": "5th right",
+  "fr": "5e droite",
+  "de": "5. rechts"
+ },
+ "5º Dcha (Edificio 4)": {
+  "en": "5th Right (Building 4)",
+  "fr": "5e Droite (Bâtiment 4)",
+  "de": "5. Rechts (Gebäude 4)"
+ },
+ "5º derecha": {
+  "en": "5th right",
+  "fr": "5e droite",
+  "de": "5. rechts"
+ },
+ "5º ED 2": {
+  "en": "5th BLDG 2",
+  "fr": "5e BÂT 2",
+  "de": "5. GEB 2"
+ },
+ "5º Norte": {
+  "en": "5th North",
+  "fr": "5e Nord",
+  "de": "5. Nord"
+ },
+ "5º Norte 1": {
+  "en": "5th North 1",
+  "fr": "5e Nord 1",
+  "de": "5. Nord 1"
+ },
+ "5º Onic 3": {
+  "en": "5th Onic 3",
+  "fr": "5e Onic 3",
+  "de": "5. Onic 3"
+ },
+ "5º Planta": {
+  "en": "5th floor",
+  "fr": "5e étage",
+  "de": "5. Etage"
+ },
+ "5º Sur": {
+  "en": "5th South",
+  "fr": "5e Sud",
+  "de": "5. Süd"
+ },
+ "5ºA": {
+  "en": "5th A",
+  "fr": "5e A",
+  "de": "5. A"
+ },
+ "6 plazas": {
+  "en": "6 spaces",
+  "fr": "6 places",
+  "de": "6 Stellplätze"
+ },
+ "6°": {
+  "en": "6th",
+  "fr": "6e",
+  "de": "6."
+ },
+ "6ª": {
+  "en": "6th",
+  "fr": "6e",
+  "de": "6."
+ },
+ "6ª (edificio 2)": {
+  "en": "6th (building 2)",
+  "fr": "6e (bâtiment 2)",
+  "de": "6. (Gebäude 2)"
+ },
+ "6º": {
+  "en": "6th",
+  "fr": "6e",
+  "de": "6."
+ },
+ "6º ABEDUL": {
+  "en": "6th ABEDUL",
+  "fr": "6e ABEDUL",
+  "de": "6. ABEDUL"
+ },
+ "6º izq": {
+  "en": "6th left",
+  "fr": "6e gauche",
+  "de": "6. links"
+ },
+ "6º Izq": {
+  "en": "6th Left",
+  "fr": "6e Gauche",
+  "de": "6. Links"
+ },
+ "6º Norte 1": {
+  "en": "6th North 1",
+  "fr": "6e Nord 1",
+  "de": "6. Nord 1"
+ },
+ "6º OLMO": {
+  "en": "6th OLMO",
+  "fr": "6e OLMO",
+  "de": "6. OLMO"
+ },
+ "6º Onic 3": {
+  "en": "6th Onic 3",
+  "fr": "6e Onic 3",
+  "de": "6. Onic 3"
+ },
+ "6º Onic 6": {
+  "en": "6th Onic 6",
+  "fr": "6e Onic 6",
+  "de": "6. Onic 6"
+ },
+ "6º Poniente": {
+  "en": "6th West",
+  "fr": "6e Ouest",
+  "de": "6. West"
+ },
+ "6º-7º": {
+  "en": "6th-7th",
+  "fr": "6e-7e",
+  "de": "6.-7."
+ },
+ "6ºA": {
+  "en": "6th A",
+  "fr": "6e A",
+  "de": "6. A"
+ },
+ "6ºB1": {
+  "en": "6th B1",
+  "fr": "6e B1",
+  "de": "6. B1"
+ },
+ "6ºC": {
+  "en": "6th C",
+  "fr": "6e C",
+  "de": "6. C"
+ },
+ "6ºD": {
+  "en": "6th D",
+  "fr": "6e D",
+  "de": "6. D"
+ },
+ "7ª": {
+  "en": "7th",
+  "fr": "7e",
+  "de": "7."
+ },
+ "7º": {
+  "en": "7th",
+  "fr": "7e",
+  "de": "7."
+ },
+ "7º Izq": {
+  "en": "7th Left",
+  "fr": "7e Gauche",
+  "de": "7. Links"
+ },
+ "7º Norte 1": {
+  "en": "7th North 1",
+  "fr": "7e Nord 1",
+  "de": "7. Nord 1"
+ },
+ "7º OLMO": {
+  "en": "7th OLMO",
+  "fr": "7e OLMO",
+  "de": "7. OLMO"
+ },
+ "7º Sur": {
+  "en": "7th South",
+  "fr": "7e Sud",
+  "de": "7. Süd"
+ },
+ "7º y 8º": {
+  "en": "7th and 8th",
+  "fr": "7e et 8e",
+  "de": "7. und 8."
+ },
+ "7º Y 8º": {
+  "en": "7th and 8th",
+  "fr": "7e et 8e",
+  "de": "7. und 8."
+ },
+ "7º-9º": {
+  "en": "7th-9th",
+  "fr": "7e-9e",
+  "de": "7.-9."
+ },
+ "8ª": {
+  "en": "8th",
+  "fr": "8e",
+  "de": "8."
+ },
+ "8ª Sur": {
+  "en": "8th South",
+  "fr": "8e Sud",
+  "de": "8. Süd"
+ },
+ "8º": {
+  "en": "8th",
+  "fr": "8e",
+  "de": "8."
+ },
+ "8º dcha": {
+  "en": "8th right",
+  "fr": "8e droite",
+  "de": "8. rechts"
+ },
+ "8º Norte 1": {
+  "en": "8th North 1",
+  "fr": "8e Nord 1",
+  "de": "8. Nord 1"
+ },
+ "8º-11º": {
+  "en": "8th-11th",
+  "fr": "8e-11e",
+  "de": "8.-11."
+ },
+ "8º-9º": {
+  "en": "8th-9th",
+  "fr": "8e-9e",
+  "de": "8.-9."
+ },
+ "9ª": {
+  "en": "9th",
+  "fr": "9e",
+  "de": "9."
+ },
+ "9ª B": {
+  "en": "9th B",
+  "fr": "9e B",
+  "de": "9. B"
+ },
+ "9º": {
+  "en": "9th",
+  "fr": "9e",
+  "de": "9."
+ },
+ "9º ALAMO": {
+  "en": "9th ALAMO",
+  "fr": "9e ALAMO",
+  "de": "9. ALAMO"
+ },
+ "9º Norte 1": {
+  "en": "9th North 1",
+  "fr": "9e Nord 1",
+  "de": "9. Nord 1"
+ },
+ "A confirmar": {
+  "en": "To be confirmed",
+  "fr": "À confirmer",
+  "de": "Wird bestätigt"
+ },
+ "A consultar": {
+  "en": "On request",
+  "fr": "Sur demande",
+  "de": "Auf Anfrage"
+ },
+ "Abril 2026": {
+  "en": "April 2026",
+  "fr": "Avril 2026",
+  "de": "April 2026"
+ },
+ "Abril 2027": {
+  "en": "April 2027",
+  "fr": "Avril 2027",
+  "de": "April 2027"
+ },
+ "Acceso Local 1-2-3-4": {
+  "en": "Access to units 1-2-3-4",
+  "fr": "Accès locaux 1-2-3-4",
+  "de": "Zugang Einheiten 1-2-3-4"
+ },
+ "Acceso Local 8": {
+  "en": "Access to unit 8",
+  "fr": "Accès local 8",
+  "de": "Zugang Einheit 8"
+ },
+ "Acceso/oficina": {
+  "en": "Access/office",
+  "fr": "Accès/bureau",
+  "de": "Zugang/Büro"
+ },
+ "Agosto 2025": {
+  "en": "August 2025",
+  "fr": "Août 2025",
+  "de": "August 2025"
+ },
+ "Agosto 2026": {
+  "en": "August 2026",
+  "fr": "Août 2026",
+  "de": "August 2026"
+ },
+ "Almacén": {
+  "en": "Storage",
+  "fr": "Stockage",
+  "de": "Lager"
+ },
+ "Almacén / Parking Bicis": {
+  "en": "Storage / Bike parking",
+  "fr": "Stockage / Parking vélos",
+  "de": "Lager / Fahrradstellplätze"
+ },
+ "Almacén-oficina": {
+  "en": "Storage-office",
+  "fr": "Stockage-bureau",
+  "de": "Lager-Büro"
+ },
+ "Almacén/maquinaria": {
+  "en": "Storage/machinery",
+  "fr": "Stockage/machines",
+  "de": "Lager/Maschinen"
+ },
+ "Altillo": {
+  "en": "Loft",
+  "fr": "Soupente",
+  "de": "Hängeboden"
+ },
+ "Amenities": {
+  "en": "Amenities",
+  "fr": "Espaces communs",
+  "de": "Gemeinschaftsflächen"
+ },
+ "Aparcamiento": {
+  "en": "Parking",
+  "fr": "Parking",
+  "de": "Parkplätze"
+ },
+ "ÁTICA I.": {
+  "en": "ÁTICA I.",
+  "fr": "ÁTICA I.",
+  "de": "ÁTICA I."
+ },
+ "ÁTICA I. Planta 2": {
+  "en": "ÁTICA I. Floor 2",
+  "fr": "ÁTICA I. Étage 2",
+  "de": "ÁTICA I. Etage 2"
+ },
+ "ÁTICA III.": {
+  "en": "ÁTICA III.",
+  "fr": "ÁTICA III.",
+  "de": "ÁTICA III."
+ },
+ "ÁTICA III. Planta 2A1": {
+  "en": "ÁTICA III. Floor 2A1",
+  "fr": "ÁTICA III. Étage 2A1",
+  "de": "ÁTICA III. Etage 2A1"
+ },
+ "ÁTICA III. Planta 2C": {
+  "en": "ÁTICA III. Floor 2C",
+  "fr": "ÁTICA III. Étage 2C",
+  "de": "ÁTICA III. Etage 2C"
+ },
+ "ÁTICA III. Planta 3B": {
+  "en": "ÁTICA III. Floor 3B",
+  "fr": "ÁTICA III. Étage 3B",
+  "de": "ÁTICA III. Etage 3B"
+ },
+ "ÁTICA V.": {
+  "en": "ÁTICA V.",
+  "fr": "ÁTICA V.",
+  "de": "ÁTICA V."
+ },
+ "ÁTICA V. Planta 1 D-E-F-G": {
+  "en": "ÁTICA V. Floor 1 D-E-F-G",
+  "fr": "ÁTICA V. Étage 1 D-E-F-G",
+  "de": "ÁTICA V. Etage 1 D-E-F-G"
+ },
+ "ÁTICA V. Planta 3 C-E-F-G": {
+  "en": "ÁTICA V. Floor 3 C-E-F-G",
+  "fr": "ÁTICA V. Étage 3 C-E-F-G",
+  "de": "ÁTICA V. Etage 3 C-E-F-G"
+ },
+ "ÁTICA V. Planta Baja E": {
+  "en": "ÁTICA V. Ground floor E",
+  "fr": "ÁTICA V. Rez-de-chaussée E",
+  "de": "ÁTICA V. Erdgeschoss E"
+ },
+ "ÁTICA V. SS": {
+  "en": "ÁTICA V. SS",
+  "fr": "ÁTICA V. SS",
+  "de": "ÁTICA V. SS"
+ },
+ "Ático": {
+  "en": "Penthouse",
+  "fr": "Attique",
+  "de": "Dachgeschoss"
+ },
+ "Auriga 3. Baja": {
+  "en": "Auriga 3. Ground floor",
+  "fr": "Auriga 3. Rez-de-chaussée",
+  "de": "Auriga 3. Erdgeschoss"
+ },
+ "Auriga 3. Exterior": {
+  "en": "Auriga 3. Exterior",
+  "fr": "Auriga 3. Extérieur",
+  "de": "Auriga 3. Außen"
+ },
+ "Auriga 3. Primera": {
+  "en": "Auriga 3. 1st",
+  "fr": "Auriga 3. 1er",
+  "de": "Auriga 3. 1."
+ },
+ "Auriga 3. Sótano": {
+  "en": "Auriga 3. Basement",
+  "fr": "Auriga 3. Sous-sol",
+  "de": "Auriga 3. Untergeschoss"
+ },
+ "Azotea": {
+  "en": "Roof terrace",
+  "fr": "Toit-terrasse",
+  "de": "Dachterrasse"
+ },
+ "baja": {
+  "en": "ground floor",
+  "fr": "rez-de-chaussée",
+  "de": "Erdgeschoss"
+ },
+ "Baja": {
+  "en": "Ground floor",
+  "fr": "Rez-de-chaussée",
+  "de": "Erdgeschoss"
+ },
+ "Baja - mód. 1": {
+  "en": "Ground floor - mód. 1",
+  "fr": "Rez-de-chaussée - mód. 1",
+  "de": "Erdgeschoss - mód. 1"
+ },
+ "Baja - mód. 2": {
+  "en": "Ground floor - mód. 2",
+  "fr": "Rez-de-chaussée - mód. 2",
+  "de": "Erdgeschoss - mód. 2"
+ },
+ "Baja ( Dublín)": {
+  "en": "Ground floor ( Dublín)",
+  "fr": "Rez-de-chaussée ( Dublín)",
+  "de": "Erdgeschoss ( Dublín)"
+ },
+ "Baja + 1ª": {
+  "en": "Ground floor + 1st",
+  "fr": "Rez-de-chaussée + 1er",
+  "de": "Erdgeschoss + 1."
+ },
+ "Baja + 1º": {
+  "en": "Ground floor + 1st",
+  "fr": "Rez-de-chaussée + 1er",
+  "de": "Erdgeschoss + 1."
+ },
+ "Baja 1": {
+  "en": "Ground floor 1",
+  "fr": "Rez-de-chaussée 1",
+  "de": "Erdgeschoss 1"
+ },
+ "Baja 2": {
+  "en": "Ground floor 2",
+  "fr": "Rez-de-chaussée 2",
+  "de": "Erdgeschoss 2"
+ },
+ "Baja A": {
+  "en": "Ground floor A",
+  "fr": "Rez-de-chaussée A",
+  "de": "Erdgeschoss A"
+ },
+ "Baja B": {
+  "en": "Ground floor B",
+  "fr": "Rez-de-chaussée B",
+  "de": "Erdgeschoss B"
+ },
+ "Baja B4": {
+  "en": "Ground floor B4",
+  "fr": "Rez-de-chaussée B4",
+  "de": "Erdgeschoss B4"
+ },
+ "Baja Bilbao": {
+  "en": "Ground floor Bilbao",
+  "fr": "Rez-de-chaussée Bilbao",
+  "de": "Erdgeschoss Bilbao"
+ },
+ "Baja C": {
+  "en": "Ground floor C",
+  "fr": "Rez-de-chaussée C",
+  "de": "Erdgeschoss C"
+ },
+ "Baja Dcha": {
+  "en": "Ground floor Right",
+  "fr": "Rez-de-chaussée Droite",
+  "de": "Erdgeschoss Rechts"
+ },
+ "Baja Dcha A": {
+  "en": "Ground floor Right A",
+  "fr": "Rez-de-chaussée Droite A",
+  "de": "Erdgeschoss Rechts A"
+ },
+ "Baja Implantada": {
+  "en": "Ground floor (fitted out)",
+  "fr": "Rez-de-chaussée (aménagé)",
+  "de": "Erdgeschoss (ausgebaut)"
+ },
+ "Baja Izq": {
+  "en": "Ground floor Left",
+  "fr": "Rez-de-chaussée Gauche",
+  "de": "Erdgeschoss Links"
+ },
+ "Baja Local 2-3-5-6-7-8": {
+  "en": "Ground floor Units 2-3-5-6-7-8",
+  "fr": "Rez-de-chaussée Locaux 2-3-5-6-7-8",
+  "de": "Erdgeschoss Einheiten 2-3-5-6-7-8"
+ },
+ "Baja Local 4-9-10": {
+  "en": "Ground floor Units 4-9-10",
+  "fr": "Rez-de-chaussée Locaux 4-9-10",
+  "de": "Erdgeschoss Einheiten 4-9-10"
+ },
+ "Baja Mod 2": {
+  "en": "Ground floor Mod 2",
+  "fr": "Rez-de-chaussée Mod 2",
+  "de": "Erdgeschoss Mod 2"
+ },
+ "Baja Mod. C": {
+  "en": "Ground floor Mod. C",
+  "fr": "Rez-de-chaussée Mod. C",
+  "de": "Erdgeschoss Mod. C"
+ },
+ "Baja Mod. C 1": {
+  "en": "Ground floor Mod. C 1",
+  "fr": "Rez-de-chaussée Mod. C 1",
+  "de": "Erdgeschoss Mod. C 1"
+ },
+ "Baja Mod. C 2": {
+  "en": "Ground floor Mod. C 2",
+  "fr": "Rez-de-chaussée Mod. C 2",
+  "de": "Erdgeschoss Mod. C 2"
+ },
+ "Baja Mod. D": {
+  "en": "Ground floor Mod. D",
+  "fr": "Rez-de-chaussée Mod. D",
+  "de": "Erdgeschoss Mod. D"
+ },
+ "Baja Mod.A": {
+  "en": "Ground floor Mod.A",
+  "fr": "Rez-de-chaussée Mod.A",
+  "de": "Erdgeschoss Mod.A"
+ },
+ "Baja Mod.B": {
+  "en": "Ground floor Mod.B",
+  "fr": "Rez-de-chaussée Mod.B",
+  "de": "Erdgeschoss Mod.B"
+ },
+ "Baja Modulo 1": {
+  "en": "Ground floor Module 1",
+  "fr": "Rez-de-chaussée Module 1",
+  "de": "Erdgeschoss Modul 1"
+ },
+ "Baja Modulo 2": {
+  "en": "Ground floor Module 2",
+  "fr": "Rez-de-chaussée Module 2",
+  "de": "Erdgeschoss Modul 2"
+ },
+ "Baja Modulo 3": {
+  "en": "Ground floor Module 3",
+  "fr": "Rez-de-chaussée Module 3",
+  "de": "Erdgeschoss Modul 3"
+ },
+ "Baja Módulo B1": {
+  "en": "Ground floor Module B1",
+  "fr": "Rez-de-chaussée Module B1",
+  "de": "Erdgeschoss Modul B1"
+ },
+ "Baja Norte": {
+  "en": "Ground floor North",
+  "fr": "Rez-de-chaussée Nord",
+  "de": "Erdgeschoss Nord"
+ },
+ "Baja Norte 1": {
+  "en": "Ground floor North 1",
+  "fr": "Rez-de-chaussée Nord 1",
+  "de": "Erdgeschoss Nord 1"
+ },
+ "Baja Norte 2": {
+  "en": "Ground floor North 2",
+  "fr": "Rez-de-chaussée Nord 2",
+  "de": "Erdgeschoss Nord 2"
+ },
+ "Baja O": {
+  "en": "Ground floor O",
+  "fr": "Rez-de-chaussée O",
+  "de": "Erdgeschoss O"
+ },
+ "Baja Oeste 3": {
+  "en": "Ground floor West 3",
+  "fr": "Rez-de-chaussée Ouest 3",
+  "de": "Erdgeschoss West 3"
+ },
+ "Baja Pt.1": {
+  "en": "Ground floor Pt.1",
+  "fr": "Rez-de-chaussée Pt.1",
+  "de": "Erdgeschoss Pt.1"
+ },
+ "Baja Pt.2": {
+  "en": "Ground floor Pt.2",
+  "fr": "Rez-de-chaussée Pt.2",
+  "de": "Erdgeschoss Pt.2"
+ },
+ "Baja Pt.3": {
+  "en": "Ground floor Pt.3",
+  "fr": "Rez-de-chaussée Pt.3",
+  "de": "Erdgeschoss Pt.3"
+ },
+ "Baja Pt.4": {
+  "en": "Ground floor Pt.4",
+  "fr": "Rez-de-chaussée Pt.4",
+  "de": "Erdgeschoss Pt.4"
+ },
+ "Baja Valencia": {
+  "en": "Ground floor Valencia",
+  "fr": "Rez-de-chaussée Valencia",
+  "de": "Erdgeschoss Valencia"
+ },
+ "Baja y entreplanta": {
+  "en": "Ground floor and mezzanine",
+  "fr": "Rez-de-chaussée et entresol",
+  "de": "Erdgeschoss und Zwischengeschoss"
+ },
+ "Baja y Entreplanta": {
+  "en": "Ground floor and Mezzanine",
+  "fr": "Rez-de-chaussée et Entresol",
+  "de": "Erdgeschoss und Zwischengeschoss"
+ },
+ "Baja y semisótano": {
+  "en": "Ground floor and lower ground floor",
+  "fr": "Rez-de-chaussée et semi-sous-sol",
+  "de": "Erdgeschoss und Souterrain"
+ },
+ "Baja y sótano": {
+  "en": "Ground floor and basement",
+  "fr": "Rez-de-chaussée et sous-sol",
+  "de": "Erdgeschoss und Untergeschoss"
+ },
+ "Baja y Sótano": {
+  "en": "Ground floor and Basement",
+  "fr": "Rez-de-chaussée et Sous-sol",
+  "de": "Erdgeschoss und Untergeschoss"
+ },
+ "Baja, Entreplanta": {
+  "en": "Ground floor, Mezzanine",
+  "fr": "Rez-de-chaussée, Entresol",
+  "de": "Erdgeschoss, Zwischengeschoss"
+ },
+ "Baja, entreplanta y sótano": {
+  "en": "Ground floor, mezzanine and basement",
+  "fr": "Rez-de-chaussée, entresol et sous-sol",
+  "de": "Erdgeschoss, Zwischengeschoss und Untergeschoss"
+ },
+ "Baja, Entreplanta y sótano": {
+  "en": "Ground floor, Mezzanine and basement",
+  "fr": "Rez-de-chaussée, Entresol et sous-sol",
+  "de": "Erdgeschoss, Zwischengeschoss und Untergeschoss"
+ },
+ "Baja, Entreplanta y Sótano": {
+  "en": "Ground floor, Mezzanine and Basement",
+  "fr": "Rez-de-chaussée, Entresol et Sous-sol",
+  "de": "Erdgeschoss, Zwischengeschoss und Untergeschoss"
+ },
+ "Baja, Entreplanta, Primera, Segunda": {
+  "en": "Ground floor, Mezzanine, 1st, 2nd",
+  "fr": "Rez-de-chaussée, Entresol, 1er, 2e",
+  "de": "Erdgeschoss, Zwischengeschoss, 1., 2."
+ },
+ "Baja, Primera": {
+  "en": "Ground floor, 1st",
+  "fr": "Rez-de-chaussée, 1er",
+  "de": "Erdgeschoss, 1."
+ },
+ "Baja, Primera, Segunda": {
+  "en": "Ground floor, 1st, 2nd",
+  "fr": "Rez-de-chaussée, 1er, 2e",
+  "de": "Erdgeschoss, 1., 2."
+ },
+ "Baja, Semisótano": {
+  "en": "Ground floor, Lower ground floor",
+  "fr": "Rez-de-chaussée, Semi-sous-sol",
+  "de": "Erdgeschoss, Souterrain"
+ },
+ "Baja, Sótano": {
+  "en": "Ground floor, Basement",
+  "fr": "Rez-de-chaussée, Sous-sol",
+  "de": "Erdgeschoss, Untergeschoss"
+ },
+ "Bajo": {
+  "en": "Ground floor",
+  "fr": "Rez-de-chaussée",
+  "de": "Erdgeschoss"
+ },
+ "Bajo - 1ª - 2ª - 3ª": {
+  "en": "Ground floor - 1st - 2nd - 3rd",
+  "fr": "Rez-de-chaussée - 1er - 2e - 3e",
+  "de": "Erdgeschoss - 1. - 2. - 3."
+ },
+ "Bajo - B": {
+  "en": "Ground floor - B",
+  "fr": "Rez-de-chaussée - B",
+  "de": "Erdgeschoss - B"
+ },
+ "Bajo 1º": {
+  "en": "Ground floor 1st",
+  "fr": "Rez-de-chaussée 1er",
+  "de": "Erdgeschoss 1."
+ },
+ "Bajo A": {
+  "en": "Ground floor A",
+  "fr": "Rez-de-chaussée A",
+  "de": "Erdgeschoss A"
+ },
+ "Bajo B": {
+  "en": "Ground floor B",
+  "fr": "Rez-de-chaussée B",
+  "de": "Erdgeschoss B"
+ },
+ "Bajo cubierta": {
+  "en": "Under-roof floor",
+  "fr": "Sous-combles",
+  "de": "Dachgeschoss"
+ },
+ "Bajo Cubierta": {
+  "en": "Under-roof floor",
+  "fr": "Sous-combles",
+  "de": "Dachgeschoss"
+ },
+ "Bajo Dcha": {
+  "en": "Ground floor Right",
+  "fr": "Rez-de-chaussée Droite",
+  "de": "Erdgeschoss Rechts"
+ },
+ "Bajo ext": {
+  "en": "Ground floor (exterior)",
+  "fr": "Rez-de-chaussée (extérieur)",
+  "de": "Erdgeschoss (außen)"
+ },
+ "Bajo G": {
+  "en": "Ground floor G",
+  "fr": "Rez-de-chaussée G",
+  "de": "Erdgeschoss G"
+ },
+ "Bajo H": {
+  "en": "Ground floor H",
+  "fr": "Rez-de-chaussée H",
+  "de": "Erdgeschoss H"
+ },
+ "Bajo int": {
+  "en": "Ground floor (interior)",
+  "fr": "Rez-de-chaussée (intérieur)",
+  "de": "Erdgeschoss (innen)"
+ },
+ "Bajo Izq": {
+  "en": "Ground floor Left",
+  "fr": "Rez-de-chaussée Gauche",
+  "de": "Erdgeschoss Links"
+ },
+ "Bajo y 1º": {
+  "en": "Ground floor and 1st",
+  "fr": "Rez-de-chaussée et 1er",
+  "de": "Erdgeschoss und 1."
+ },
+ "Bar": {
+  "en": "Bar",
+  "fr": "Bar",
+  "de": "Bar"
+ },
+ "Bodega": {
+  "en": "Cellar",
+  "fr": "Cave",
+  "de": "Keller"
+ },
+ "Café Espectáculo": {
+  "en": "Café with live shows",
+  "fr": "Café-spectacle",
+  "de": "Café mit Bühnenprogramm"
+ },
+ "Cafetería": {
+  "en": "Café",
+  "fr": "Cafétéria",
+  "de": "Café"
+ },
+ "Clínica/oficina/residencial": {
+  "en": "Clinic/office/residential",
+  "fr": "Clinique/bureau/résidentiel",
+  "de": "Klinik/Büro/Wohnen"
+ },
+ "comercial": {
+  "en": "retail",
+  "fr": "commerce",
+  "de": "Einzelhandel"
+ },
+ "Comercial": {
+  "en": "Retail",
+  "fr": "Commerce",
+  "de": "Einzelhandel"
+ },
+ "Comercial/oficinas": {
+  "en": "Retail/offices",
+  "fr": "Commerce/bureaux",
+  "de": "Einzelhandel/Büros"
+ },
+ "Comercial/Oficinas": {
+  "en": "Retail/Offices",
+  "fr": "Commerce/Bureaux",
+  "de": "Einzelhandel/Büros"
+ },
+ "Consultar": {
+  "en": "On request",
+  "fr": "Sur demande",
+  "de": "Auf Anfrage"
+ },
+ "contrato hasta Abril 2030": {
+  "en": "lease until April 2030",
+  "fr": "bail jusqu'en avril 2030",
+  "de": "Mietvertrag bis April 2030"
+ },
+ "contrato hasta noviembre 2033": {
+  "en": "lease until November 2033",
+  "fr": "bail jusqu'en novembre 2033",
+  "de": "Mietvertrag bis November 2033"
+ },
+ "Dársena": {
+  "en": "Loading dock",
+  "fr": "Quai de chargement",
+  "de": "Laderampe"
+ },
+ "Dic 2026": {
+  "en": "Dec 2026",
+  "fr": "Déc. 2026",
+  "de": "Dez. 2026"
+ },
+ "Diciembre 2024": {
+  "en": "December 2024",
+  "fr": "Décembre 2024",
+  "de": "Dezember 2024"
+ },
+ "Diciembre 2025": {
+  "en": "December 2025",
+  "fr": "Décembre 2025",
+  "de": "Dezember 2025"
+ },
+ "Diciembre 2026": {
+  "en": "December 2026",
+  "fr": "Décembre 2026",
+  "de": "Dezember 2026"
+ },
+ "Diciembre 2027": {
+  "en": "December 2027",
+  "fr": "Décembre 2027",
+  "de": "Dezember 2027"
+ },
+ "Dos entreplantas": {
+  "en": "Two mezzanines",
+  "fr": "Deux entresols",
+  "de": "Zwei Zwischengeschosse"
+ },
+ "Dotacional": {
+  "en": "Public facilities",
+  "fr": "Équipements publics",
+  "de": "Gemeinbedarf"
+ },
+ "Dotacional/ oficinas": {
+  "en": "Public facilities/ offices",
+  "fr": "Équipements publics/ bureaux",
+  "de": "Gemeinbedarf/ Büros"
+ },
+ "Dotacional/sanitario": {
+  "en": "Public facilities/healthcare",
+  "fr": "Équipements publics/santé",
+  "de": "Gemeinbedarf/Gesundheitswesen"
+ },
+ "E1 1º": {
+  "en": "E1 1st",
+  "fr": "E1 1er",
+  "de": "E1 1."
+ },
+ "E1 2º": {
+  "en": "E1 2nd",
+  "fr": "E1 2e",
+  "de": "E1 2."
+ },
+ "E1 3º": {
+  "en": "E1 3rd",
+  "fr": "E1 3e",
+  "de": "E1 3."
+ },
+ "E1 4º": {
+  "en": "E1 4th",
+  "fr": "E1 4e",
+  "de": "E1 4."
+ },
+ "E1 Bajo": {
+  "en": "E1 Ground floor",
+  "fr": "E1 Rez-de-chaussée",
+  "de": "E1 Erdgeschoss"
+ },
+ "E1, 1º, 2º, 4º": {
+  "en": "E1, 1st, 2nd, 4th",
+  "fr": "E1, 1er, 2e, 4e",
+  "de": "E1, 1., 2., 4."
+ },
+ "E2, Baja, 2º, 3º, 4º": {
+  "en": "E2, Ground floor, 2nd, 3rd, 4th",
+  "fr": "E2, Rez-de-chaussée, 2e, 3e, 4e",
+  "de": "E2, Erdgeschoss, 2., 3., 4."
+ },
+ "E2, Baja, 2º, 4º": {
+  "en": "E2, Ground floor, 2nd, 4th",
+  "fr": "E2, Rez-de-chaussée, 2e, 4e",
+  "de": "E2, Erdgeschoss, 2., 4."
+ },
+ "E3 1º": {
+  "en": "E3 1st",
+  "fr": "E3 1er",
+  "de": "E3 1."
+ },
+ "E3 Bajo": {
+  "en": "E3 Ground floor",
+  "fr": "E3 Rez-de-chaussée",
+  "de": "E3 Erdgeschoss"
+ },
+ "Ed \"A\" 2º": {
+  "en": "Bldg \"A\" 2nd",
+  "fr": "Bât \"A\" 2e",
+  "de": "Geb \"A\" 2."
+ },
+ "Ed \"A\" 4º": {
+  "en": "Bldg \"A\" 4th",
+  "fr": "Bât \"A\" 4e",
+  "de": "Geb \"A\" 4."
+ },
+ "Ed \"B\" 1º": {
+  "en": "Bldg \"B\" 1st",
+  "fr": "Bât \"B\" 1er",
+  "de": "Geb \"B\" 1."
+ },
+ "Ed \"B\" 2º": {
+  "en": "Bldg \"B\" 2nd",
+  "fr": "Bât \"B\" 2e",
+  "de": "Geb \"B\" 2."
+ },
+ "Ed \"B\" 3º": {
+  "en": "Bldg \"B\" 3rd",
+  "fr": "Bât \"B\" 3e",
+  "de": "Geb \"B\" 3."
+ },
+ "Ed \"B\" 4º": {
+  "en": "Bldg \"B\" 4th",
+  "fr": "Bât \"B\" 4e",
+  "de": "Geb \"B\" 4."
+ },
+ "Ed \"B\" 5º": {
+  "en": "Bldg \"B\" 5th",
+  "fr": "Bât \"B\" 5e",
+  "de": "Geb \"B\" 5."
+ },
+ "Ed \"B\" 6º": {
+  "en": "Bldg \"B\" 6th",
+  "fr": "Bât \"B\" 6e",
+  "de": "Geb \"B\" 6."
+ },
+ "Ed \"B\" 7º": {
+  "en": "Bldg \"B\" 7th",
+  "fr": "Bât \"B\" 7e",
+  "de": "Geb \"B\" 7."
+ },
+ "Ed \"B\" 8º": {
+  "en": "Bldg \"B\" 8th",
+  "fr": "Bât \"B\" 8e",
+  "de": "Geb \"B\" 8."
+ },
+ "Ed \"B\" Baja": {
+  "en": "Bldg \"B\" Ground floor",
+  "fr": "Bât \"B\" Rez-de-chaussée",
+  "de": "Geb \"B\" Erdgeschoss"
+ },
+ "Ed A": {
+  "en": "Bldg A",
+  "fr": "Bât A",
+  "de": "Geb A"
+ },
+ "Ed B": {
+  "en": "Bldg B",
+  "fr": "Bât B",
+  "de": "Geb B"
+ },
+ "Ed C": {
+  "en": "Bldg C",
+  "fr": "Bât C",
+  "de": "Geb C"
+ },
+ "Ed D": {
+  "en": "Bldg D",
+  "fr": "Bât D",
+  "de": "Geb D"
+ },
+ "Ed. 4 3º": {
+  "en": "Bldg. 4 3rd",
+  "fr": "Bât. 4 3e",
+  "de": "Geb. 4 3."
+ },
+ "Ed. A 3º": {
+  "en": "Bldg. A 3rd",
+  "fr": "Bât. A 3e",
+  "de": "Geb. A 3."
+ },
+ "Edificio": {
+  "en": "Building",
+  "fr": "Bâtiment",
+  "de": "Gebäude"
+ },
+ "Edificio 10": {
+  "en": "Building 10",
+  "fr": "Bâtiment 10",
+  "de": "Gebäude 10"
+ },
+ "Edificio 11. 1º Dcha": {
+  "en": "Building 11. 1st Right",
+  "fr": "Bâtiment 11. 1er Droite",
+  "de": "Gebäude 11. 1. Rechts"
+ },
+ "Edificio 11. 2ª Dcha": {
+  "en": "Building 11. 2nd Right",
+  "fr": "Bâtiment 11. 2e Droite",
+  "de": "Gebäude 11. 2. Rechts"
+ },
+ "Edificio 13. 1ª Izq": {
+  "en": "Building 13. 1st Left",
+  "fr": "Bâtiment 13. 1er Gauche",
+  "de": "Gebäude 13. 1. Links"
+ },
+ "Edificio 13. Bajo Dcha 1": {
+  "en": "Building 13. Ground floor Right 1",
+  "fr": "Bâtiment 13. Rez-de-chaussée Droite 1",
+  "de": "Gebäude 13. Erdgeschoss Rechts 1"
+ },
+ "Edificio 13. Bajo Dcha 2": {
+  "en": "Building 13. Ground floor Right 2",
+  "fr": "Bâtiment 13. Rez-de-chaussée Droite 2",
+  "de": "Gebäude 13. Erdgeschoss Rechts 2"
+ },
+ "Edificio 13. Bajo Izq 2": {
+  "en": "Building 13. Ground floor Left 2",
+  "fr": "Bâtiment 13. Rez-de-chaussée Gauche 2",
+  "de": "Gebäude 13. Erdgeschoss Links 2"
+ },
+ "Edificio 15A. 1ª": {
+  "en": "Building 15A. 1st",
+  "fr": "Bâtiment 15A. 1er",
+  "de": "Gebäude 15A. 1."
+ },
+ "Edificio 2": {
+  "en": "Building 2",
+  "fr": "Bâtiment 2",
+  "de": "Gebäude 2"
+ },
+ "Edificio 3. 1ª Dcha": {
+  "en": "Building 3. 1st Right",
+  "fr": "Bâtiment 3. 1er Droite",
+  "de": "Gebäude 3. 1. Rechts"
+ },
+ "Edificio 3. Bajo Izq 1": {
+  "en": "Building 3. Ground floor Left 1",
+  "fr": "Bâtiment 3. Rez-de-chaussée Gauche 1",
+  "de": "Gebäude 3. Erdgeschoss Links 1"
+ },
+ "Edificio A": {
+  "en": "Building A",
+  "fr": "Bâtiment A",
+  "de": "Gebäude A"
+ },
+ "Edificio A - Baja": {
+  "en": "Building A - Ground floor",
+  "fr": "Bâtiment A - Rez-de-chaussée",
+  "de": "Gebäude A - Erdgeschoss"
+ },
+ "Edificio B": {
+  "en": "Building B",
+  "fr": "Bâtiment B",
+  "de": "Gebäude B"
+ },
+ "Edificio B 1ºA": {
+  "en": "Building B 1st A",
+  "fr": "Bâtiment B 1er A",
+  "de": "Gebäude B 1. A"
+ },
+ "Edificio B 1ºB": {
+  "en": "Building B 1st B",
+  "fr": "Bâtiment B 1er B",
+  "de": "Gebäude B 1. B"
+ },
+ "Edificio B Bajo A": {
+  "en": "Building B Ground floor A",
+  "fr": "Bâtiment B Rez-de-chaussée A",
+  "de": "Gebäude B Erdgeschoss A"
+ },
+ "Edificio C": {
+  "en": "Building C",
+  "fr": "Bâtiment C",
+  "de": "Gebäude C"
+ },
+ "Edificio C 5ª": {
+  "en": "Building C 5th",
+  "fr": "Bâtiment C 5e",
+  "de": "Gebäude C 5."
+ },
+ "Edificio completo": {
+  "en": "Entire building",
+  "fr": "Immeuble entier",
+  "de": "Gesamtes Gebäude"
+ },
+ "Edificio Completo": {
+  "en": "Entire building",
+  "fr": "Immeuble entier",
+  "de": "Gesamtes Gebäude"
+ },
+ "Edificio D": {
+  "en": "Building D",
+  "fr": "Bâtiment D",
+  "de": "Gebäude D"
+ },
+ "Edifiico": {
+  "en": "Building",
+  "fr": "Bâtiment",
+  "de": "Gebäude"
+ },
+ "enero 2026": {
+  "en": "January 2026",
+  "fr": "janvier 2026",
+  "de": "Januar 2026"
+ },
+ "Enero 2026": {
+  "en": "January 2026",
+  "fr": "Janvier 2026",
+  "de": "Januar 2026"
+ },
+ "Enero 2027": {
+  "en": "January 2027",
+  "fr": "Janvier 2027",
+  "de": "Januar 2027"
+ },
+ "Enreplanta": {
+  "en": "Mezzanine",
+  "fr": "Entresol",
+  "de": "Zwischengeschoss"
+ },
+ "Entreplanta": {
+  "en": "Mezzanine",
+  "fr": "Entresol",
+  "de": "Zwischengeschoss"
+ },
+ "Entreplanta + Planta baja + Sótano": {
+  "en": "Mezzanine + Ground floor + Basement",
+  "fr": "Entresol + Rez-de-chaussée + Sous-sol",
+  "de": "Zwischengeschoss + Erdgeschoss + Untergeschoss"
+ },
+ "Entreplanta + Planta Baja + Sótano": {
+  "en": "Mezzanine + Ground floor + Basement",
+  "fr": "Entresol + Rez-de-chaussée + Sous-sol",
+  "de": "Zwischengeschoss + Erdgeschoss + Untergeschoss"
+ },
+ "Entreplanta A": {
+  "en": "Mezzanine A",
+  "fr": "Entresol A",
+  "de": "Zwischengeschoss A"
+ },
+ "Entreplanta Dcha.": {
+  "en": "Mezzanine Right",
+  "fr": "Entresol Droite",
+  "de": "Zwischengeschoss Rechts"
+ },
+ "Entreplanta Izda.": {
+  "en": "Mezzanine Left",
+  "fr": "Entresol Gauche",
+  "de": "Zwischengeschoss Links"
+ },
+ "Entreplanta y Semisótano": {
+  "en": "Mezzanine and Lower ground floor",
+  "fr": "Entresol et Semi-sous-sol",
+  "de": "Zwischengeschoss und Souterrain"
+ },
+ "Febrero 2027": {
+  "en": "February 2027",
+  "fr": "Février 2027",
+  "de": "Februar 2027"
+ },
+ "Febrero 2028": {
+  "en": "February 2028",
+  "fr": "Février 2028",
+  "de": "Februar 2028"
+ },
+ "Formación": {
+  "en": "Training",
+  "fr": "Formation",
+  "de": "Schulung"
+ },
+ "Garaje": {
+  "en": "Parking",
+  "fr": "Parking",
+  "de": "Parkplätze"
+ },
+ "Hospedaje": {
+  "en": "Accommodation",
+  "fr": "Hébergement",
+  "de": "Beherbergung"
+ },
+ "Hostelería": {
+  "en": "Hospitality",
+  "fr": "Hôtellerie-restauration",
+  "de": "Gastgewerbe"
+ },
+ "Immediata": {
+  "en": "Immediate",
+  "fr": "Immédiate",
+  "de": "Sofort"
+ },
+ "Industrial": {
+  "en": "Industrial",
+  "fr": "Industriel",
+  "de": "Industrie"
+ },
+ "Industrial/Oficinas": {
+  "en": "Industrial/Offices",
+  "fr": "Industriel/Bureaux",
+  "de": "Industrie/Büros"
+ },
+ "inmediata": {
+  "en": "immediate",
+  "fr": "immédiate",
+  "de": "sofort"
+ },
+ "Inmediata": {
+  "en": "Immediate",
+  "fr": "Immédiate",
+  "de": "Sofort"
+ },
+ "INMEDIATA": {
+  "en": "IMMEDIATE",
+  "fr": "IMMÉDIATE",
+  "de": "SOFORT"
+ },
+ "Inmediata (subarriendo)": {
+  "en": "Immediate (sublease)",
+  "fr": "Immédiate (sous-location)",
+  "de": "Sofort (Untervermietung)"
+ },
+ "Inmeidata": {
+  "en": "Immediate",
+  "fr": "Immédiate",
+  "de": "Sofort"
+ },
+ "Instalaciones": {
+  "en": "Facilities",
+  "fr": "Installations",
+  "de": "Anlagen"
+ },
+ "Jardin": {
+  "en": "Garden",
+  "fr": "Jardin",
+  "de": "Garten"
+ },
+ "Jardín": {
+  "en": "Garden",
+  "fr": "Jardin",
+  "de": "Garten"
+ },
+ "Jardín A": {
+  "en": "Garden A",
+  "fr": "Jardin A",
+  "de": "Garten A"
+ },
+ "Jardín Mod.2-3": {
+  "en": "Garden Mod.2-3",
+  "fr": "Jardin Mod.2-3",
+  "de": "Garten Mod.2-3"
+ },
+ "Jardín Mod.5": {
+  "en": "Garden Mod.5",
+  "fr": "Jardin Mod.5",
+  "de": "Garten Mod.5"
+ },
+ "Jardín Mod.8": {
+  "en": "Garden Mod.8",
+  "fr": "Jardin Mod.8",
+  "de": "Garten Mod.8"
+ },
+ "Jardín, Entreplanta": {
+  "en": "Garden, Mezzanine",
+  "fr": "Jardin, Entresol",
+  "de": "Garten, Zwischengeschoss"
+ },
+ "Julio 2023": {
+  "en": "July 2023",
+  "fr": "Juillet 2023",
+  "de": "Juli 2023"
+ },
+ "Julio 2026": {
+  "en": "July 2026",
+  "fr": "Juillet 2026",
+  "de": "Juli 2026"
+ },
+ "Julio 2027": {
+  "en": "July 2027",
+  "fr": "Juillet 2027",
+  "de": "Juli 2027"
+ },
+ "Junio 2026": {
+  "en": "June 2026",
+  "fr": "Juin 2026",
+  "de": "Juni 2026"
+ },
+ "junio 2027": {
+  "en": "June 2027",
+  "fr": "juin 2027",
+  "de": "Juni 2027"
+ },
+ "Junio 2027": {
+  "en": "June 2027",
+  "fr": "Juin 2027",
+  "de": "Juni 2027"
+ },
+ "Libre": {
+  "en": "Available",
+  "fr": "Libre",
+  "de": "Frei"
+ },
+ "Local": {
+  "en": "Retail unit",
+  "fr": "Local commercial",
+  "de": "Gewerbefläche"
+ },
+ "Local 1": {
+  "en": "Unit 1",
+  "fr": "Local 1",
+  "de": "Einheit 1"
+ },
+ "Local 2": {
+  "en": "Unit 2",
+  "fr": "Local 2",
+  "de": "Einheit 2"
+ },
+ "Local comercial": {
+  "en": "Commercial premises",
+  "fr": "Local commercial",
+  "de": "Gewerbefläche"
+ },
+ "Local nº 8": {
+  "en": "Unit no. 8",
+  "fr": "Local nº 8",
+  "de": "Einheit Nr. 8"
+ },
+ "Local Pb": {
+  "en": "Unit, ground floor",
+  "fr": "Local, rez-de-chaussée",
+  "de": "Einheit, Erdgeschoss"
+ },
+ "Local/oficina": {
+  "en": "Retail unit/office",
+  "fr": "Local commercial/bureau",
+  "de": "Gewerbefläche/Büro"
+ },
+ "Local/ofiicna": {
+  "en": "Retail unit/office",
+  "fr": "Local commercial/bureau",
+  "de": "Gewerbefläche/Büro"
+ },
+ "Marzo 2024": {
+  "en": "March 2024",
+  "fr": "Mars 2024",
+  "de": "März 2024"
+ },
+ "Marzo 2026": {
+  "en": "March 2026",
+  "fr": "Mars 2026",
+  "de": "März 2026"
+ },
+ "Marzo 2027": {
+  "en": "March 2027",
+  "fr": "Mars 2027",
+  "de": "März 2027"
+ },
+ "Marzo de 2023": {
+  "en": "March 2023",
+  "fr": "Mars 2023",
+  "de": "März 2023"
+ },
+ "Marzo de 2026": {
+  "en": "March 2026",
+  "fr": "Mars 2026",
+  "de": "März 2026"
+ },
+ "May-2027": {
+  "en": "May-2027",
+  "fr": "Mai-2027",
+  "de": "Mai-2027"
+ },
+ "Mayo 2026": {
+  "en": "May 2026",
+  "fr": "Mai 2026",
+  "de": "Mai 2026"
+ },
+ "Mayo 2027": {
+  "en": "May 2027",
+  "fr": "Mai 2027",
+  "de": "Mai 2027"
+ },
+ "Módulo 1ª Planta": {
+  "en": "Module 1st floor",
+  "fr": "Module 1er étage",
+  "de": "Modul 1. Etage"
+ },
+ "Modulo A - 1ª": {
+  "en": "Module A - 1st",
+  "fr": "Module A - 1er",
+  "de": "Modul A - 1."
+ },
+ "Modulo A- 1º": {
+  "en": "Module A- 1st",
+  "fr": "Module A- 1er",
+  "de": "Modul A- 1."
+ },
+ "Modulo A- 1º A": {
+  "en": "Module A- 1st A",
+  "fr": "Module A- 1er A",
+  "de": "Modul A- 1. A"
+ },
+ "Modulo B - 1ª": {
+  "en": "Module B - 1st",
+  "fr": "Module B - 1er",
+  "de": "Modul B - 1."
+ },
+ "Modulo B - 2ª": {
+  "en": "Module B - 2nd",
+  "fr": "Module B - 2e",
+  "de": "Modul B - 2."
+ },
+ "Modulo B - 3ª": {
+  "en": "Module B - 3rd",
+  "fr": "Module B - 3e",
+  "de": "Modul B - 3."
+ },
+ "Modulo B 1ª": {
+  "en": "Module B 1st",
+  "fr": "Module B 1er",
+  "de": "Modul B 1."
+ },
+ "Modulo B 2ª": {
+  "en": "Module B 2nd",
+  "fr": "Module B 2e",
+  "de": "Modul B 2."
+ },
+ "Modulo B 3ª": {
+  "en": "Module B 3rd",
+  "fr": "Module B 3e",
+  "de": "Modul B 3."
+ },
+ "Modulo B-1ª": {
+  "en": "Module B-1st",
+  "fr": "Module B-1er",
+  "de": "Modul B-1."
+ },
+ "Nave/Almacén": {
+  "en": "Warehouse/Storage",
+  "fr": "Entrepôt/Stockage",
+  "de": "Halle/Lager"
+ },
+ "New York 4º": {
+  "en": "New York 4th",
+  "fr": "New York 4e",
+  "de": "New York 4."
+ },
+ "New York 5º": {
+  "en": "New York 5th",
+  "fr": "New York 5e",
+  "de": "New York 5."
+ },
+ "New York 6º": {
+  "en": "New York 6th",
+  "fr": "New York 6e",
+  "de": "New York 6."
+ },
+ "New York Bajo D": {
+  "en": "New York Ground floor D",
+  "fr": "New York Rez-de-chaussée D",
+  "de": "New York Erdgeschoss D"
+ },
+ "Nov 2026": {
+  "en": "Nov 2026",
+  "fr": "Nov. 2026",
+  "de": "Nov. 2026"
+ },
+ "Noviembre 2023": {
+  "en": "November 2023",
+  "fr": "Novembre 2023",
+  "de": "November 2023"
+ },
+ "Noviembre 2026": {
+  "en": "November 2026",
+  "fr": "Novembre 2026",
+  "de": "November 2026"
+ },
+ "NUDO 1. 3ª": {
+  "en": "NUDO 1. 3rd",
+  "fr": "NUDO 1. 3e",
+  "de": "NUDO 1. 3."
+ },
+ "NUDO 1. 5ª": {
+  "en": "NUDO 1. 5th",
+  "fr": "NUDO 1. 5e",
+  "de": "NUDO 1. 5."
+ },
+ "NUDO 3. 2ª": {
+  "en": "NUDO 3. 2nd",
+  "fr": "NUDO 3. 2e",
+  "de": "NUDO 3. 2."
+ },
+ "NUDO 3. 4ª": {
+  "en": "NUDO 3. 4th",
+  "fr": "NUDO 3. 4e",
+  "de": "NUDO 3. 4."
+ },
+ "NUDO 3. 5ª": {
+  "en": "NUDO 3. 5th",
+  "fr": "NUDO 3. 5e",
+  "de": "NUDO 3. 5."
+ },
+ "NUDO 3. Bajo": {
+  "en": "NUDO 3. Ground floor",
+  "fr": "NUDO 3. Rez-de-chaussée",
+  "de": "NUDO 3. Erdgeschoss"
+ },
+ "NUDO 4. 1º": {
+  "en": "NUDO 4. 1st",
+  "fr": "NUDO 4. 1er",
+  "de": "NUDO 4. 1."
+ },
+ "NUDO 4. 2º": {
+  "en": "NUDO 4. 2nd",
+  "fr": "NUDO 4. 2e",
+  "de": "NUDO 4. 2."
+ },
+ "NUDO 4. 5º": {
+  "en": "NUDO 4. 5th",
+  "fr": "NUDO 4. 5e",
+  "de": "NUDO 4. 5."
+ },
+ "Octubre 2026": {
+  "en": "October 2026",
+  "fr": "Octobre 2026",
+  "de": "Oktober 2026"
+ },
+ "Oficin": {
+  "en": "Office",
+  "fr": "Bureau",
+  "de": "Büro"
+ },
+ "oficina": {
+  "en": "office",
+  "fr": "bureau",
+  "de": "Büro"
+ },
+ "Oficina": {
+  "en": "Office",
+  "fr": "Bureau",
+  "de": "Büro"
+ },
+ "Oficina + Terraza": {
+  "en": "Office + Terrace",
+  "fr": "Bureau + Terrasse",
+  "de": "Büro + Terrasse"
+ },
+ "Oficina + Terraza privativa": {
+  "en": "Office + private terrace",
+  "fr": "Bureau + terrasse privative",
+  "de": "Büro + private Terrasse"
+ },
+ "Oficina comercial": {
+  "en": "Commercial office",
+  "fr": "Bureau commercial",
+  "de": "Gewerbebüro"
+ },
+ "Oficina Comercial": {
+  "en": "Commercial office",
+  "fr": "Bureau commercial",
+  "de": "Gewerbebüro"
+ },
+ "Oficina implantada": {
+  "en": "Fitted office",
+  "fr": "Bureau aménagé",
+  "de": "Ausgebautes Büro"
+ },
+ "Oficina Implantada": {
+  "en": "Fitted office",
+  "fr": "Bureau aménagé",
+  "de": "Ausgebautes Büro"
+ },
+ "Oficina IMPLANTADA": {
+  "en": "FITTED office",
+  "fr": "Bureau AMÉNAGÉ",
+  "de": "AUSGEBAUTES Büro"
+ },
+ "Oficina-Almacén": {
+  "en": "Office-Storage",
+  "fr": "Bureau-Stockage",
+  "de": "Büro-Lager"
+ },
+ "Oficina/Comercial": {
+  "en": "Office/Retail",
+  "fr": "Bureau/Commerce",
+  "de": "Büro/Einzelhandel"
+ },
+ "Oficina/formación": {
+  "en": "Office/training",
+  "fr": "Bureau/formation",
+  "de": "Büro/Schulung"
+ },
+ "Oficina/residencial": {
+  "en": "Office/residential",
+  "fr": "Bureau/résidentiel",
+  "de": "Büro/Wohnen"
+ },
+ "Oficina/Residencial": {
+  "en": "Office/Residential",
+  "fr": "Bureau/Résidentiel",
+  "de": "Büro/Wohnen"
+ },
+ "Oficinas": {
+  "en": "Offices",
+  "fr": "Bureaux",
+  "de": "Büros"
+ },
+ "Oficinas (implantada)": {
+  "en": "Offices (fitted out)",
+  "fr": "Bureaux (aménagés)",
+  "de": "Büros (ausgebaut)"
+ },
+ "Oficinas/residencial": {
+  "en": "Offices/residential",
+  "fr": "Bureaux/résidentiel",
+  "de": "Büros/Wohnen"
+ },
+ "Ofiicna": {
+  "en": "Office",
+  "fr": "Bureau",
+  "de": "Büro"
+ },
+ "P3 - P5": {
+  "en": "P3 - P5",
+  "fr": "P3 - P5",
+  "de": "P3 - P5"
+ },
+ "P6": {
+  "en": "P6",
+  "fr": "P6",
+  "de": "P6"
+ },
+ "P7": {
+  "en": "P7",
+  "fr": "P7",
+  "de": "P7"
+ },
+ "Pabellón": {
+  "en": "Pavilion",
+  "fr": "Pavillon",
+  "de": "Pavillon"
+ },
+ "Parkibg": {
+  "en": "Parking",
+  "fr": "Parking",
+  "de": "Parkplätze"
+ },
+ "Parkin": {
+  "en": "Parking",
+  "fr": "Parking",
+  "de": "Parkplätze"
+ },
+ "Parking": {
+  "en": "Parking",
+  "fr": "Parking",
+  "de": "Parkplätze"
+ },
+ "Parking + Almacén": {
+  "en": "Parking + Storage",
+  "fr": "Parking + Stockage",
+  "de": "Parkplätze + Lager"
+ },
+ "Parking exterior": {
+  "en": "Outdoor parking",
+  "fr": "Parking extérieur",
+  "de": "Außenparkplätze"
+ },
+ "Parking interior": {
+  "en": "Indoor parking",
+  "fr": "Parking intérieur",
+  "de": "Innenparkplätze"
+ },
+ "Patio": {
+  "en": "Courtyard",
+  "fr": "Cour",
+  "de": "Innenhof"
+ },
+ "Pb": {
+  "en": "Ground floor",
+  "fr": "Rez-de-chaussée",
+  "de": "Erdgeschoss"
+ },
+ "PB - P2": {
+  "en": "PB - P2",
+  "fr": "PB - P2",
+  "de": "PB - P2"
+ },
+ "PbA": {
+  "en": "PbA",
+  "fr": "PbA",
+  "de": "PbA"
+ },
+ "Planta -1": {
+  "en": "Level -1",
+  "fr": "Niveau -1",
+  "de": "Ebene -1"
+ },
+ "Planta -2": {
+  "en": "Level -2",
+  "fr": "Niveau -2",
+  "de": "Ebene -2"
+ },
+ "Planta -3": {
+  "en": "Level -3",
+  "fr": "Niveau -3",
+  "de": "Ebene -3"
+ },
+ "Planta -4": {
+  "en": "Level -4",
+  "fr": "Niveau -4",
+  "de": "Ebene -4"
+ },
+ "Planta 15ª": {
+  "en": "15th floor",
+  "fr": "15e étage",
+  "de": "15. Etage"
+ },
+ "Planta 1ª": {
+  "en": "1st floor",
+  "fr": "1er étage",
+  "de": "1. Etage"
+ },
+ "Planta 1ª, 2ª y 3ª": {
+  "en": "1st, 2nd and 3rd floors",
+  "fr": "1er, 2e et 3e étages",
+  "de": "1., 2. und 3. Etage"
+ },
+ "Planta 1ª, baja y sótano": {
+  "en": "1st floor, ground floor and basement",
+  "fr": "1er étage, rez-de-chaussée et sous-sol",
+  "de": "1. Etage, Erdgeschoss und Untergeschoss"
+ },
+ "Planta 1º": {
+  "en": "1st floor",
+  "fr": "1er étage",
+  "de": "1. Etage"
+ },
+ "Planta 1º y Baja": {
+  "en": "1st floor and ground floor",
+  "fr": "1er étage et rez-de-chaussée",
+  "de": "1. Etage und Erdgeschoss"
+ },
+ "Planta 21ª": {
+  "en": "21st floor",
+  "fr": "21e étage",
+  "de": "21. Etage"
+ },
+ "Planta 2ª": {
+  "en": "2nd floor",
+  "fr": "2e étage",
+  "de": "2. Etage"
+ },
+ "Planta 2ª + Planta 3ª": {
+  "en": "2nd floor + 3rd floor",
+  "fr": "2e étage + 3e étage",
+  "de": "2. Etage + 3. Etage"
+ },
+ "Planta 2ª y 3ª": {
+  "en": "2nd and 3rd floors",
+  "fr": "2e et 3e étages",
+  "de": "2. und 3. Etage"
+ },
+ "Planta 2º": {
+  "en": "2nd floor",
+  "fr": "2e étage",
+  "de": "2. Etage"
+ },
+ "Planta 37º": {
+  "en": "37th floor",
+  "fr": "37e étage",
+  "de": "37. Etage"
+ },
+ "Planta 3ª": {
+  "en": "3rd floor",
+  "fr": "3e étage",
+  "de": "3. Etage"
+ },
+ "Planta 3ºC": {
+  "en": "3rd floor C",
+  "fr": "3e étage C",
+  "de": "3. Etage C"
+ },
+ "Planta 4ª": {
+  "en": "4th floor",
+  "fr": "4e étage",
+  "de": "4. Etage"
+ },
+ "Planta 4º": {
+  "en": "4th floor",
+  "fr": "4e étage",
+  "de": "4. Etage"
+ },
+ "Planta 5ª": {
+  "en": "5th floor",
+  "fr": "5e étage",
+  "de": "5. Etage"
+ },
+ "Planta 5ª + 6ª": {
+  "en": "5th + 6th floors",
+  "fr": "5e + 6e étages",
+  "de": "5. + 6. Etage"
+ },
+ "Planta 5º": {
+  "en": "5th floor",
+  "fr": "5e étage",
+  "de": "5. Etage"
+ },
+ "Planta 5º y 6º": {
+  "en": "5th and 6th floors",
+  "fr": "5e et 6e étages",
+  "de": "5. und 6. Etage"
+ },
+ "Planta 6ª": {
+  "en": "6th floor",
+  "fr": "6e étage",
+  "de": "6. Etage"
+ },
+ "Planta 6º": {
+  "en": "6th floor",
+  "fr": "6e étage",
+  "de": "6. Etage"
+ },
+ "Planta 7º": {
+  "en": "7th floor",
+  "fr": "7e étage",
+  "de": "7. Etage"
+ },
+ "Planta 7º y 8º": {
+  "en": "7th and 8th floors",
+  "fr": "7e et 8e étages",
+  "de": "7. und 8. Etage"
+ },
+ "Planta 7º-8º": {
+  "en": "7th-8th floors",
+  "fr": "7e-8e étages",
+  "de": "7.-8. Etage"
+ },
+ "Planta 9º": {
+  "en": "9th floor",
+  "fr": "9e étage",
+  "de": "9. Etage"
+ },
+ "Planta acceso": {
+  "en": "Access floor",
+  "fr": "Niveau d'accès",
+  "de": "Zugangsebene"
+ },
+ "Planta Acceso": {
+  "en": "Access floor",
+  "fr": "Niveau d'accès",
+  "de": "Zugangsebene"
+ },
+ "Planta baja": {
+  "en": "Ground floor",
+  "fr": "Rez-de-chaussée",
+  "de": "Erdgeschoss"
+ },
+ "Planta Baja": {
+  "en": "Ground floor",
+  "fr": "Rez-de-chaussée",
+  "de": "Erdgeschoss"
+ },
+ "Planta baja (B)": {
+  "en": "Ground floor (B)",
+  "fr": "Rez-de-chaussée (B)",
+  "de": "Erdgeschoss (B)"
+ },
+ "Planta baja + 1ª": {
+  "en": "Ground floor + 1st",
+  "fr": "Rez-de-chaussée + 1er",
+  "de": "Erdgeschoss + 1."
+ },
+ "Planta Baja + Semisótano": {
+  "en": "Ground floor + Lower ground floor",
+  "fr": "Rez-de-chaussée + Semi-sous-sol",
+  "de": "Erdgeschoss + Souterrain"
+ },
+ "Planta baja + Sótano": {
+  "en": "Ground floor + Basement",
+  "fr": "Rez-de-chaussée + Sous-sol",
+  "de": "Erdgeschoss + Untergeschoss"
+ },
+ "Planta Baja + Sótano": {
+  "en": "Ground floor + Basement",
+  "fr": "Rez-de-chaussée + Sous-sol",
+  "de": "Erdgeschoss + Untergeschoss"
+ },
+ "Planta Baja + Sótano + Planta 1ª": {
+  "en": "Ground floor + Basement + 1st floor",
+  "fr": "Rez-de-chaussée + Sous-sol + 1er étage",
+  "de": "Erdgeschoss + Untergeschoss + 1. Etage"
+ },
+ "Planta baja y 1ª": {
+  "en": "Ground floor and 1st",
+  "fr": "Rez-de-chaussée et 1er",
+  "de": "Erdgeschoss und 1."
+ },
+ "Planta baja y dos entreplantas": {
+  "en": "Ground floor and two mezzanines",
+  "fr": "Rez-de-chaussée et deux entresols",
+  "de": "Erdgeschoss und zwei Zwischengeschosse"
+ },
+ "Planta baja y entreplanta": {
+  "en": "Ground floor and mezzanine",
+  "fr": "Rez-de-chaussée et entresol",
+  "de": "Erdgeschoss und Zwischengeschoss"
+ },
+ "Planta baja y Entreplanta": {
+  "en": "Ground floor and Mezzanine",
+  "fr": "Rez-de-chaussée et Entresol",
+  "de": "Erdgeschoss und Zwischengeschoss"
+ },
+ "Planta Baja y Entreplanta": {
+  "en": "Ground floor and Mezzanine",
+  "fr": "Rez-de-chaussée et Entresol",
+  "de": "Erdgeschoss und Zwischengeschoss"
+ },
+ "Planta baja y semisótano": {
+  "en": "Ground floor and lower ground floor",
+  "fr": "Rez-de-chaussée et semi-sous-sol",
+  "de": "Erdgeschoss und Souterrain"
+ },
+ "Planta baja y sótano": {
+  "en": "Ground floor and basement",
+  "fr": "Rez-de-chaussée et sous-sol",
+  "de": "Erdgeschoss und Untergeschoss"
+ },
+ "Planta Baja y Sótano": {
+  "en": "Ground floor and Basement",
+  "fr": "Rez-de-chaussée et Sous-sol",
+  "de": "Erdgeschoss und Untergeschoss"
+ },
+ "Planta Baja, 2º, 3º, 4º": {
+  "en": "Ground floor, 2nd, 3rd, 4th",
+  "fr": "Rez-de-chaussée, 2e, 3e, 4e",
+  "de": "Erdgeschoss, 2., 3., 4."
+ },
+ "Planta Baja, Primera y Segunda": {
+  "en": "Ground floor, 1st and 2nd",
+  "fr": "Rez-de-chaussée, 1er et 2e",
+  "de": "Erdgeschoss, 1. und 2."
+ },
+ "Planta Baja, Sótano -1 y Sótano -2": {
+  "en": "Ground floor, Basement -1 and Basement -2",
+  "fr": "Rez-de-chaussée, Sous-sol -1 et Sous-sol -2",
+  "de": "Erdgeschoss, Untergeschoss -1 und Untergeschoss -2"
+ },
+ "Planta baja, sótano y entreplanta": {
+  "en": "Ground floor, basement and mezzanine",
+  "fr": "Rez-de-chaussée, sous-sol et entresol",
+  "de": "Erdgeschoss, Untergeschoss und Zwischengeschoss"
+ },
+ "Planta cubierta": {
+  "en": "Roof level",
+  "fr": "Niveau toiture",
+  "de": "Dachebene"
+ },
+ "Planta primera": {
+  "en": "First floor",
+  "fr": "Premier étage",
+  "de": "Erste Etage"
+ },
+ "Planta Semisótano": {
+  "en": "Lower ground floor",
+  "fr": "Semi-sous-sol",
+  "de": "Souterrain"
+ },
+ "Planta sótano": {
+  "en": "Basement",
+  "fr": "Sous-sol",
+  "de": "Untergeschoss"
+ },
+ "Planta Sótano": {
+  "en": "Basement",
+  "fr": "Sous-sol",
+  "de": "Untergeschoss"
+ },
+ "Plantas 2ª + 3ª + 4ª": {
+  "en": "2nd + 3rd + 4th floors",
+  "fr": "2e + 3e + 4e étages",
+  "de": "2. + 3. + 4. Etage"
+ },
+ "Plantas baja, primera y sótano": {
+  "en": "Ground floor, 1st floor and basement",
+  "fr": "Rez-de-chaussée, 1er étage et sous-sol",
+  "de": "Erdgeschoss, 1. Etage und Untergeschoss"
+ },
+ "Plazas de garaje": {
+  "en": "Parking spaces",
+  "fr": "Places de parking",
+  "de": "Stellplätze"
+ },
+ "Plazas Parking": {
+  "en": "Parking spaces",
+  "fr": "Places de parking",
+  "de": "Stellplätze"
+ },
+ "Porche": {
+  "en": "Porch",
+  "fr": "Porche",
+  "de": "Veranda"
+ },
+ "Portal 6 4º": {
+  "en": "Entrance 6 4th",
+  "fr": "Entrée 6 4e",
+  "de": "Eingang 6 4."
+ },
+ "Portal 6 5º": {
+  "en": "Entrance 6 5th",
+  "fr": "Entrée 6 5e",
+  "de": "Eingang 6 5."
+ },
+ "Primera": {
+  "en": "1st",
+  "fr": "1er",
+  "de": "1."
+ },
+ "Ps-1": {
+  "en": "Ps-1",
+  "fr": "Ps-1",
+  "de": "Ps-1"
+ },
+ "Q2 2026": {
+  "en": "Q2 2026",
+  "fr": "T2 2026",
+  "de": "Q2 2026"
+ },
+ "Residencial": {
+  "en": "Residential",
+  "fr": "Résidentiel",
+  "de": "Wohnen"
+ },
+ "Restauración": {
+  "en": "Restaurant",
+  "fr": "Restauration",
+  "de": "Gastronomie"
+ },
+ "Restauración + terraza": {
+  "en": "Restaurant + terrace",
+  "fr": "Restauration + terrasse",
+  "de": "Gastronomie + Terrasse"
+ },
+ "Sanitario": {
+  "en": "Healthcare",
+  "fr": "Santé",
+  "de": "Gesundheitswesen"
+ },
+ "Sanitario/Residencial": {
+  "en": "Healthcare/Residential",
+  "fr": "Santé/Résidentiel",
+  "de": "Gesundheitswesen/Wohnen"
+ },
+ "Segunda": {
+  "en": "2nd",
+  "fr": "2e",
+  "de": "2."
+ },
+ "Semi Sótano, Baja, Primera, Segunda": {
+  "en": "Lower ground floor, Ground floor, 1st, 2nd",
+  "fr": "Semi-sous-sol, Rez-de-chaussée, 1er, 2e",
+  "de": "Souterrain, Erdgeschoss, 1., 2."
+ },
+ "Semisótano": {
+  "en": "Lower ground floor",
+  "fr": "Semi-sous-sol",
+  "de": "Souterrain"
+ },
+ "Semisótano A-B": {
+  "en": "Lower ground floor A-B",
+  "fr": "Semi-sous-sol A-B",
+  "de": "Souterrain A-B"
+ },
+ "Semisótano, Baja, Primera": {
+  "en": "Lower ground floor, Ground floor, 1st",
+  "fr": "Semi-sous-sol, Rez-de-chaussée, 1er",
+  "de": "Souterrain, Erdgeschoss, 1."
+ },
+ "Septiembre 2025": {
+  "en": "September 2025",
+  "fr": "Septembre 2025",
+  "de": "September 2025"
+ },
+ "Septiembre 2026": {
+  "en": "September 2026",
+  "fr": "Septembre 2026",
+  "de": "September 2026"
+ },
+ "Servicios complementarios": {
+  "en": "Ancillary services",
+  "fr": "Services complémentaires",
+  "de": "Ergänzende Dienstleistungen"
+ },
+ "SM": {
+  "en": "SM",
+  "fr": "SM",
+  "de": "SM"
+ },
+ "Sotano": {
+  "en": "Basement",
+  "fr": "Sous-sol",
+  "de": "Untergeschoss"
+ },
+ "Sotáno": {
+  "en": "Basement",
+  "fr": "Sous-sol",
+  "de": "Untergeschoss"
+ },
+ "Sótano": {
+  "en": "Basement",
+  "fr": "Sous-sol",
+  "de": "Untergeschoss"
+ },
+ "Sótano -1": {
+  "en": "Basement -1",
+  "fr": "Sous-sol -1",
+  "de": "Untergeschoss -1"
+ },
+ "Sótano -1 -2 -3 -4": {
+  "en": "Basement -1 -2 -3 -4",
+  "fr": "Sous-sol -1 -2 -3 -4",
+  "de": "Untergeschoss -1 -2 -3 -4"
+ },
+ "Sótano -2": {
+  "en": "Basement -2",
+  "fr": "Sous-sol -2",
+  "de": "Untergeschoss -2"
+ },
+ "Sótano -3": {
+  "en": "Basement -3",
+  "fr": "Sous-sol -3",
+  "de": "Untergeschoss -3"
+ },
+ "Sótano + Baja + 1ª": {
+  "en": "Basement + Ground floor + 1st",
+  "fr": "Sous-sol + Rez-de-chaussée + 1er",
+  "de": "Untergeschoss + Erdgeschoss + 1."
+ },
+ "Sótano 1": {
+  "en": "Basement 1",
+  "fr": "Sous-sol 1",
+  "de": "Untergeschoss 1"
+ },
+ "Sótano 2": {
+  "en": "Basement 2",
+  "fr": "Sous-sol 2",
+  "de": "Untergeschoss 2"
+ },
+ "Sótano, Baja y 1ª": {
+  "en": "Basement, Ground floor and 1st",
+  "fr": "Sous-sol, Rez-de-chaussée et 1er",
+  "de": "Untergeschoss, Erdgeschoss und 1."
+ },
+ "Sótano, Baja, 1ª, 2º": {
+  "en": "Basement, Ground floor, 1st, 2nd",
+  "fr": "Sous-sol, Rez-de-chaussée, 1er, 2e",
+  "de": "Untergeschoss, Erdgeschoss, 1., 2."
+ },
+ "Sótano, Bajo, y 1º": {
+  "en": "Basement, Ground floor, and 1st",
+  "fr": "Sous-sol, Rez-de-chaussée, et 1er",
+  "de": "Untergeschoss, Erdgeschoss, und 1."
+ },
+ "Sótano/Baja": {
+  "en": "Basement/Ground floor",
+  "fr": "Sous-sol/Rez-de-chaussée",
+  "de": "Untergeschoss/Erdgeschoss"
+ },
+ "SS": {
+  "en": "SS",
+  "fr": "SS",
+  "de": "SS"
+ },
+ "Supermercado": {
+  "en": "Supermarket",
+  "fr": "Supermarché",
+  "de": "Supermarkt"
+ },
+ "Terciario": {
+  "en": "Tertiary",
+  "fr": "Tertiaire",
+  "de": "Dienstleistung"
+ },
+ "Terraza": {
+  "en": "Terrace",
+  "fr": "Terrasse",
+  "de": "Terrasse"
+ },
+ "TOTAL": {
+  "en": "TOTAL",
+  "fr": "TOTAL",
+  "de": "GESAMT"
+ },
+ "Trastero": {
+  "en": "Storage room",
+  "fr": "Débarras",
+  "de": "Abstellraum"
+ },
+ "Trasteros": {
+  "en": "Storage rooms",
+  "fr": "Débarras",
+  "de": "Abstellräume"
+ },
+ "Tres plantas": {
+  "en": "Three floors",
+  "fr": "Trois étages",
+  "de": "Drei Etagen"
+ },
+ "Varias": {
+  "en": "Various",
+  "fr": "Plusieurs",
+  "de": "Mehrere"
+ },
+ "Verano 2021": {
+  "en": "Summer 2021",
+  "fr": "Été 2021",
+  "de": "Sommer 2021"
+ },
+ "ZZCC": {
+  "en": "COMMON AREAS",
+  "fr": "PARTIES COMMUNES",
+  "de": "GEMEINSCHAFTSFLÄCHEN"
+ }
+}

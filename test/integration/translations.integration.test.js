@@ -26,6 +26,8 @@ Object.assign(process.env, {
   AWS_SECRET_ACCESS_KEY: "test",
   FRONTEND_URL: "http://127.0.0.1:9",
   ENABLE_REVALIDATION: "false",
+  // Nunca se llama a DeepL desde las pruebas
+  AUTO_TRANSLATION: "false",
 });
 delete process.env.TRANSLATION_LANGS;
 

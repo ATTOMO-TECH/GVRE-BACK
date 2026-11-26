@@ -7,7 +7,7 @@ const {
   getTranslatedLangs,
   localizeDocument,
   withTranslationStatus,
-  planTranslationWrites,
+  planTranslationWritesWithAuto,
   applyWritesToDocument,
 } = require("../i18n");
 const {
@@ -36,16 +36,13 @@ const presentFaq = (faq, lang) =>
       }
     : withTranslationStatus(ENTITIES.LISTING_FAQ, faq);
 
-const hasTranslationsInput = (input) =>
-  Boolean(input?.incoming || input?.confirmed);
-
 // Aplica las traducciones que llegan del CRM sobre la FAQ (en español ya
-// actualizada), comparando con las que tenía guardadas
-const applyTranslations = (faq, input, stored) => {
-  if (!hasTranslationsInput(input)) return;
+// actualizada), comparando con las que tenía guardadas. Las que falten se
+// traducen solas (DeepL).
+const applyTranslations = async (faq, input, stored) => {
   applyWritesToDocument(
     faq,
-    planTranslationWrites(ENTITIES.LISTING_FAQ, {
+    await planTranslationWritesWithAuto(ENTITIES.LISTING_FAQ, {
       source: faq.toObject(),
       stored,
       ...input,
@@ -156,7 +153,7 @@ const createFaq = async (req, res, next) => {
       ...content,
       order: last ? last.order + 1 : 0,
     });
-    applyTranslations(faq, req.translationsInput);
+    await applyTranslations(faq, req.translationsInput);
     await faq.save();
 
     await revalidateWeb([WEB_CACHE_TAG]);
@@ -177,7 +174,7 @@ const updateFaq = async (req, res, next) => {
 
     const storedTranslations = faq.toObject().translations;
     faq.set(content);
-    applyTranslations(faq, req.translationsInput, storedTranslations);
+    await applyTranslations(faq, req.translationsInput, storedTranslations);
     await faq.save();
 
     await revalidateWeb([WEB_CACHE_TAG]);
