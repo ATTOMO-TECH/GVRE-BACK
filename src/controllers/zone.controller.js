@@ -3,7 +3,7 @@ const { revalidateWeb } = require("../utils/revalidateWeb");
 const {
   ENTITIES,
   withTranslationStatus,
-  planTranslationWrites,
+  planTranslationWritesWithAuto,
   toMongoUpdate,
 } = require("../i18n");
 
@@ -210,7 +210,7 @@ const updateZoneDescription = async (req, res, next) => {
 
     // Si la petición no trae descripción en español, la guardada no cambia
     const translationUpdate = toMongoUpdate(
-      planTranslationWrites(ENTITIES.ZONE, {
+      await planTranslationWritesWithAuto(ENTITIES.ZONE, {
         source: {
           zoneDescription: zoneDescription ?? currentZone.zoneDescription,
         },
